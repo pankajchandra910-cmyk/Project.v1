@@ -3,14 +3,7 @@ import { Button } from "./button";
 import { Input } from "./Input";
 import { useState } from "react";
 
-// interface HeaderProps {
-//   isLoggedIn: boolean;
-//   onSearch: (query: string) => void;
-//   userName?: string;
-//   onLogoClick?: () => void;
-//   onMenuToggle?: () => void;
-//   showMobileMenu?: boolean;
-// }
+
 
 export default function Header({ isLoggedIn, onSearch, userName, onLogoClick, onMenuToggle, showMobileMenu } ) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +22,7 @@ export default function Header({ isLoggedIn, onSearch, userName, onLogoClick, on
           {/* Logo */}
           <div className="flex items-center space-x-2">
             <div 
-              className="text-2xl font-bold text-primary cursor-pointer hover:opacity-80  transition-opacity text-[#228B22]"
+              className="text-2xl font-bold  cursor-pointer hover:opacity-80  transition-opacity text-[#228B22]"
               onClick={onLogoClick}
             >
               NainiExplore
@@ -110,23 +103,3 @@ export default function Header({ isLoggedIn, onSearch, userName, onLogoClick, on
 }
 
 
-// import { Star } from "lucide-react";
-
-// export default function Header () {
-//   return (
-//     <div>
-//       <Star size={32} color="gold" strokeWidth={1.5} />
-//       <p>A golden star!</p>
-//     </div>
-//   );
-// }
-
-
-
-// export default function Header(){
-//   return (
-//     <>
-//     <h1>hello</h1>
-//     </>
-//   )
-// }
