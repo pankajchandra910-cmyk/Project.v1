@@ -4,7 +4,6 @@ import { Input } from "./Input";
 import { useState } from "react";
 
 
-
 export default function Header({ isLoggedIn, onSearch, userName, onLogoClick, onMenuToggle, showMobileMenu } ) {
   const [searchQuery, setSearchQuery] = useState("");
 
