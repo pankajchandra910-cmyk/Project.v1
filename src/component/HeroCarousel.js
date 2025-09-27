@@ -4,40 +4,42 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { ImageWithFallback }  from "./ImageWithFallback";
 
+
+
+
 const heroSlides = [
   {
     id: 1,
-    image: ".src/utils/hero1.jpg",
+    image: "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Discover Nainital Lake",
     subtitle: "Experience the serene beauty of the Queen of Lakes",
     buttonText: "Explore Now"
   },
   {
     id: 2,
-    image: ".src/utils/hero2.jpg",
+    image: "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Explore Bhimtal",
     subtitle: "Find tranquility at the largest lake in Kumaon",
     buttonText: "Book Stay"
   },
   {
     id: 3,
-    image: ".src/utils/hero3.jpg",
+    image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Mountain Trekking Adventures",
     subtitle: "Discover hidden trails and breathtaking views",
     buttonText: "Book Trek"
   },
   {
     id: 4,
-    image: ".src/utils/hero4.jpg",
+    image: "https://images.unsplash.com/photo-1735242004608-35b11962c9f7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWtlJTIwYm9hdGluZyUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Lake Boating Experience",
     subtitle: "Enjoy peaceful boat rides across pristine waters",
     buttonText: "Book Boat"
   }
 ];
 
-// interface HeroCarouselProps {
-//   onBooking: (type: string) => void;
-// }
+
+
 
 export default function HeroCarousel({ onBooking }) {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -62,6 +64,7 @@ export default function HeroCarousel({ onBooking }) {
  
     <div className="relative h-96 md:h-[500px] overflow-hidden rounded-lg">
       {heroSlides.map((slide, index) => (
+        
         <div
           key={slide.id}
           className={`absolute inset-0 transition-transform duration-500 ease-in-out ${
@@ -75,7 +78,7 @@ export default function HeroCarousel({ onBooking }) {
               alt={slide.title}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black bg-opacity-40" />
+            <div className="absolute inset-0" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center text-white space-y-4 px-4">
                 <h2 className="text-3xl md:text-5xl font-bold">{slide.title}</h2>
