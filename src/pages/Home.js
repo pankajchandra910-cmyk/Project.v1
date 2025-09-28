@@ -1,7 +1,7 @@
-import Header from "./Header";
-import HeroCarousel from "./HeroCarousel";
-import CategoryCard from "./CategoryCard";
-import FeaturedCard from "./FeaturedCard";
+import Header from "../component/Header";
+import HeroCarousel from "../component/HeroCarousel";
+import CategoryCard from "../component/CategoryCard";
+import FeaturedCard from "../component/FeaturedCard";
 import { 
   Bed, 
   MapPin, 
@@ -22,9 +22,11 @@ import {
   X,
   User
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "./Card";
-import { Button } from "./button";
-import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
+import { Button } from "../component/button";
+import { useState ,useContext }  from "react";
+import { useNavigate } from "react-router-dom";
+import { GlobalContext } from "../component/GlobalContext";
 
 
 
@@ -48,15 +50,49 @@ export default function Home(){
 ];
 
 
+     const navigate = useNavigate();
 
-    const [currentView, setCurrentView] = useState("login") // instead of useState<AppView>
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("");
-    const [userName] = useState("Priya Sharma");
-    const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const [selectedItemId, setSelectedItemId] = useState("");
-    const [selectedDetailType, setSelectedDetailType] = useState("hotel");
+  const handleViewDetails = (id, type = "hotel") => {
+    switch (type) {
+      case "hotel":
+        navigate(`/hotel-details/${id}`);
+        break;
+      case "place":
+        navigate(`/place-details/${id}`);
+        break;
+      case "trek":
+        navigate(`/trek-details/${id}`);
+        break;
+      case "bike":
+        navigate(`/bike-details/${id}`);
+        break;
+      case "cab":
+        navigate(`/cab-details/${id}`);
+        break;
+      case "guide":
+        navigate(`/guide-details/${id}`);
+        break;
+      default:
+        navigate("/");
+    }
+  };
+    const {
+    currentView,
+    setCurrentView,
+    isLoggedIn,
+    setIsLoggedIn,
+    searchQuery,
+    setSearchQuery,
+    selectedCategory,
+    setSelectedCategory,
+    userName,
+    showMobileMenu,
+    setShowMobileMenu,
+    selectedItemId,
+    setSelectedItemId,
+    selectedDetailType,
+    setSelectedDetailType,
+  } = useContext(GlobalContext);
 
        // Mock data
     const categories = [
@@ -125,16 +161,7 @@ export default function Home(){
   };
 
 
-const handleViewDetails = (id, type = "hotel") => {
-  const view = `${type}-details`;
-  if (AppViews.includes(view)) {
-    setSelectedItemId(id);
-    setSelectedDetailType(type);
-    setCurrentView(view);
-  } else {
-    console.warn(`Invalid view type: ${view}`);
-  }
-};
+
 
    
     return(

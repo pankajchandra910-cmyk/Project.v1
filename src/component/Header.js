@@ -1,11 +1,22 @@
 import { Search, User, Menu } from "lucide-react";
 import { Button } from "./button";
 import { Input } from "./Input";
-import { useState } from "react";
+import React, { useContext } from "react";
+import { GlobalContext } from "./GlobalContext";
 
 
-export default function Header({ isLoggedIn, onSearch, userName, onLogoClick, onMenuToggle, showMobileMenu } ) {
-  const [searchQuery, setSearchQuery] = useState("");
+
+export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
+  const {
+    isLoggedIn,
+    userName,
+    searchQuery,
+    setSearchQuery,
+    setCurrentView,
+    showMobileMenu,
+    setShowMobileMenu,
+  } = useContext(GlobalContext);
+ 
 
   const handleSearch = (e) => {
     e.preventDefault();
