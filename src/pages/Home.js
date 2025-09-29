@@ -27,55 +27,17 @@ import { Button } from "../component/button";
 import { useState ,useContext }  from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
+import  LocationCarousel from "../component/LocationCarousel";
 
 
 
 export default function Home(){
 
-    const AppViews = [
-  "login",
-  "home",
-  "search",
-  "details",
-  "hotel-details",
-  "place-details",
-  "trek-details",
-  "bike-details",
-  "cab-details",
-  "guide-details",
-  "profile",
-  "owner-dashboard",
-  "map",
-  "booking"
-];
 
 
      const navigate = useNavigate();
 
-  const handleViewDetails = (id, type = "hotel") => {
-    switch (type) {
-      case "hotel":
-        navigate(`/hotel-details/${id}`);
-        break;
-      case "place":
-        navigate(`/place-details/${id}`);
-        break;
-      case "trek":
-        navigate(`/trek-details/${id}`);
-        break;
-      case "bike":
-        navigate(`/bike-details/${id}`);
-        break;
-      case "cab":
-        navigate(`/cab-details/${id}`);
-        break;
-      case "guide":
-        navigate(`/guide-details/${id}`);
-        break;
-      default:
-        navigate("/");
-    }
-  };
+  
     const {
     currentView,
     setCurrentView,
@@ -92,10 +54,12 @@ export default function Home(){
     setSelectedItemId,
     selectedDetailType,
     setSelectedDetailType,
+    focusArea,
+     setFocusArea
   } = useContext(GlobalContext);
 
        // Mock data
-    const categories = [
+  const categories = [
         { icon: Bed, title: "Hotels & Resorts", description: "Comfortable stays" },
         { icon: MapPin, title: "Places to Visit", description: "Top attractions" },
         { icon: Mountain, title: "Tours & Treks", description: "Adventure trails" },
@@ -103,61 +67,91 @@ export default function Home(){
         { icon: Users, title: "Local Guides", description: "Expert guidance" },
         { icon: Home, title: "Hill Stays", description: "Mountain resorts" },
         { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" }
-    ];
+  ];
     
-     const featuredPlaces = [
+  const featuredPlaces = [
     {
       id: "1",
-      image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "Luxury Resort Bhimtal",
-      location: "Bhimtal, Uttarakhand",
-      price: "₹5,000",
-      rating: 4.5,
-      description: "Scenic lake views with modern amenities and spa facilities"
+      image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
+      title: "Naina Devi Temple",
+      location: "Nainital, Uttarakhand",
+      price: "Free Entry",
+      rating: 4.7,
+      description: "Visited by 500K+ annually—iconic spiritual destination ⭐ 4.7/5"
     },
     {
       id: "2",
       image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "Nainital Trek Package",
+      title: "China Peak",
       location: "Nainital, Uttarakhand",
-      price: "₹2,500",
+      price: "₹50",
       rating: 4.8,
-      description: "3-day guided trek through scenic mountain trails"
+      description: "Top for adventure views—highest peak around Nainital ⭐ 4.8/5"
     },
     {
       id: "3",
-      image: "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "Naini Lake Retreat",
-      location: "Nainital, Uttarakhand",
-      price: "₹3,500",
+      image: "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      title: "Bhimtal Lake",
+      location: "Bhimtal, Uttarakhand",
+      price: "₹30",
       rating: 4.6,
-      description: "Lakefront hotel with boating and mountain views"
+      description: "Popular family spot—larger than Naini Lake ⭐ 4.6/5"
+    },
+    {
+      id: "4",
+      image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      title: "Tiffin Top",
+      location: "Nainital, Uttarakhand",
+      price: "Free",
+      rating: 4.5,
+      description: "Eco-trail favorite—perfect for nature walks ⭐ 4.5/5"
     }
   ];
 
 
+  const handleViewDetails = (id, type = "hotel") => {
+    const routeMap = {
+      hotel: `/hotel-details/${id}`,
+      place: `/place-details/${id}`,
+      trek: `/trek-details/${id}`,
+      bike: `/bike-details/${id}`,
+      cab: `/cab-details/${id}`,
+      guide: `/guide-details/${id}`,
+    };
 
-    const handleSearch = (query) => {
-    setSearchQuery(query);
-    setCurrentView("search");
+    const path = routeMap[type] || "/";
+    navigate(path);
   };
 
-   const handleLogoClick = () => {
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    navigate("/search");
+  };
+
+  const handleLogoClick = () => {
     if (userType === "owner") {
-      setCurrentView("owner-dashboard");
+      navigate("/owner-dashboard");
     } else {
-      setCurrentView("profile");
+      navigate("/profile");
     }
   };
 
-   const handleBooking = () => {
-    setCurrentView("search");
+  const handleBooking = () => {
+    navigate("/search");
   };
 
-   const handleCategoryClick = () => {
+  const handleCategoryClick = (category) => {
     setSelectedCategory(category);
     setSearchQuery("");
-    setCurrentView("search");
+    navigate("/search");
+  };
+  const handleExploreMore = (area) => {
+    if (area === "Nainital") {
+      navigate("/nainital-details");
+    } else {
+      setFocusArea(area);
+      navigate("/map");
+    }
   };
 
 
@@ -239,25 +233,26 @@ export default function Home(){
                     {/* Hero Carousel */}
                     <HeroCarousel onBooking={handleBooking} />
 
-                        {/* Categories */}
+                    {/* Location Carousel */}
+                    <LocationCarousel onLocationClick={handleExploreMore} />
+
+
+                    {/* Categories */}
                     <section>
-                    <h2 className="text-3xl font-bold text-center mb-8">
-                        Explore Nainital
-                    </h2>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                      <h2 className="text-3xl font-bold text-center mb-8">Services</h2>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                         {categories.map((category) => (
-                        <CategoryCard
+                          <CategoryCard
                             key={category.title}
                             icon={category.icon}
                             title={category.title}
                             description={category.description}
-                            onClick={() =>
-                            handleCategoryClick(category.title)
-                            }
-                        />
+                            onClick={() => handleCategoryClick(category.title)}
+                          />
                         ))}
-                    </div>
+                      </div>
                     </section>
+
 
 
                     {/* Enhanced Banners */}
@@ -310,16 +305,16 @@ export default function Home(){
 
                     {/* Featured Section */}
                     <section>
-                    <h2 className="text-3xl font-bold text-center mb-8">Top Picks in Nainital</h2>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <h2 className="text-3xl font-bold text-center mb-8">Top Popular Picks Across Hills</h2>
+                      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {featuredPlaces.map((place) => (
-                        <FeaturedCard
+                          <FeaturedCard
                             key={place.id}
                             {...place}
                             onViewDetails={handleViewDetails}
-                        />
+                          />
                         ))}
-                    </div>
+                      </div>
                     </section>
 
                     {/* About Section */}
@@ -335,50 +330,50 @@ export default function Home(){
                 </main>
                 
                 <footer className="bg-gray-900 text-white py-12">
-                    <div className="container mx-auto px-4">
-                    <div className="grid md:grid-cols-4 gap-8">
-                        <div>
-                        <h3 className="text-xl font-bold mb-4">NainiExplore</h3>
-                        <p className="text-gray-400">
-                            Your gateway to exploring the beautiful lakes and mountains of Uttarakhand.
-                        </p>
-                        </div>
-                        <div>
-                        <h4 className="font-semibold mb-4">Quick Links</h4>
-                        <ul className="space-y-2 text-gray-400">
-                            <li>About Us</li>
-                            <li>Contact</li>
-                            <li>Privacy Policy</li>
-                            <li>Terms of Service</li>
-                        </ul>
-                        </div>
-                        <div>
-                        <h4 className="font-semibold mb-4">Destinations</h4>
-                        <ul className="space-y-2 text-gray-400">
-                            <li>Nainital</li>
-                            <li>Bhimtal</li>
-                            <li>Sukhatal</li>
-                            <li>Naukuchiatal</li>
-                        </ul>
-                        </div>
-                        <div>
-                        <h4 className="font-semibold mb-4">Contact Us</h4>
-                        <div className="space-y-2 text-gray-400">
-                            <div className="flex items-center space-x-2">
-                            <Phone className="w-4 h-4" />
-                            <span>+91 9876543210</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                            <Mail className="w-4 h-4" />
-                            <span>info@nainiexplore.com</span>
-                            </div>
-                        </div>
-                        </div>
+                <div className="container mx-auto px-4">
+                  <div className="grid md:grid-cols-4 gap-8">
+                    <div>
+                      <h3 className="text-xl font-bold mb-4">Buddy In Hills</h3>
+                      <p className="text-gray-400">
+                        Your gateway to exploring the beautiful lakes and mountains of Uttarakhand.
+                      </p>
                     </div>
-                    <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-                        <p>&copy; 2024 NainiExplore. All rights reserved.</p>
+                    <div>
+                      <h4 className="font-semibold mb-4">Quick Links</h4>
+                      <ul className="space-y-2 text-gray-400">
+                        <li>About Us</li>
+                        <li>Contact</li>
+                        <li>Privacy Policy</li>
+                        <li>Terms of Service</li>
+                      </ul>
                     </div>
+                    <div>
+                      <h4 className="font-semibold mb-4">Destinations</h4>
+                      <ul className="space-y-2 text-gray-400">
+                        <li>Nainital</li>
+                        <li>Bhimtal</li>
+                        <li>Sukhatal</li>
+                        <li>Naukuchiatal</li>
+                      </ul>
                     </div>
+                    <div>
+                      <h4 className="font-semibold mb-4">Contact Us</h4>
+                      <div className="space-y-2 text-gray-400">
+                        <div className="flex items-center space-x-2">
+                          <Phone className="w-4 h-4" />
+                          <span>+91 9876543210</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Mail className="w-4 h-4" />
+                          <span>info@buddyinhills.com</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                    <p>&copy; 2024 Buddy In Hills. All rights reserved.</p>
+                  </div>
+                </div>
                 </footer>
             </div>
         </>

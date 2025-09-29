@@ -8,6 +8,7 @@ const GlobalProvider = ({ children }) => {
   const [currentView, setCurrentView] = useState("login"); // AppView type assumed as string
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState("user"); // 'user' | 'owner'
+  
 
   // User info
   const [profession, setProfession] = useState("");

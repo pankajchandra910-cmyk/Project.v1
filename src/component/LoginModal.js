@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Button } from "./button";
-import { Input } from "./input";
+import { Input } from "./Input";
 import { Label } from "./label";
 import { Separator } from "./separator";
 import { RadioGroup, RadioGroupItem } from "./radio-group";

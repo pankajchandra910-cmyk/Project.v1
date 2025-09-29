@@ -3,8 +3,6 @@ import { Button } from "./button";
 import { Star, MapPin } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
 
-
-
 export default function FeaturedCard({
   id,
   image,
@@ -38,16 +36,16 @@ export default function FeaturedCard({
             <span className="text-sm">{location}</span>
           </div>
         </div>
-        
+
         <p className="text-sm text-muted-foreground line-clamp-2">{description}</p>
-        
+
         <div className="flex items-center justify-between">
           <div>
             <span className="text-lg font-semibold text-primary">{price}</span>
             <span className="text-sm text-muted-foreground">/night</span>
           </div>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="bg-primary"
             onClick={() => onViewDetails(id)}
           >

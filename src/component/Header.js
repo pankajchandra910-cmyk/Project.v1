@@ -3,6 +3,7 @@ import { Button } from "./button";
 import { Input } from "./Input";
 import React, { useContext } from "react";
 import { GlobalContext } from "./GlobalContext";
+import Logo from '../assets/Logo.jpg';
 
 
 
@@ -18,24 +19,31 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
   } = useContext(GlobalContext);
  
 
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       onSearch(searchQuery);
     }
   };
-
+  
   return (
     <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <img 
+              src={Logo} 
+              alt="Buddy In Hills Logo"
+              className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={onLogoClick}
+            />
             <div 
-              className="text-2xl font-bold  cursor-pointer hover:opacity-80  transition-opacity text-[#228B22]"
+              className="text-xl font-bold text-primary cursor-pointer hover:opacity-80 transition-opacity hidden sm:block"
               onClick={onLogoClick}
             >
-              NainiExplore
+              Buddy In Hills
             </div>
           </div>
 
