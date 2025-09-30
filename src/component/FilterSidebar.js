@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./button";
 import { Label } from "./label";
 import { Separator } from "./separator";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./Sheet";//problem is solved
+
 import { SlidersHorizontal, X } from "lucide-react";
 
 export default function FilterSidebar({ filters, onFilterChange, onClearFilters, isMobile = false }) {
