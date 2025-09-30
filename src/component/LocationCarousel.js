@@ -3,13 +3,13 @@ import { Button } from "./button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Badge } from "./badge";
 import { ChevronLeft, ChevronRight, X, MapPin, Star } from "lucide-react";
-import { ImageWithFallback } from "./ImageWithFallback"; 
+import { ImageWithFallback } from "./ImageWithFallback";
 
 const locations = [
   {
     id: "1",
     name: "Nainital",
-    image: "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     distance: "0km",
     viewpoints: ["Naini Lake", "Mall Road", "Snow View Point"],
     description: "The Queen of Hills, famous for its pristine lake and colonial charm",
@@ -39,7 +39,7 @@ const locations = [
     viewpoints: ["Sukhatal Lake", "Forest Walks", "Bird Watching Points"],
     description: "Peaceful lake perfect for meditation and nature photography",
     gallery: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
     ]
   },
   {
@@ -105,7 +105,7 @@ const locations = [
     viewpoints: ["Himalayan Range", "Valley Views", "Photography Points"],
     description: "Best spot for Himalayan range photography",
     gallery: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
     ]
   },
   {
@@ -127,12 +127,15 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const handleLocationClick = (location) => {
-    // If it's Nainital and we have a special handler, use it
-    if (location.name === "Nainital" && onLocationClick) {
-      onLocationClick("Nainital");
-      return;
+    // Always call onLocationClick if it's provided.
+    // The parent component can then decide to navigate or do something else.
+    if (onLocationClick) {
+      onLocationClick(location.name); // Pass the location name to the handler
     }
-    
+
+    // If onLocationClick doesn't prevent default behavior (like navigating
+    // to a different page), then open the modal to show details.
+    // This allows the parent to either navigate OR open the modal.
     setSelectedLocation(location);
     setSelectedImageIndex(0);
     setIsModalOpen(true);
@@ -153,7 +156,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
   return (
     <section className="space-y-6">
       <h2 className="text-3xl font-bold text-center mb-8">Explore Hill Destinations</h2>
-      
+
       {/* Scrollable Carousel */}
       <div className="relative">
         <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
@@ -169,7 +172,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
                   alt={location.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                <div className="absolute inset-0 bg-opacity-40 flex items-center justify-center">
                   <div className="text-center text-white p-2">
                     <h3 className="font-semibold text-sm">{location.name}</h3>
                     <p className="text-xs opacity-90">{location.distance}</p>
@@ -209,7 +212,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  
+
                   {selectedLocation.gallery.length > 1 && (
                     <>
                       <Button
@@ -232,7 +235,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
                       </Button>
                     </>
                   )}
-                  
+
                   <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
                     <div className="flex space-x-1">
                       {selectedLocation.gallery.map((_, index) => (
@@ -256,7 +259,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
                     </div>
                     <p className="text-muted-foreground mb-4">{selectedLocation.description}</p>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-semibold mb-3 flex items-center">
                       <Star className="w-5 h-5 text-yellow-500 mr-2" />

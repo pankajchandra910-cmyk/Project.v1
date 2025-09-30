@@ -39,24 +39,22 @@ export default function Home(){
 
   
     const {
-    currentView,
-    setCurrentView,
-    isLoggedIn,
-    setIsLoggedIn,
-    searchQuery,
-    setSearchQuery,
-    selectedCategory,
-    setSelectedCategory,
-    userName,
-    showMobileMenu,
-    setShowMobileMenu,
-    selectedItemId,
-    setSelectedItemId,
-    selectedDetailType,
-    setSelectedDetailType,
-    focusArea,
-     setFocusArea
-  } = useContext(GlobalContext);
+      isLoggedIn,
+      setIsLoggedIn,
+      searchQuery,
+      setSearchQuery,
+      selectedCategory,
+      setSelectedCategory,
+      userName,
+      showMobileMenu,
+      setShowMobileMenu,
+      selectedItemId,
+      setSelectedItemId,
+      selectedDetailType,
+      setSelectedDetailType,
+      focusArea,
+      setFocusArea
+    } = useContext(GlobalContext);
 
        // Mock data
   const categories = [
@@ -146,12 +144,9 @@ export default function Home(){
     navigate("/search");
   };
   const handleExploreMore = (area) => {
-    if (area === "Nainital") {
-      navigate("/nainital-details");
-    } else {
-      setFocusArea(area);
-      navigate("/map");
-    }
+      
+    navigate(`/location-details/${area.toLowerCase().replace(/\s/g, '-')}`);
+      
   };
 
 
@@ -191,7 +186,7 @@ export default function Home(){
                             variant="ghost" 
                             className="w-full justify-start" 
                             onClick={() => {
-                                setCurrentView("profile");
+                                navigate("/profile");
                                 setShowMobileMenu(false);
                             }}
                             >

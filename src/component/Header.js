@@ -13,7 +13,7 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
     userName,
     searchQuery,
     setSearchQuery,
-    setCurrentView,
+    
     showMobileMenu,
     setShowMobileMenu,
   } = useContext(GlobalContext);
@@ -119,5 +119,3 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
     </header>
   );
 }
-
-

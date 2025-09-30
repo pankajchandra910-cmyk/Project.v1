@@ -1,11 +1,9 @@
-// GlobalContext.js
 import React, { createContext, useState } from "react";
 import { useIsMobile } from "../hooks/use-mobile"; // Make sure this hook is defined or imported correctly
 
 export const GlobalContext = createContext();
 const GlobalProvider = ({ children }) => {
   // View and auth
-  const [currentView, setCurrentView] = useState("login"); // AppView type assumed as string
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState("user"); // 'user' | 'owner'
   
@@ -32,8 +30,7 @@ const GlobalProvider = ({ children }) => {
 
   // Bundle all state into context
   const contextValue = {
-    currentView,
-    setCurrentView,
+    
     isLoggedIn,
     setIsLoggedIn,
     userType,

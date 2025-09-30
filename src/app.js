@@ -5,6 +5,7 @@ import GlobalProvider from "./component/GlobalContext"
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./component/Signup";
+import SearchView from "./pages/SearchView";
 
 
 function App(){
@@ -17,6 +18,8 @@ function App(){
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/search" element={<SearchView/>} />
+                    
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>
