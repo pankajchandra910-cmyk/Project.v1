@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Import useEffect
 import { Card, CardContent, CardHeader, CardTitle } from "./Card";
 import { Slider } from "./slider";
 import { Checkbox } from "./checkbox";
@@ -6,13 +6,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "./button";
 import { Label } from "./label";
 import { Separator } from "./separator";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./Sheet";//problem is solved
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./Sheet";
 
 import { SlidersHorizontal, X } from "lucide-react";
 
-export default function FilterSidebar({ filters, onFilterChange, onClearFilters, isMobile = false }) {
+export default function FilterSidebar({ filters, onFilterChange, onClearFilters, isMobile = false, allResults }) { // Added allResults prop
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  // Derive unique types from allResults
+  const uniqueTypes = Array.from(new Set(allResults.map(item => item.type)));
+  // You might want to sort these alphabetically or by some other logic
+  uniqueTypes.sort();
+
+  // Derive unique locations from allResults
+  const uniqueLocations = Array.from(new Set(allResults.map(item => item.location)));
+  uniqueLocations.sort();
+
+  // Derive unique amenities from allResults
+  const uniqueAmenities = Array.from(new Set(allResults.flatMap(item => item.amenities || [])));
+  uniqueAmenities.sort();
+
 
   const handlePriceChange = (value) => {
     onFilterChange({
@@ -22,7 +36,6 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
   };
 
   const handleCheckboxChange = (category, value, checked) => {
-    // Ensure the category exists and is an array before attempting to filter/spread
     const currentValues = Array.isArray(filters[category]) ? filters[category] : [];
     const newValues = checked
       ? [...currentValues, value]
@@ -73,8 +86,8 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
           {["4+ stars", "3+ stars", "2+ stars"].map((rating) => (
             <div key={rating} className="flex items-center space-x-2">
               <Checkbox
-                id={`rating-${rating}`} // Unique ID for each checkbox
-                checked={filters.rating && filters.rating.includes(rating)} // Add null/undefined check for filters.rating
+                id={`rating-${rating}`}
+                checked={filters.rating && filters.rating.includes(rating)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange("rating", rating, checked)
                 }
@@ -87,15 +100,15 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
 
       <Separator />
 
-      {/* Type */}
+      {/* Type - Dynamically generated */}
       <div>
         <Label className="text-sm font-medium">Type</Label>
         <div className="mt-3 space-y-2">
-          {["Hotels", "Resorts", "Treks", "Cabs", "Guides", "Places"].map((type) => (
+          {uniqueTypes.map((type) => (
             <div key={type} className="flex items-center space-x-2">
               <Checkbox
-                id={`type-${type}`} // Unique ID
-                checked={filters.type && filters.type.includes(type)} // Add null/undefined check
+                id={`type-${type}`}
+                checked={filters.type && filters.type.includes(type)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange("type", type, checked)
                 }
@@ -108,15 +121,15 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
 
       <Separator />
 
-      {/* Location */}
+      {/* Location - Dynamically generated */}
       <div>
         <Label className="text-sm font-medium">Location</Label>
         <div className="mt-3 space-y-2">
-          {["Nainital", "Bhimtal", "Sukhatal", "Naukuchiatal", "Brahmasthali"].map((location) => (
+          {uniqueLocations.map((location) => (
             <div key={location} className="flex items-center space-x-2">
               <Checkbox
-                id={`location-${location}`} // Unique ID
-                checked={filters.location && filters.location.includes(location)} // Add null/undefined check
+                id={`location-${location}`}
+                checked={filters.location && filters.location.includes(location)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange("location", location, checked)
                 }
@@ -129,15 +142,15 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
 
       <Separator />
 
-      {/* Amenities */}
+      {/* Amenities - Dynamically generated */}
       <div>
         <Label className="text-sm font-medium">Amenities</Label>
         <div className="mt-3 space-y-2">
-          {["WiFi", "Pool", "Trek Gear", "Local Transport", "Restaurant", "Parking"].map((amenity) => (
+          {uniqueAmenities.map((amenity) => (
             <div key={amenity} className="flex items-center space-x-2">
               <Checkbox
-                id={`amenity-${amenity}`} // Unique ID
-                checked={filters.amenities && filters.amenities.includes(amenity)} // Add null/undefined check
+                id={`amenity-${amenity}`}
+                checked={filters.amenities && filters.amenities.includes(amenity)}
                 onCheckedChange={(checked) =>
                   handleCheckboxChange("amenities", amenity, checked)
                 }
@@ -162,7 +175,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
             <SelectItem value="price-low">Price: Low to High</SelectItem>
             <SelectItem value="price-high">Price: High to Low</SelectItem>
             <SelectItem value="rating">Rating</SelectItem>
-            <SelectItem value="distance">Distance</SelectItem>
+            <SelectItem value="distance">Distance</SelectItem> {/* Assuming 'distance' is a valid sort key */}
           </SelectContent>
         </Select>
       </div>
@@ -186,7 +199,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
           <SheetHeader>
             <div className="flex items-center justify-between">
               <SheetTitle>Filters</SheetTitle>
-              <Button variant="ghost" size="sm" onClick={() => { onClearFilters(); setIsSheetOpen(false); }}> {/* Close sheet on clear */}
+              <Button variant="ghost" size="sm" onClick={() => { onClearFilters(); setIsSheetOpen(false); }}>
                 Clear All
               </Button>
             </div>
@@ -211,7 +224,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
   }
 
   return (
-    <Card className="sticky top-24">
+    <Card className="sticky top-24 lg:max-h-[calc(100vh-theme(spacing.16)-theme(spacing.8))] lg:overflow-y-auto filter-scrollbar-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center">

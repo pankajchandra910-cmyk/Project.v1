@@ -9,7 +9,14 @@
   scrollbar-width: none; /* Firefox */
 }
 
-
+/* Scoped scrollbar hiding for FilterSidebar only */
+.filter-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.filter-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* our other custom CSS and @apply rules */
 @custom-variant dark (&:is(.dark *));
