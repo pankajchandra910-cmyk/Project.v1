@@ -1,8 +1,8 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext,useCallback} from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
-
 import Header from "../component/Header";
+import MobileMenu from "../component/MobileMenu";
 import HeroCarousel from "../component/HeroCarousel";
 import CategoryCard from "../component/CategoryCard";
 import FeaturedCard from "../component/FeaturedCard";
@@ -16,12 +16,9 @@ import {
   Users,
   Home as HomeIcon, // Renamed to avoid conflict with component name
   Bike,
-  MessageCircle,
   Navigation,
-  X,
-  User,
   Phone,
-  Mail,
+  Mail 
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
@@ -30,14 +27,14 @@ import { Button } from "../component/button";
 export default function Home() {
   const navigate = useNavigate();
 
-  const {
-    isLoggedIn,
+ const {
     setSearchQuery,
     setSelectedCategory,
     userName,
     showMobileMenu,
     setShowMobileMenu,
-    userType // Assuming userType is available in GlobalContext
+    userType,
+    isLoggedIn, // Keep isLoggedIn here if Header or other components directly use it
   } = useContext(GlobalContext);
 
   // Mock data
@@ -95,9 +92,8 @@ export default function Home() {
   ];
 
 
-  const handleViewDetails = (id, type = "hotel") => {
-    // This function can be used to navigate to specific detail pages
-    // The type parameter ensures the correct route is chosen
+
+   const handleViewDetails = useCallback((id, type = "hotel") => {
     const routeMap = {
       hotel: `/hotel-details/${id}`,
       place: `/place-details/${id}`,
@@ -105,46 +101,40 @@ export default function Home() {
       bike: `/bike-details/${id}`,
       cab: `/cab-details/${id}`,
       guide: `/guide-details/${id}`,
-      resort: `/hotel-details/${id}` // Assuming resorts are detailed like hotels
+      resort: `/hotel-details/${id}`
     };
-
-    const path = routeMap[type.toLowerCase()] || "/"; // Default to home if type is unknown
+    const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
-  };
+    }, [navigate]);
 
-  const handleSearch = (query) => {
+
+    const handleSearch = useCallback((query) => {
     setSearchQuery(query);
-    setSelectedCategory(""); // Clear selected category on direct search
+    setSelectedCategory("");
     navigate("/search");
-  };
+    }, [navigate, setSearchQuery, setSelectedCategory]);
 
-  const handleLogoClick = () => {
+  const handleLogoClick = useCallback(() => {
     if (userType === "owner") {
       navigate("/owner-dashboard");
     } else {
       navigate("/profile");
     }
-  };
+  }, [navigate, userType]);
 
-  const handleBooking = () => {
-    navigate("/search"); // Redirect to search page for booking options
-  };
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setSearchQuery(""); // Clear search query when a category is selected
+  const handleBooking = useCallback(() => {
     navigate("/search");
-  };
+  }, [navigate]);
 
-  const handleExploreMore = (area) => {
+  const handleCategoryClick = useCallback((category) => {
+    setSelectedCategory(category);
+    setSearchQuery("");
+    navigate("/search");
+  }, [navigate, setSelectedCategory, setSearchQuery]);
+
+  const handleExploreMore = useCallback((area) => {
     navigate(`/location-details/${area.toLowerCase().replace(/\s/g, '-')}`);
-  };
-
-  // Assuming setShowAIChat exists in GlobalContext or is passed down if needed
-  const setShowAIChat = () => {
-    console.log("AI Chat functionality not implemented or passed yet.");
-    // This would typically come from GlobalContext as well, e.g., setShowAIChat(true);
-  };
+  }, [navigate]);
 
   return (
     <>
@@ -159,61 +149,8 @@ export default function Home() {
         />
 
         {/* Mobile Menu Overlay */}
-        {showMobileMenu && (
-          <div className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden">
-            <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">Menu</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-              <div className="p-6 space-y-4">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/profile");
-                    setShowMobileMenu(false);
-                  }}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  My Profile
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    setShowAIChat(true); // Assuming setShowAIChat is defined
-                    setShowMobileMenu(false);
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Ask AI Assistant
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    handleExploreMore("Nainital");
-                    setShowMobileMenu(false);
-                  }}
-                >
-                  <Navigation className="w-4 h-4 mr-2" />
-                  Explore Map
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
+        {showMobileMenu && <MobileMenu onClose={() => setShowMobileMenu(false)} />}
+      
         <main className="container mx-auto px-4 py-8 space-y-12">
           {/* Hero Carousel */}
           <HeroCarousel onBooking={handleBooking} />
@@ -358,7 +295,9 @@ export default function Home() {
             </div>
           </div>
         </footer>
+      
       </div>
+
     </>
   );
 }

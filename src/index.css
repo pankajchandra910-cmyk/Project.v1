@@ -10,12 +10,14 @@
 }
 
 /* Scoped scrollbar hiding for FilterSidebar only */
+/* In your global CSS file (e.g., index.css or globals.css) */
 .filter-scrollbar-hidden::-webkit-scrollbar {
-  display: none;
+  width: 0px;
+  background: transparent;
 }
 .filter-scrollbar-hidden {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* our other custom CSS and @apply rules */

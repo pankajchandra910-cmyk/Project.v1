@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // Import useEffect
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./Card";
 import { Slider } from "./slider";
 import { Checkbox } from "./checkbox";
@@ -8,34 +8,50 @@ import { Label } from "./label";
 import { Separator } from "./separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./Sheet";
 
-import { SlidersHorizontal, X } from "lucide-react";
+import { SlidersHorizontal, X, ChevronUp, ChevronDown } from "lucide-react"; // Added Chevron icons
 
-export default function FilterSidebar({ filters, onFilterChange, onClearFilters, isMobile = false, allResults }) { // Added allResults prop
+export default function FilterSidebar({
+  filters,
+  onFilterChange,
+  onClearFilters,
+  isMobile = false,
+  allResultTypes = [],      // Default to empty array
+  allResultLocations = [], // Default to empty array
+  allResultAmenities = [], // Default to empty array, ensures .map() is safe
+}) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Derive unique types from allResults
-  const uniqueTypes = Array.from(new Set(allResults.map(item => item.type)));
-  // You might want to sort these alphabetically or by some other logic
-  uniqueTypes.sort();
+  // Memoize unique options (now directly from props passed from SearchView)
+  const uniqueTypes = useMemo(() => {
+    const types = [...allResultTypes]; // Use the passed prop
+    types.sort();
+    return types;
+  }, [allResultTypes]);
 
-  // Derive unique locations from allResults
-  const uniqueLocations = Array.from(new Set(allResults.map(item => item.location)));
-  uniqueLocations.sort();
+  const uniqueLocations = useMemo(() => {
+    const locations = [...allResultLocations]; // Use the passed prop
+    locations.sort();
+    return locations;
+  }, [allResultLocations]);
 
-  // Derive unique amenities from allResults
-  const uniqueAmenities = Array.from(new Set(allResults.flatMap(item => item.amenities || [])));
-  uniqueAmenities.sort();
+  const uniqueAmenities = useMemo(() => {
+    const amenities = [...allResultAmenities]; // Use the passed prop
+    amenities.sort();
+    return amenities;
+  }, [allResultAmenities]);
 
 
-  const handlePriceChange = (value) => {
+  // Memoize handler functions to prevent unnecessary re-renders of children
+  const handlePriceChange = useCallback((value) => {
     onFilterChange({
       ...filters,
       priceRange: [value[0], value[1]],
     });
-  };
+  }, [filters, onFilterChange]);
 
-  const handleCheckboxChange = (category, value, checked) => {
+  const handleCheckboxChange = useCallback((category, value, checked) => {
+    // Ensure currentValues is always an array before filtering/spreading
     const currentValues = Array.isArray(filters[category]) ? filters[category] : [];
     const newValues = checked
       ? [...currentValues, value]
@@ -45,15 +61,21 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
       ...filters,
       [category]: newValues,
     });
-  };
+  }, [filters, onFilterChange]);
 
-  const handleSortChange = (value) => {
+  const handleSortChange = useCallback((value) => {
     onFilterChange({
       ...filters,
       sortBy: value,
     });
+  }, [filters, onFilterChange]);
+
+  const handleClearAndCloseSheet = () => {
+    onClearFilters();
+    setIsSheetOpen(false);
   };
 
+  // Common content for both desktop and mobile sidebar
   const FilterContent = () => (
     <div className="space-y-6">
       {/* Price Range */}
@@ -83,16 +105,17 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
       <div>
         <Label className="text-sm font-medium">Rating</Label>
         <div className="mt-3 space-y-2">
-          {["4+ stars", "3+ stars", "2+ stars"].map((rating) => (
-            <div key={rating} className="flex items-center space-x-2">
+          {/* Using number strings for simpler filter logic based on integer rating */}
+          {["4", "3", "2"].map((minRating) => (
+            <div key={minRating} className="flex items-center space-x-2">
               <Checkbox
-                id={`rating-${rating}`}
-                checked={filters.rating && filters.rating.includes(rating)}
+                id={`rating-${minRating}`}
+                checked={filters.rating && filters.rating.includes(minRating)}
                 onCheckedChange={(checked) =>
-                  handleCheckboxChange("rating", rating, checked)
+                  handleCheckboxChange("rating", minRating, checked)
                 }
               />
-              <Label htmlFor={`rating-${rating}`} className="text-sm">{rating}</Label>
+              <Label htmlFor={`rating-${minRating}`} className="text-sm">{minRating}+ stars</Label>
             </div>
           ))}
         </div>
@@ -100,64 +123,76 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
 
       <Separator />
 
-      {/* Type - Dynamically generated */}
+      {/* Type - Dynamically generated from allResultTypes prop */}
       <div>
         <Label className="text-sm font-medium">Type</Label>
         <div className="mt-3 space-y-2">
-          {uniqueTypes.map((type) => (
-            <div key={type} className="flex items-center space-x-2">
-              <Checkbox
-                id={`type-${type}`}
-                checked={filters.type && filters.type.includes(type)}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange("type", type, checked)
-                }
-              />
-              <Label htmlFor={`type-${type}`} className="text-sm">{type}</Label>
-            </div>
-          ))}
+          {uniqueTypes.length > 0 ? (
+            uniqueTypes.map((type) => (
+              <div key={type} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`type-${type}`}
+                  checked={filters.type && filters.type.includes(type)}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange("type", type, checked)
+                  }
+                />
+                <Label htmlFor={`type-${type}`} className="text-sm">{type}</Label>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No types available.</p>
+          )}
         </div>
       </div>
 
       <Separator />
 
-      {/* Location - Dynamically generated */}
+      {/* Location - Dynamically generated from allResultLocations prop */}
       <div>
         <Label className="text-sm font-medium">Location</Label>
         <div className="mt-3 space-y-2">
-          {uniqueLocations.map((location) => (
-            <div key={location} className="flex items-center space-x-2">
-              <Checkbox
-                id={`location-${location}`}
-                checked={filters.location && filters.location.includes(location)}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange("location", location, checked)
-                }
-              />
-              <Label htmlFor={`location-${location}`} className="text-sm">{location}</Label>
-            </div>
-          ))}
+          {uniqueLocations.length > 0 ? (
+            uniqueLocations.map((location) => (
+              <div key={location} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`location-${location}`}
+                  checked={filters.location && filters.location.includes(location)}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange("location", location, checked)
+                  }
+                />
+                <Label htmlFor={`location-${location}`} className="text-sm">{location}</Label>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No locations available.</p>
+          )}
         </div>
       </div>
 
       <Separator />
 
-      {/* Amenities - Dynamically generated */}
+      {/* Amenities - Dynamically generated from allResultAmenities prop */}
       <div>
         <Label className="text-sm font-medium">Amenities</Label>
         <div className="mt-3 space-y-2">
-          {uniqueAmenities.map((amenity) => (
-            <div key={amenity} className="flex items-center space-x-2">
-              <Checkbox
-                id={`amenity-${amenity}`}
-                checked={filters.amenities && filters.amenities.includes(amenity)}
-                onCheckedChange={(checked) =>
-                  handleCheckboxChange("amenities", amenity, checked)
-                }
-              />
-              <Label htmlFor={`amenity-${amenity}`} className="text-sm">{amenity}</Label>
-            </div>
-          ))}
+          {uniqueAmenities.length > 0 ? (
+            uniqueAmenities.map((amenity) => (
+              <div key={amenity} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`amenity-${amenity}`}
+                  checked={filters.amenities && filters.amenities.includes(amenity)}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange("amenities", amenity, checked)
+                  }
+                />
+                <Label htmlFor={`amenity-${amenity}`} className="text-sm">{amenity}</Label>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No amenities available.</p>
+          )}
         </div>
       </div>
 
@@ -175,13 +210,14 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
             <SelectItem value="price-low">Price: Low to High</SelectItem>
             <SelectItem value="price-high">Price: High to Low</SelectItem>
             <SelectItem value="rating">Rating</SelectItem>
-            <SelectItem value="distance">Distance</SelectItem> {/* Assuming 'distance' is a valid sort key */}
+            <SelectItem value="distance">Distance</SelectItem> {/* Keep if you plan to implement */}
           </SelectContent>
         </Select>
       </div>
     </div>
   );
 
+  // Mobile view (Sheet component)
   if (isMobile) {
     return (
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -195,11 +231,11 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
             Filters & Sort
           </Button>
         </SheetTrigger>
-        <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
-          <SheetHeader>
+        <SheetContent side="bottom" className="h-[80vh] max-h-[80vh] overflow-y-auto flex flex-col">
+          <SheetHeader className="flex-shrink-0"> {/* Ensure header doesn't scroll */}
             <div className="flex items-center justify-between">
               <SheetTitle>Filters</SheetTitle>
-              <Button variant="ghost" size="sm" onClick={() => { onClearFilters(); setIsSheetOpen(false); }}>
+              <Button variant="ghost" size="sm" onClick={handleClearAndCloseSheet}>
                 Clear All
               </Button>
             </div>
@@ -207,24 +243,25 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
               Customize your search results
             </SheetDescription>
           </SheetHeader>
-          <div className="py-6">
+          <div className="py-6 flex-grow overflow-y-auto"> {/* Main content area is scrollable */}
             <FilterContent />
-            <div className="mt-6 pt-6 border-t">
-              <Button
-                className="w-full bg-primary hover:bg-primary/90"
-                onClick={() => setIsSheetOpen(false)}
-              >
-                Apply Filters
-              </Button>
-            </div>
+          </div>
+          <div className="mt-auto pt-4 border-t flex-shrink-0"> {/* Footer area */}
+            <Button
+              className="w-full bg-primary hover:bg-primary/90"
+              onClick={() => setIsSheetOpen(false)}
+            >
+              Apply Filters
+            </Button>
           </div>
         </SheetContent>
       </Sheet>
     );
   }
 
+  // Desktop view (Card component)
   return (
-    <Card className="sticky top-24 lg:max-h-[calc(100vh-theme(spacing.16)-theme(spacing.8))] lg:overflow-y-auto filter-scrollbar-hidden">
+    <Card className="sticky top-24 lg:max-h-[calc(110vh-10rem)] lg:overflow-y-auto filter-scrollbar-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center">
@@ -242,7 +279,7 @@ export default function FilterSidebar({ filters, onFilterChange, onClearFilters,
               className="p-2"
               aria-label={isCollapsed ? "Expand filters" : "Collapse filters"}
             >
-              {isCollapsed ? <SlidersHorizontal className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </Button>
           </div>
         </div>

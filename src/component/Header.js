@@ -1,4 +1,4 @@
-import { Search, User, Menu } from "lucide-react";
+import { Search, User, Menu,X } from "lucide-react";
 import { Button } from "./button";
 import { Input } from "./Input";
 import React, { useContext } from "react";
