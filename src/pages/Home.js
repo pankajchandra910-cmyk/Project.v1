@@ -22,10 +22,20 @@ import {
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
-
+import {featuredPlaces}from"../assets/dummy"
 
 export default function Home() {
   const navigate = useNavigate();
+
+  const categories = [
+      { icon: Bed, title: "Hotels & Resorts", description: "Comfortable stays" },
+      { icon: MapPin, title: "Places to Visit", description: "Top attractions" },
+      { icon: Mountain, title: "Tours & Treks", description: "Adventure trails" },
+      { icon: Car, title: "Cabs & Taxis", description: "Local transport" },
+      { icon: Users, title: "Local Guides", description: "Expert guidance" },
+      { icon: HomeIcon, title: "Hill Stays", description: "Mountain resorts" },
+      { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" },
+  ];
 
  const {
     setSearchQuery,
@@ -36,62 +46,6 @@ export default function Home() {
     userType,
     isLoggedIn, // Keep isLoggedIn here if Header or other components directly use it
   } = useContext(GlobalContext);
-
-  // Mock data
-  const categories = [
-    { icon: Bed, title: "Hotels & Resorts", description: "Comfortable stays" },
-    { icon: MapPin, title: "Places to Visit", description: "Top attractions" },
-    { icon: Mountain, title: "Tours & Treks", description: "Adventure trails" },
-    { icon: Car, title: "Cabs & Taxis", description: "Local transport" },
-    { icon: Users, title: "Local Guides", description: "Expert guidance" },
-    { icon: HomeIcon, title: "Hill Stays", description: "Mountain resorts" },
-    { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" },
-  ];
-
-  const featuredPlaces = [
-    {
-      id: "1",
-      image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
-      title: "Naina Devi Temple",
-      location: "Nainital, Uttarakhand",
-      price: "Free Entry",
-      rating: 4.7,
-      description: "Visited by 500K+ annually—iconic spiritual destination ⭐ 4.7/5",
-      type: "Place"
-    },
-    {
-      id: "2",
-      image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "China Peak",
-      location: "Nainital, Uttarakhand",
-      price: "₹50",
-      rating: 4.8,
-      description: "Top for adventure views—highest peak around Nainital ⭐ 4.8/5",
-      type: "Trek"
-    },
-    {
-      id: "3",
-      image: "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "Bhimtal Lake",
-      location: "Bhimtal, Uttarakhand",
-      price: "₹30",
-      rating: 4.6,
-      description: "Popular family spot—larger than Naini Lake ⭐ 4.6/5",
-      type: "Place"
-    },
-    {
-      id: "4",
-      image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      title: "Tiffin Top",
-      location: "Nainital, Uttarakhand",
-      price: "Free",
-      rating: 4.5,
-      description: "Eco-trail favorite—perfect for nature walks ⭐ 4.5/5",
-      type: "Place"
-    }
-  ];
-
-
 
    const handleViewDetails = useCallback((id, type = "hotel") => {
     const routeMap = {

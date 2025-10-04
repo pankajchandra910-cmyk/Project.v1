@@ -6,6 +6,8 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./component/Signup";
 import SearchView from "./pages/SearchView";
+import ProfileView from "./pages/ProfileView";
+
 
 
 function App(){
@@ -19,6 +21,9 @@ function App(){
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/search" element={<SearchView/>} />
+                    <Route path="/profile" element={<ProfileView/>} />
+                    
+
                     
                     </Routes>
                 </BrowserRouter>
