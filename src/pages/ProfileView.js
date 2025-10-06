@@ -131,12 +131,12 @@ export default function ProfileView() {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 md:grid-cols-5 bg-white shadow-sm rounded-lg p-1">
-            <TabsTrigger value="profile" className="text-sm md:text-base font-medium">Profile</TabsTrigger>
-            <TabsTrigger value="bookings" className="text-sm md:text-base font-medium">Bookings</TabsTrigger>
-            <TabsTrigger value="favorites" className="text-sm md:text-base font-medium">Favorites</TabsTrigger>
-            <TabsTrigger value="viewpoints" className="text-sm md:text-base font-medium hidden sm:flex">Viewpoints</TabsTrigger>
-            <TabsTrigger value="routes" className="text-sm md:text-base font-medium hidden sm:flex">Routes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 md:grid-cols-5 ">
+            <TabsTrigger value="profile" className="text-xs md:text-sm">Profile</TabsTrigger>
+            <TabsTrigger value="bookings" className="text-xs md:text-sm">Bookings</TabsTrigger>
+            <TabsTrigger value="favorites" className="text-xs md:text-sm">Favorites</TabsTrigger>
+            <TabsTrigger value="viewpoints" className="text-xs md:text-sm">Viewpoints</TabsTrigger>
+            <TabsTrigger value="routes" className="text-xs md:text-sm">Routes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">

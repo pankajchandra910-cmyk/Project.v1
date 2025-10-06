@@ -6,15 +6,25 @@ import { Separator } from "./separator";
 import { RadioGroup, RadioGroupItem } from "./radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./select";
 import { Mail, Phone, Eye, EyeOff, User, Building } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Import useEffect
 
-export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChange }) {
+export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChange, currentUserType, currentProfession }) {
   const [showPassword, setShowPassword] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState("user");
-  const [profession, setProfession] = useState("");
+  const [userType, setUserType] = useState(currentUserType || "user"); // Initialize with prop
+  const [profession, setProfession] = useState(currentProfession || ""); // Initialize with prop
+
+  // Use useEffect to update local state if props change (e.g., from GlobalContext)
+  useEffect(() => {
+    if (currentUserType) setUserType(currentUserType);
+  }, [currentUserType]);
+
+  useEffect(() => {
+    if (currentProfession) setProfession(currentProfession);
+  }, [currentProfession]);
+
 
   const handleGoogleLogin = () => {
     onLogin(userType, profession);
@@ -33,7 +43,7 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
   };
 
   const handleGuestAccess = () => {
-    onLogin("user");
+    onLogin("user", ""); // No profession for guest
   };
 
   const texts = {
@@ -104,8 +114,8 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
 
           <div className="space-y-3">
             <Label>{t.userType}</Label>
-            <RadioGroup 
-              value={userType} 
+            <RadioGroup
+              value={userType}
               onValueChange={(value) => setUserType(value)}
               className="flex justify-center space-x-6"
             >
@@ -147,9 +157,9 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
 
           <Separator />
 
-          <Button 
+          <Button
             onClick={handleGoogleLogin}
-            variant="outline" 
+            variant="outline"
             className="w-full flex items-center gap-2"
           >
             <Mail className="w-4 h-4" />
@@ -215,9 +225,9 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
 
           <Separator />
 
-          <Button 
+          <Button
             onClick={handleGuestAccess}
-            variant="outline" 
+            variant="outline"
             className="w-full"
           >
             {t.guestAccess}

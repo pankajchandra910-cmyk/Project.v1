@@ -89,7 +89,7 @@ const categoriesData = [
 
 const GlobalProvider = ({ children }) => {
   // View and auth
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Default to logged in for profile testing
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Default to logged in for profile testing
   const [userType, setUserType] = useState(mockUserData.userType);
   
   // User info - Now initialized from mockUserData

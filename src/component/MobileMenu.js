@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { Button } from "./button"; // Adjust path as needed
 
-export default function MobileMenu({ onClose }) {
+// MobileMenu now accepts userType and profession as props
+export default function MobileMenu({ onClose, userType, profession }) {
   const navigate = useNavigate();
   const {
     isLoggedIn,
@@ -75,11 +76,22 @@ export default function MobileMenu({ onClose }) {
     handleNavigation(`/location-details/${area.toLowerCase().replace(/\s/g, '-')}`);
   };
 
+  // New function to handle profile navigation based on userType
+  const handleProfileNavigation = () => {
+    if (userType === "owner") {
+      // Navigate to owner-dashboard with profession from props
+      handleNavigation(`/owner-dashboard/${profession}`);
+    } else {
+      // Navigate to generic user profile
+      handleNavigation("/profile");
+    }
+  };
+
   return (
     // The overlay container. Added 'backdrop-blur-sm' for blurring.
     // Increased z-index to ensure it's on top
     <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden" // Using bg-black/50 (tailwind for bg-opacity-50)
+      className="fixed inset-0 z-50  backdrop-blur-sm md:hidden" // Using bg-black/50 (tailwind for bg-opacity-50)
       onClick={onClose} // Close menu if clicking outside the inner menu panel
     >
       <div
@@ -107,10 +119,11 @@ export default function MobileMenu({ onClose }) {
         <div className="p-6 space-y-4 mt-6">
           {isLoggedIn && (
             <>
+              {/* Changed onClick to use handleProfileNavigation */}
               <Button
                 variant="ghost"
                 className="w-full justify-start text-left"
-                onClick={() => handleNavigation("/profile")}
+                onClick={handleProfileNavigation}
               >
                 <User className="w-4 h-4 mr-2" />
                 My Profile

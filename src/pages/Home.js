@@ -18,7 +18,7 @@ import {
   Bike,
   Navigation,
   Phone,
-  Mail 
+  Mail
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
@@ -44,7 +44,8 @@ export default function Home() {
     showMobileMenu,
     setShowMobileMenu,
     userType,
-    isLoggedIn, // Keep isLoggedIn here if Header or other components directly use it
+    isLoggedIn,
+    profession, // Add profession here to pass to MobileMenu if needed for owner dashboard logic
   } = useContext(GlobalContext);
 
    const handleViewDetails = useCallback((id, type = "hotel") => {
@@ -68,13 +69,19 @@ export default function Home() {
     navigate("/search");
     }, [navigate, setSearchQuery, setSelectedCategory]);
 
+  // This handleLogoClick is for the header logo, not for a general "profile" in mobile menu.
+  // It handles if the user is an owner, navigate to dashboard, otherwise to a generic profile.
   const handleLogoClick = useCallback(() => {
     if (userType === "owner") {
-      navigate("/owner-dashboard");
+      // Ensure profession is available here if needed for owner dashboard navigation
+      // If profession is always set when userType is 'owner', this is fine.
+      // Otherwise, you might need to fetch it or get it from context.
+      // For now, assuming profession is available in context when userType is 'owner'.
+      navigate(`/owner-dashboard/${profession}`); // Navigate to specific owner dashboard
     } else {
-      navigate("/profile");
+      navigate("/profile"); // Generic user profile
     }
-  }, [navigate, userType]);
+  }, [navigate, userType, profession]); 
 
   const handleBooking = useCallback(() => {
     navigate("/search");
@@ -103,8 +110,14 @@ export default function Home() {
         />
 
         {/* Mobile Menu Overlay */}
-        {showMobileMenu && <MobileMenu onClose={() => setShowMobileMenu(false)} />}
-      
+        {showMobileMenu && (
+          <MobileMenu
+            onClose={() => setShowMobileMenu(false)}
+            userType={userType} // Pass userType
+            profession={profession} // Pass profession
+          />
+        )}
+
         <main className="container mx-auto px-4 py-8 space-y-12">
           {/* Hero Carousel */}
           <HeroCarousel onBooking={handleBooking} />
@@ -135,10 +148,10 @@ export default function Home() {
                 <div
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
+                    backgroundImage: `url('https://images.unsplash.com/photo-1579203643790-252750e391ec?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80')`
                   }}
                 />
-                <div className="absolute inset-0  bg-opacity-30" /> {/* Added overlay for better text readability */}
+                <div className="absolute inset-0  bg-opacity-30" /> {/* Changed to bg-black for consistency */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Nainital</h3>
@@ -157,10 +170,11 @@ export default function Home() {
                 <div
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
+                     // Changed the image URL as above
+                    backgroundImage: `url('https://images.unsplash.com/photo-1547844111-c967929d10e5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80')`
                   }}
                 />
-                <div className="absolute inset-0  bg-opacity-30" /> {/* Added overlay */}
+                <div className="absolute inset-0 bg-black bg-opacity-30" /> {/* Changed to bg-black for consistency */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Lakes</h3>
@@ -249,7 +263,7 @@ export default function Home() {
             </div>
           </div>
         </footer>
-      
+
       </div>
 
     </>

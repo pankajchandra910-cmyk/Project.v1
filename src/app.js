@@ -7,7 +7,9 @@ import Login from "./pages/Login";
 import Signup from "./component/Signup";
 import SearchView from "./pages/SearchView";
 import ProfileView from "./pages/ProfileView";
-
+import  OwnerDashboard  from "./pages/OwnerDashboard"; 
+import  ListingDetail  from './component/ListingDetail';
+import  ListingEdit  from './component/ListingEdit'; 
 
 
 function App(){
@@ -22,9 +24,9 @@ function App(){
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/search" element={<SearchView/>} />
                     <Route path="/profile" element={<ProfileView/>} />
-                    
-
-                    
+                    <Route path="/owner-dashboard/:profession" element={<OwnerDashboard />} />
+                    <Route path="/listings/:id" element={<ListingDetail />} />
+                    <Route path="/listings/:id/edit" element={<ListingEdit />} />
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>
