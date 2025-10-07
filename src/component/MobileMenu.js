@@ -1,7 +1,7 @@
 // src/component/MobileMenu.jsx
 import React, { useContext, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { GlobalContext } from "./GlobalContext"; // Adjust path as needed
+import { GlobalContext } from "./GlobalContext";
 
 import {
   X,
@@ -14,25 +14,24 @@ import {
   BookOpen,
   LogOut,
   LogIn,
+  HomeIcon, // Added HomeIcon for dashboard navigation
 } from "lucide-react";
-import { Button } from "./button"; // Adjust path as needed
+import { Button } from "./button";
 
-// MobileMenu now accepts userType and profession as props
 export default function MobileMenu({ onClose, userType, profession }) {
   const navigate = useNavigate();
   const {
     isLoggedIn,
     setIsLoggedIn,
     setShowAIChat,
-    // setShowMobileMenu is now managed via onClose prop, which updates global context
+    logout1
+    // Note: setShowMobileMenu is correctly managed via onClose prop, which updates global context
   } = useContext(GlobalContext);
 
-  const menuRef = useRef(null); // Ref to the menu container for focus management
+  const menuRef = useRef(null);
 
-  // Effect to manage focus when the menu opens
   useEffect(() => {
     if (menuRef.current) {
-      // Find the first focusable element inside the menu, e.g., the close button
       const firstFocusableElement = menuRef.current.querySelector(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
@@ -41,12 +40,10 @@ export default function MobileMenu({ onClose, userType, profession }) {
       }
     }
 
-    // Add event listener for keyboard navigation (e.g., Escape key to close)
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         onClose();
       }
-      // Add more sophisticated focus trapping if needed, for now escape is enough
     };
 
     document.addEventListener("keydown", handleKeyDown);
@@ -56,17 +53,17 @@ export default function MobileMenu({ onClose, userType, profession }) {
     };
   }, [onClose]);
 
-
   const handleNavigation = (path, action = null) => {
     navigate(path);
     if (action) action();
-    onClose(); // Close the menu after navigation
+    onClose();
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    handleNavigation("/login");
-  };
+  // const handleLogout = () => {
+    
+  //   // After logout, always redirect to login page
+  //   handleNavigation("/login");
+  // };
 
   const handleLogin = () => {
     handleNavigation("/login");
@@ -76,40 +73,38 @@ export default function MobileMenu({ onClose, userType, profession }) {
     handleNavigation(`/location-details/${area.toLowerCase().replace(/\s/g, '-')}`);
   };
 
-  // New function to handle profile navigation based on userType
-  const handleProfileNavigation = () => {
+  const handleDashboardNavigation = () => {
     if (userType === "owner") {
-      // Navigate to owner-dashboard with profession from props
-      handleNavigation(`/owner-dashboard/${profession}`);
+      handleNavigation(`/owner-dashboard/${profession}`); // Simplified path
+    } else if (userType === "user") {
+      handleNavigation("/profile"); // This is typically the user's main dashboard
     } else {
-      // Navigate to generic user profile
-      handleNavigation("/profile");
+      handleNavigation("/"); // Fallback for other user types or just a home link
     }
   };
 
+
   return (
-    // The overlay container. Added 'backdrop-blur-sm' for blurring.
-    // Increased z-index to ensure it's on top
     <div
-      className="fixed inset-0 z-50  backdrop-blur-sm md:hidden" // Using bg-black/50 (tailwind for bg-opacity-50)
-      onClick={onClose} // Close menu if clicking outside the inner menu panel
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm md:hidden"
+      onClick={onClose}
     >
       <div
-        ref={menuRef} // Attach ref here
-        role="dialog" // ARIA role for accessibility
-        aria-modal="true" // Indicates it's a modal dialog
-        aria-labelledby="mobile-menu-title" // Link to the menu title for screen readers
-        className="fixed right-0 top-4 h-[calc(100vh-2rem)] w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out rounded-lg mr-4"
-        onClick={(e) => e.stopPropagation()} // Prevent clicks inside menu from closing it
+        ref={menuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-menu-title"
+        className="fixed right-0 top-4 h-[calc(100vh-2rem)] w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out rounded-lg mr-4 dark:bg-gray-800 dark:text-gray-50"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b">
+        <div className="p-6 border-b dark:border-gray-700">
           <div className="flex items-center justify-between">
             <h2 id="mobile-menu-title" className="text-xl font-semibold">Menu</h2>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="p-2"
+              className="p-2 dark:text-gray-50 dark:hover:bg-gray-700"
             >
               <X className="w-5 h-5" />
             </Button>
@@ -119,18 +114,27 @@ export default function MobileMenu({ onClose, userType, profession }) {
         <div className="p-6 space-y-4 mt-6">
           {isLoggedIn && (
             <>
-              {/* Changed onClick to use handleProfileNavigation */}
+              {/* Conditional rendering for Dashboard/Profile link */}
               <Button
                 variant="ghost"
-                className="w-full justify-start text-left"
-                onClick={handleProfileNavigation}
+                className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
+                onClick={handleDashboardNavigation}
               >
-                <User className="w-4 h-4 mr-2" />
-                My Profile
+                {userType === "owner" ? (
+                  <>
+                    <User className="w-4 h-4 mr-2" />
+                    Owner Dashboard
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4 mr-2" />
+                    My Profile
+                  </>
+                )}
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start text-left"
+                className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
                 onClick={() => handleNavigation("/AIChat", () => setShowAIChat(true))}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
@@ -140,18 +144,18 @@ export default function MobileMenu({ onClose, userType, profession }) {
           )}
           <Button
             variant="ghost"
-            className="w-full justify-start text-left"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
             onClick={() => handleExploreMore("Nainital")}
           >
             <Navigation className="w-4 h-4 mr-2" />
             Explore Map
           </Button>
 
-          <hr className="my-4 border-gray-200" />
+          <hr className="my-4 border-gray-200 dark:border-gray-700" />
 
           <Button
             variant="ghost"
-            className="w-full justify-start text-left"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
             onClick={() => handleNavigation("/about")}
           >
             <Info className="w-4 h-4 mr-2" />
@@ -159,7 +163,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-left"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
             onClick={() => handleNavigation("/contact")}
           >
             <Phone className="w-4 h-4 mr-2" />
@@ -167,7 +171,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-left"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
             onClick={() => handleNavigation("/privacy-policy")}
           >
             <Lock className="w-4 h-4 mr-2" />
@@ -175,20 +179,20 @@ export default function MobileMenu({ onClose, userType, profession }) {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-left"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
             onClick={() => handleNavigation("/terms-of-service")}
           >
             <BookOpen className="w-4 h-4 mr-2" />
             Terms of Service
           </Button>
 
-          <hr className="my-4 border-gray-200" />
+          <hr className="my-4 border-gray-200 dark:border-gray-700" />
 
           {isLoggedIn ? (
             <Button
               variant="ghost"
-              className="w-full justify-start text-left text-red-600 hover:bg-red-50"
-              onClick={handleLogout}
+              className="w-full justify-start text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900"
+              onClick={logout1}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
@@ -196,7 +200,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           ) : (
             <Button
               variant="ghost"
-              className="w-full justify-start text-left text-green-600 hover:bg-green-50"
+              className="w-full justify-start text-left text-green-600 hover:bg-green-50 dark:hover:bg-green-900"
               onClick={handleLogin}
             >
               <LogIn className="w-4 h-4 mr-2" />

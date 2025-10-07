@@ -1,24 +1,21 @@
-import { Search, User, Menu,X } from "lucide-react";
+import { Search, User, Menu, X, LogOut } from "lucide-react"; // Import LogOut icon
 import { Button } from "./button";
 import { Input } from "./Input";
 import React, { useContext } from "react";
 import { GlobalContext } from "./GlobalContext";
 import Logo from '../assets/Logo.jpg';
 
-
-
-export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
+export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
   const {
     isLoggedIn,
     userName,
     searchQuery,
     setSearchQuery,
-    
     showMobileMenu,
     setShowMobileMenu,
+    userRole, // Assuming you have a userRole in GlobalContext (e.g., 'user', 'owner', null)
+    logout1, // Assuming you have a logout function in GlobalContext
   } = useContext(GlobalContext);
- 
-
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -26,20 +23,20 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
       onSearch(searchQuery);
     }
   };
-  
+
   return (
     <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-3">
-            <img 
-              src={Logo} 
+            <img
+              src={Logo}
               alt="Buddy In Hills Logo"
               className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
               onClick={onLogoClick}
             />
-            <div 
+            <div
               className="text-xl font-bold text-primary cursor-pointer hover:opacity-80 transition-opacity hidden sm:block"
               onClick={onLogoClick}
             >
@@ -67,12 +64,12 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
             </div>
           </form>
 
-          {/* User Section */}
+          {/* User Section and Logout */}
           <div className="flex items-center space-x-3">
             {/* Mobile Menu */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="md:hidden"
               onClick={onMenuToggle}
             >
@@ -81,17 +78,30 @@ export default function Header({  onSearch,  onLogoClick, onMenuToggle,  } ) {
 
             {/* User Profile */}
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="flex items-center space-x-2"
-                onClick={onLogoClick}
+                onClick={onLogoClick} 
               >
                 <User className="w-5 h-5" />
                 {isLoggedIn && userName && (
                   <span className="hidden sm:inline">{userName}</span>
                 )}
               </Button>
+
+              {/* Logout Button (Desktop View Only) */}
+              {isLoggedIn && (userRole === 'owner' || userRole === 'user') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hidden md:flex items-center space-x-1"
+                  onClick={logout1} // Call the logout function from GlobalContext
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="hidden lg:inline">Logout</span> {/* Optional: show text on larger screens */}
+                </Button>
+              )}
             </div>
           </div>
         </div>
