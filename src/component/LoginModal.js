@@ -14,7 +14,7 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userType, setUserType] = useState(currentUserType || "user"); // Initialize with prop
-  const [profession, setProfession] = useState(currentProfession || ""); // Initialize with prop
+  const [profession, setProfession] = useState(currentProfession || " "); // Initialize with prop
 
   // Use useEffect to update local state if props change (e.g., from GlobalContext)
   useEffect(() => {
@@ -147,7 +147,8 @@ export function LoginModal({ isOpen, onClose, onLogin, language, onLanguageChang
                   <SelectItem value="resort-hotel">Resort/Hotel</SelectItem>
                   <SelectItem value="rental-bikes">Rental Bikes</SelectItem>
                   <SelectItem value="cabs-taxis">Cabs/Taxis</SelectItem>
-                  <SelectItem value="local-guide">Local Guide</SelectItem>
+                  <SelectItem value="local-guides">Local Guide</SelectItem>
+                  {/* <SelectItem value="hill-stays">Hill-Stays</SelectItem> */}
                   <SelectItem value="tours-treks">Tours/Treks</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>

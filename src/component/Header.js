@@ -13,7 +13,7 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
     setSearchQuery,
     showMobileMenu,
     setShowMobileMenu,
-    userRole, // Assuming you have a userRole in GlobalContext (e.g., 'user', 'owner', null)
+    userType, // Assuming you have a userRole in GlobalContext (e.g., 'user', 'owner', null)
     logout1, // Assuming you have a logout function in GlobalContext
   } = useContext(GlobalContext);
 
@@ -91,7 +91,7 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
               </Button>
 
               {/* Logout Button (Desktop View Only) */}
-              {isLoggedIn && (userRole === 'owner' || userRole === 'user') && (
+              {isLoggedIn && (userType=== 'owner' || userType === 'user') && (
                 <Button
                   variant="ghost"
                   size="sm"

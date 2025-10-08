@@ -26,7 +26,7 @@ function App(){
                     <Route path="/profile" element={<ProfileView/>} />
                     <Route path="/owner-dashboard/:profession" element={<OwnerDashboard />} />
                     <Route path="/listings/:id" element={<ListingDetail />} />
-                    <Route path="/listings/:id/edit" element={<ListingEdit />} />
+                    {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>

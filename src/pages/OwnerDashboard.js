@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef, useCallback } from "react"; // Added useCallback
+import React, { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
 import { Button } from "../component/button";
 import { Input } from "../component/Input";
@@ -17,24 +17,21 @@ export default function OwnerDashboard() {
     profession: globalProfession,
     setProfession: setGlobalProfession,
     userType,
-    // setUserType, // If you want to allow changing user type from here, uncomment this
     userName, setUserName,
     userEmail, setUserEmail,
     userPhone, setUserPhone,
     readOwnerListings,
     writeOwnerListings,
     ownerId,
-     businessAddress, setBusinessAddress,
+    businessAddress, setBusinessAddress,
     licenseNumber, setLicenseNumber,
-    // New fields from GlobalContext for profile management
-    loginPlatform, setLoginPlatform, // Assuming you might want to save/display this
-    language, setLanguage, // Assuming you might want to save/display this
+    loginPlatform, setLoginPlatform,
+    language, setLanguage,
   } = useContext(GlobalContext);
 
   const [activeTab, setActiveTab] = useState("add-listing");
   const navigate = useNavigate();
 
-  // Determine the profession to use for rendering the form
   const currentProfession = globalProfession;
 
   const initialFormData = {
@@ -42,40 +39,34 @@ export default function OwnerDashboard() {
     name: "",
     location: "",
     description: "",
-    price: "", // General price, might be overridden by specific items
+    price: "",
     photos: [],
     listingDetails: {
       rooms: [],
       bikes: [],
       vehicles: [],
       guideFeatures: [],
-      // Add more specific details here for other professions if needed
-      treks: [], // Example for tours-treks
-      hillStayAmenities: [], // Example for hill-stays
+      treks: [],
+      hillStayAmenities: [],
     },
   };
 
   const [formData, setFormData] = useState(initialFormData);
-
-  // State for "My Listings" tab
   const [ownerListings, setOwnerListings] = useState([]);
   const [editingListingId, setEditingListingId] = useState(null);
 
-  // Ref for the file input to clear it
+  // State for local-guides new feature input, hoisted to top level
+  const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
+
   const fileInputRef = useRef(null);
 
-
-
-  // Load existing listings when the component mounts or ownerId changes
   useEffect(() => {
     if (ownerId) {
       setOwnerListings(readOwnerListings(ownerId));
     }
   }, [ownerId, readOwnerListings]);
 
-  // Reset form when switching to "add-listing" or when profession changes for a new listing
   useEffect(() => {
-    // Only reset if we are NOT editing an existing listing
     if (!editingListingId) {
       let initialDetails = {
         rooms: [],
@@ -86,7 +77,6 @@ export default function OwnerDashboard() {
         hillStayAmenities: [],
       };
 
-      // Pre-populate with a default item if creating a new listing
       switch (currentProfession) {
         case "resort-hotel":
           initialDetails.rooms = [{ id: Date.now(), type: "", price: "", features: [], view: "" }];
@@ -97,20 +87,18 @@ export default function OwnerDashboard() {
         case "cabs-taxis":
           initialDetails.vehicles = [{ id: Date.now(), type: "", price: "" }];
           break;
-        // For local-guides, tours-treks, hill-stays, they might not have a "default item" immediately
-        // but their specific forms handle adding features.
         default:
           break;
       }
 
       setFormData(prev => ({
-        ...initialFormData, // Reset general fields too
-        profession: currentProfession, // Set profession in form data
+        ...initialFormData,
+        profession: currentProfession,
         listingDetails: initialDetails
       }));
+      setNewGuideFeatureText(""); // Also reset this specific state
     }
-  }, [currentProfession, editingListingId]); // Re-run when profession or editing state changes
-
+  }, [currentProfession, editingListingId]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -127,7 +115,6 @@ export default function OwnerDashboard() {
     }));
   };
 
-  // --- Photo Upload Logic ---
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     if (formData.photos.length + files.length > 10) {
@@ -139,12 +126,11 @@ export default function OwnerDashboard() {
       reader.onload = (event) => {
         setFormData((prev) => ({
           ...prev,
-          photos: [...prev.photos, event.target.result], // Store base64 string
+          photos: [...prev.photos, event.target.result],
         }));
       };
       reader.readAsDataURL(file);
     });
-    // Clear the input to allow uploading the same file again if needed
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -157,9 +143,6 @@ export default function OwnerDashboard() {
     }));
   };
 
-  // --- Dynamic Item Management (Rooms, Bikes, Vehicles, Guide Features) ---
-
-  // Generic function to update nested arrays like rooms, bikes, vehicles
   const updateNestedArray = (arrayName, id, field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -251,17 +234,18 @@ export default function OwnerDashboard() {
     }));
   };
 
-  const addGuideFeature = useCallback((featureText) => { // Memoize with useCallback
-    if (featureText && !formData.listingDetails.guideFeatures.includes(featureText)) {
+  const addGuideFeature = useCallback(() => {
+    if (newGuideFeatureText && !formData.listingDetails.guideFeatures.includes(newGuideFeatureText)) {
       setFormData((prev) => ({
         ...prev,
         listingDetails: {
           ...prev.listingDetails,
-          guideFeatures: [...prev.listingDetails.guideFeatures, featureText],
+          guideFeatures: [...prev.listingDetails.guideFeatures, newGuideFeatureText],
         },
       }));
+      setNewGuideFeatureText(""); // Clear input after adding
     }
-  }, [formData.listingDetails.guideFeatures]); // Dependency on guideFeatures
+  }, [newGuideFeatureText, formData.listingDetails.guideFeatures]);
 
   const removeGuideFeature = (featureToRemove) => {
     setFormData((prev) => ({
@@ -273,14 +257,12 @@ export default function OwnerDashboard() {
     }));
   };
 
-
   const handlePublishListing = () => {
     if (!ownerId) {
       alert("Owner ID not set. Please ensure you are logged in and your profile is complete.");
       return;
     }
 
-    // Basic validation
     if (!formData.name || !formData.location || !formData.description) {
       alert("Please fill in Name, Location, and Description.");
       return;
@@ -288,19 +270,17 @@ export default function OwnerDashboard() {
 
     let updatedListings;
     if (editingListingId) {
-      // Update existing listing
       updatedListings = ownerListings.map(listing =>
         listing.id === editingListingId
           ? { ...formData, id: editingListingId, ownerId: ownerId, profession: currentProfession, status: "Active", bookings: listing.bookings, revenue: listing.revenue }
           : listing
       );
     } else {
-      // Create new listing
       const newListing = {
-        id: Date.now().toString(), // Unique ID
+        id: Date.now().toString(),
         ownerId: ownerId,
         profession: currentProfession,
-        status: "Active", // Default status
+        status: "Active",
         bookings: 0,
         revenue: "₹0",
         ...formData,
@@ -308,16 +288,13 @@ export default function OwnerDashboard() {
       updatedListings = [...ownerListings, newListing];
     }
 
-
     if (writeOwnerListings(updatedListings, ownerId)) {
-      setOwnerListings(updatedListings); // Update local state
+      setOwnerListings(updatedListings);
       alert(editingListingId ? "Listing Updated Successfully!" : "Listing Published Successfully!");
-      // Reset form and editing state
       setFormData(initialFormData);
       setEditingListingId(null);
-      setActiveTab("my-listings"); // Switch to my listings to see the new/updated item
-      // Reset profession to default if it was changed specifically for editing
-      // Not needed if currentProfession is managed correctly and not reset on form clear
+      setActiveTab("my-listings");
+      setNewGuideFeatureText(""); // Reset this too
     } else {
       alert("Failed to save listing. Please try again.");
     }
@@ -325,10 +302,6 @@ export default function OwnerDashboard() {
 
   const handleBackToSite = () => {
     navigate("/");
-    // Removed onBack call as it's not universally needed and navigate is sufficient
-    // if (onBack) {
-    //   onBack();
-    // }
   };
 
   const handleEditListing = (listingId) => {
@@ -346,14 +319,15 @@ export default function OwnerDashboard() {
           bikes: listingToEdit.listingDetails?.bikes || [],
           vehicles: listingToEdit.listingDetails?.vehicles || [],
           guideFeatures: listingToEdit.listingDetails?.guideFeatures || [],
-          // Ensure all possible listingDetails arrays are initialized
           treks: listingToEdit.listingDetails?.treks || [],
           hillStayAmenities: listingToEdit.listingDetails?.hillStayAmenities || [],
         },
       });
-      setGlobalProfession(listingToEdit.profession); // Set the global profession context for the form
-      setEditingListingId(listingId); // Mark as editing
-      setActiveTab("add-listing"); // Go to add-listing tab to allow editing
+      setGlobalProfession(listingToEdit.profession);
+      setEditingListingId(listingId);
+      setActiveTab("add-listing");
+      // If editing a local-guide, pre-populate newGuideFeatureText if needed (or keep it clear)
+      setNewGuideFeatureText("");
     }
   };
 
@@ -369,30 +343,20 @@ export default function OwnerDashboard() {
     }
   };
 
-  // Function to handle profile update
   const handleUpdateProfile = () => {
-    // Here you would typically send these updates to a backend API.
-    // For this example, we're just updating the GlobalContext state directly.
-    setUserName(userName); // Already updated by input, but good practice to call setter
-    setUserEmail(userEmail); // Already updated by input
-    setUserPhone(userPhone); // Already updated by input
-    setGlobalProfession(globalProfession); // Already updated by select
-    
-    // You would also save `businessAddress` and `licenseNumber` to your backend
-    // or to GlobalContext if they are globally relevant.
-    // For now, let's assume they are handled within this component's state or a separate profile context.
+    setUserName(userName);
+    setUserEmail(userEmail);
+    setUserPhone(userPhone);
+    setGlobalProfession(globalProfession);
 
     alert("Profile updated successfully!");
-    // Optional: Refresh any other relevant data or navigate
   };
-
 
   const renderProfessionForm = () => {
     switch (currentProfession) {
       case "resort-hotel":
         return (
           <div className="space-y-6">
-            {/* Rooms Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Rooms</h3>
@@ -404,7 +368,7 @@ export default function OwnerDashboard() {
               <div className="space-y-4">
                 {formData.listingDetails.rooms.length === 0 && <p className="text-muted-foreground">No rooms added yet.</p>}
                 {formData.listingDetails.rooms.map((room) => (
-                  <Card key={room.id} className="p-0"> {/* Adjusted card padding */}
+                  <Card key={room.id} className="p-0">
                     <CardContent className="p-4 space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -602,15 +566,14 @@ export default function OwnerDashboard() {
         );
 
       case "local-guides":
-        const [newFeatureText, setNewFeatureText] = useState("");
         return (
           <div className="space-y-4">
             <div>
-              <Label htmlFor="guide-rate">Service Rate (e.g., per day)</Label> {/* Changed label */}
+              <Label htmlFor="guide-rate">Service Rate (e.g., per day)</Label>
               <Input
                 id="guide-rate"
                 type="number"
-                placeholder="800" // Changed placeholder to just number
+                placeholder="800"
                 name="price"
                 value={formData.price}
                 onChange={handleFormChange}
@@ -636,22 +599,16 @@ export default function OwnerDashboard() {
               <div className="flex gap-2 mt-2">
                 <Input
                   placeholder="e.g., Mountain Trekking, Local History"
-                  value={newFeatureText}
-                  onChange={(e) => setNewFeatureText(e.target.value)}
+                  value={newGuideFeatureText}
+                  onChange={(e) => setNewGuideFeatureText(e.target.value)}
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter' && newFeatureText.trim()) {
-                      addGuideFeature(newFeatureText.trim());
-                      setNewFeatureText('');
-                      e.preventDefault(); // Prevent form submission
+                    if (e.key === 'Enter' && newGuideFeatureText.trim()) {
+                      addGuideFeature();
+                      e.preventDefault();
                     }
                   }}
                 />
-                <Button onClick={() => {
-                  if (newFeatureText.trim()) {
-                    addGuideFeature(newFeatureText.trim());
-                    setNewFeatureText('');
-                  }
-                }} type="button"> {/* Added type="button" to prevent form submission */}
+                <Button onClick={addGuideFeature} type="button">
                   Add
                 </Button>
               </div>
@@ -660,7 +617,6 @@ export default function OwnerDashboard() {
           </div>
         );
 
-      // Add cases for other professions like "hill-stays", "tours-treks" if they have specific forms
       case "hill-stays":
         return (
           <div className="space-y-4">
@@ -675,9 +631,7 @@ export default function OwnerDashboard() {
                 onChange={handleFormChange}
               />
             </div>
-            {/* Add specific hill stay amenities if needed */}
             <Label>Amenities</Label>
-            {/* You can add a similar badge-based selection for amenities */}
             <p className="text-muted-foreground text-sm">Add amenities like fireplace, private balcony, etc.</p>
           </div>
         );
@@ -696,11 +650,24 @@ export default function OwnerDashboard() {
                 onChange={handleFormChange}
               />
             </div>
-            {/* Add specific trek details like difficulty, duration, itinerary */}
             <Label htmlFor="trek-difficulty">Difficulty</Label>
             <Select
-              value={formData.listingDetails.treks?.[0]?.difficulty || ""} // Assuming one main trek entry
-              onValueChange={(value) => updateNestedArray("treks", formData.listingDetails.treks?.[0]?.id || Date.now(), "difficulty", value)}
+              value={formData.listingDetails.treks?.[0]?.difficulty || ""}
+              onValueChange={(value) => {
+                // Ensure treks array exists and has at least one item before updating
+                const currentTreks = formData.listingDetails.treks;
+                if (currentTreks.length === 0) {
+                  setFormData(prev => ({
+                    ...prev,
+                    listingDetails: {
+                      ...prev.listingDetails,
+                      treks: [{ id: Date.now(), difficulty: value }],
+                    },
+                  }));
+                } else {
+                  updateNestedArray("treks", currentTreks[0].id, "difficulty", value);
+                }
+              }}
             >
               <SelectTrigger id="trek-difficulty">
                 <SelectValue placeholder="Select difficulty" />
@@ -715,7 +682,6 @@ export default function OwnerDashboard() {
           </div>
         );
 
-      // Default case for any other profession or unconfigured ones
       default:
         return (
           <div className="space-y-4">
@@ -735,7 +701,7 @@ export default function OwnerDashboard() {
               <Input
                 id="default-expertise"
                 placeholder="Hiking, Photography, Cuisine (comma separated)"
-                name="features" // This will save to formData.features which is generic
+                name="features"
                 value={formData.listingDetails.guideFeatures.join(", ")}
                 onChange={(e) => {
                   setFormData((prev) => ({
@@ -782,7 +748,6 @@ export default function OwnerDashboard() {
                 <CardTitle>{editingListingId ? "Edit Listing" : "Create New Listing"}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* General Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="business-name">Business/Service Name</Label>
@@ -862,18 +827,16 @@ export default function OwnerDashboard() {
 
                 <Separator />
 
-                {/* Profession-specific fields */}
                 {renderProfessionForm()}
 
                 <div className="flex justify-end space-x-4">
-                  <Button variant="outline" type="button">Save Draft</Button> {/* Added type="button" */}
-                  <Button onClick={handlePublishListing} className="bg-primary hover:bg-primary/90" type="button"> {/* Added type="button" */}
+                  <Button variant="outline" type="button">Save Draft</Button>
+                  <Button onClick={handlePublishListing} className="bg-primary hover:bg-primary/90" type="button">
                     {editingListingId ? "Update Listing" : "Publish Listing"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
-            {/* Preview Section */}
             <Card>
               <CardHeader>
                 <CardTitle>Preview</CardTitle>
@@ -892,11 +855,10 @@ export default function OwnerDashboard() {
                   <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                     <span className="text-2xl font-bold text-primary dark:text-blue-400">
                       {
-                        // Dynamically show price based on profession and first item if available
                         currentProfession === "resort-hotel" && formData.listingDetails.rooms.length > 0 && formData.listingDetails.rooms[0].price
                           ? `₹${formData.listingDetails.rooms[0].price}`
                           : currentProfession === "rental-bikes" && formData.listingDetails.bikes.length > 0 && formData.listingDetails.bikes[0].price
-                            ? `₹${formData.listingDetails.bikes[0].price}`
+                            ?`₹${formData.listingDetails.bikes[0].price}`
                             : currentProfession === "cabs-taxis" && formData.listingDetails.vehicles.length > 0 && formData.listingDetails.vehicles[0].price
                               ? `₹${formData.listingDetails.vehicles[0].price}`
                               : currentProfession === "local-guides" && formData.price
@@ -984,7 +946,7 @@ export default function OwnerDashboard() {
                     <Input
                       id="profile-business-name"
                       placeholder="Your Business Name"
-                      value={userName} // Using userName from GlobalContext for business name
+                      value={userName}
                       onChange={(e) => setUserName(e.target.value)}
                     />
                   </div>
@@ -993,7 +955,7 @@ export default function OwnerDashboard() {
                     <Input
                       id="profile-contact-number"
                       placeholder="+91 xxxxxxxxxx"
-                      value={userPhone} // Using userPhone from GlobalContext
+                      value={userPhone}
                       onChange={(e) => setUserPhone(e.target.value)}
                     />
                   </div>
@@ -1002,9 +964,9 @@ export default function OwnerDashboard() {
                     <Input
                       id="profile-email"
                       placeholder="business@email.com"
-                      value={userEmail} // Using userEmail from GlobalContext
+                      value={userEmail}
                       onChange={(e) => setUserEmail(e.target.value)}
-                      readOnly // Email often shouldn't be changed directly in profile
+                      readOnly
                       className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
                     />
                   </div>
@@ -1021,7 +983,7 @@ export default function OwnerDashboard() {
                         <SelectItem value="local-guides">Local Guide</SelectItem>
                         <SelectItem value="hill-stays">Hill Stays Owner</SelectItem>
                         <SelectItem value="tours-treks">Tours & Treks Operator</SelectItem>
-                        <SelectItem value="travel-enthusiast">Travel Enthusiast (Default)</SelectItem>
+                        <SelectItem value="travel-enthusiast">Other (Default)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1030,7 +992,7 @@ export default function OwnerDashboard() {
                     <Input
                       id="profile-license-number"
                       placeholder="Tourism License (if applicable)"
-                      value={licenseNumber} // Using local state for license
+                      value={licenseNumber}
                       onChange={(e) => setLicenseNumber(e.target.value)}
                     />
                   </div>
@@ -1040,18 +1002,17 @@ export default function OwnerDashboard() {
                   <Textarea
                     id="profile-business-address"
                     placeholder="Full business address"
-                    value={businessAddress} // Using local state for address
+                    value={businessAddress}
                     onChange={(e) => setBusinessAddress(e.target.value)}
                   />
                 </div>
-                {/* You could add more profile fields here if needed, like loginPlatform, language etc. */}
                 {loginPlatform && (
                   <div>
                     <Label htmlFor="profile-login-platform">Login Platform</Label>
                     <Input id="profile-login-platform" value={loginPlatform} readOnly className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed" />
                   </div>
                 )}
-                
+
 
                 <Button className="bg-primary hover:bg-primary/90" onClick={handleUpdateProfile} type="button">
                   Update Profile

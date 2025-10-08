@@ -8,7 +8,7 @@ import { Label } from "./label";
 import { Separator } from "./separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./Sheet";
 
-import { SlidersHorizontal, X, ChevronUp, ChevronDown } from "lucide-react"; // Added Chevron icons
+import { SlidersHorizontal,  ChevronUp, ChevronDown } from "lucide-react"; // Added Chevron icons
 
 export default function FilterSidebar({
   filters,
