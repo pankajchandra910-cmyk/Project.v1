@@ -45,7 +45,8 @@ export default function Home() {
     setShowMobileMenu,
     userType,
     isLoggedIn,
-    profession, // Add profession here to pass to MobileMenu if needed for owner dashboard logic
+    profession,
+    setSelectedLocationId, 
   } = useContext(GlobalContext);
 
    const handleViewDetails = useCallback((id, type = "hotel") => {
@@ -83,6 +84,12 @@ export default function Home() {
     }
   }, [navigate, userType, profession]); 
 
+  // // Handle logo click to navigate to home :in genral
+  // const handleLogoClick = useCallback(() => {
+  //   navigate("/");
+  // }, [navigate]);
+
+
   const handleBooking = useCallback(() => {
     navigate("/search");
   }, [navigate]);
@@ -93,9 +100,11 @@ export default function Home() {
     navigate("/search");
   }, [navigate, setSelectedCategory, setSearchQuery]);
 
-  const handleExploreMore = useCallback((area) => {
-    navigate(`/location-details/${area.toLowerCase().replace(/\s/g, '-')}`);
-  }, [navigate]);
+  const handleExploreMore = useCallback((locationName) => {
+    const locationId = locationName.toLowerCase().replace(/\s/g, '-');
+    setSelectedLocationId(locationId); // Set the global context state
+    navigate(`/location-details/${locationId}`); // Navigate to the dynamic route
+  }, [navigate, setSelectedLocationId]);
 
   return (
     <>

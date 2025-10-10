@@ -9,7 +9,8 @@ import SearchView from "./pages/SearchView";
 import ProfileView from "./pages/ProfileView";
 import  OwnerDashboard  from "./pages/OwnerDashboard"; 
 import  ListingDetail  from './component/ListingDetail';
-import  ListingEdit  from './component/ListingEdit'; 
+import  NainitalDetailsPage  from './pages/NainitalDetailsPage';
+
 
 
 function App(){
@@ -26,6 +27,7 @@ function App(){
                     <Route path="/profile" element={<ProfileView/>} />
                     <Route path="/owner-dashboard/:profession" element={<OwnerDashboard />} />
                     <Route path="/listings/:id" element={<ListingDetail />} />
+                    <Route path="/location-details/:locationId" element={<NainitalDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     </Routes>
                 </BrowserRouter>

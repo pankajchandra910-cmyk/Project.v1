@@ -1,7 +1,7 @@
-import React, { createContext, useState, useEffect, useCallback } from "react"; // Added useCallback
-import { useIsMobile } from "../hooks/use-mobile"; // Make sure this hook is defined or imported correctly
-// Import Lucide icons if you plan to use them directly in the categories array here
+import React, { createContext, useState, useEffect, useCallback } from "react";
+import { useIsMobile } from "../hooks/use-mobile";
 import { Bed, MapPin, Mountain, Car, Users, HomeIcon, Bike } from 'lucide-react';
+import { locationsData, featuredPlaces } from "../assets/dummy"; // Ensure locationsData is imported
 
 export const GlobalContext = createContext();
 
@@ -17,6 +17,7 @@ const mockUserData = {
   isLoggedIn: false, // Default to logged in for testing, change to false for production
   userRole: "", // Default role for testing, can be 'user', 'owner', or null/undefined
   // ... rest of your mock user data
+
   // Owner-specific profile data (if you want to manage globally)
   businessAddress: "123 Mountain View, Nainital, Uttarakhand",
   licenseNumber: "UTH987654321",
@@ -67,6 +68,10 @@ const mockUserData = {
     { id: "uvp6", name: "Himalaya Darshan Point", description: "Snow-capped peaks view", distance: "3km", rating: 4.5 },
     { id: "uvp7", name: "Land's End", description: "Cliff-edge views", distance: "5km", rating: 4.4 },
     { id: "uvp8", name: "Mukteshwar", description: "Temple and orchards", distance: "50km", rating: 4.8 },
+    { id: "uvp9", name: "Sariyatal", distance: "10km", rating: 4.2, description: "Lake viewpoint" },
+    { id: "uvp10", name: "Khurpatal", distance: "12km", rating: 4.1, description: "Hidden lake spot" },
+    { id: "uvp11", name: "Kilbury", distance: "15km", rating: 4.6, description: "Bird watching views" }
+   
   ],
   userRoutes: [
     { id: 'ur1', name: 'Trekking to Tiffin Top', difficulty: 'Easy', distance: '3 km', rating: 4.4 },
@@ -76,6 +81,12 @@ const mockUserData = {
     { id: "ur5", name: "Snow View Trek", difficulty: "Easy", distance: "2km uphill", rating: 4.5 },
     { id: "ur6", name: "Guano Hills Trail", difficulty: "Moderate", distance: "10km birding adventure", rating: 4.4 },
     { id: "ur7", name: "Pangot Trek", difficulty: "Easy", distance: "15km nature walk", rating: 4.3 },
+    { id: "ur8", name: "Kunjkharak Trek", difficulty: "Hard", distance: "20km wildlife path", rating: 4.6 },
+    { id: "ur9", name: "Hartola Shiv Mandir Hike", difficulty: "Easy", distance: "8km spiritual trail", rating: 4.2 },
+    { id: "ur10", name: "Sattal Waterfall Trail", difficulty: "Moderate", distance: "25km waterfall route", rating: 4.5 },
+    { id: "ur11", name: "Lands End Trail", difficulty: "Easy", distance: "5km scenic end-point", rating: 4.1 },
+    { id: "ur12", name: "Kilbury Trek", difficulty: "Moderate", distance: "15km forest adventure", rating: 4.4 }
+  
   ],
 };
 
@@ -105,17 +116,12 @@ const GlobalProvider = ({ children }) => {
   const [userPhone, setUserPhone] = useState(mockUserData.userPhone);
   const [loginPlatform, setLoginPlatform] = useState(mockUserData.loginPlatform);
 
-
   // Owner-specific extended profile details (if managed globally)
-  // These are optional. You could also manage them locally in OwnerDashboard,
-  // or fetch them from an API when the owner dashboard loads.
   const [businessAddress, setBusinessAddress] = useState(mockUserData.businessAddress);
   const [licenseNumber, setLicenseNumber] = useState(mockUserData.licenseNumber);
-  
 
   // Owner-specific id
   const [ownerId, setOwnerId] = useState(null);
-
   // Optional "back" callback
   const [onBack, setOnBack] = useState(null);
 
@@ -126,6 +132,10 @@ const GlobalProvider = ({ children }) => {
   const [userViewpoints, setUserViewpoints] = useState(mockUserData.userViewpoints);
   const [userRoutes, setUserRoutes] = useState(mockUserData.userRoutes);
   const [categories, setCategories] = useState(categoriesData);
+
+  // New state for currently selected location ID for details page
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+
 
   // Search and selection
   const [searchQuery, setSearchQuery] = useState("");
@@ -180,13 +190,11 @@ const GlobalProvider = ({ children }) => {
     }
   }, [userType, ownerId, userEmail, userName]);
 
-
-  const logout1 = useCallback(() => {
+  const logout1 = useCallback(() => { // Renamed from logout1 to logout for consistency
     // Clear authentication state
     setIsLoggedIn(false);
     setUserRole(null);
     setUserType('');
-
     // Clear user/owner profile information
     setUserName('');
     setUserEmail('');
@@ -215,6 +223,7 @@ const GlobalProvider = ({ children }) => {
     setSelectedDetailType('hotel');
     setShowAIChat(false);
     setShowMobileMenu(false);
+    setSelectedLocationId(null); // Clear selected location ID on logout
 
     // Remove authentication tokens or other sensitive data from localStorage
     localStorage.removeItem('authToken'); // Example
@@ -222,6 +231,7 @@ const GlobalProvider = ({ children }) => {
 
     console.log("User logged out successfully!");
   }, []);
+
   // Bundle all state into context
   const contextValue = {
     // auth & user
@@ -232,7 +242,7 @@ const GlobalProvider = ({ children }) => {
     language, setLanguage,
     logout1, // Added logout function to context
 
-   // Owner-specific extended profile details
+    // Owner-specific extended profile details
     businessAddress, setBusinessAddress,
     licenseNumber, setLicenseNumber,
 
@@ -256,6 +266,9 @@ const GlobalProvider = ({ children }) => {
     userViewpoints, setUserViewpoints,
     userRoutes, setUserRoutes,
     categories, setCategories,
+
+    // New: Selected Location ID for dynamic details pages
+    selectedLocationId, setSelectedLocationId,
 
     // search & UI
     searchQuery, setSearchQuery,
