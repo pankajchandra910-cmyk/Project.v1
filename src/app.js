@@ -10,7 +10,7 @@ import ProfileView from "./pages/ProfileView";
 import  OwnerDashboard  from "./pages/OwnerDashboard"; 
 import  ListingDetail  from './component/ListingDetail';
 import  NainitalDetailsPage  from './pages/NainitalDetailsPage';
-
+import PlaceDetailsPage from "./pages/PlaceDetailsPage";
 
 
 function App(){
@@ -29,6 +29,7 @@ function App(){
                     <Route path="/listings/:id" element={<ListingDetail />} />
                     <Route path="/location-details/:locationId" element={<NainitalDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
+                    <Route path="/place-details/:id" element={<PlaceDetailsPage />} />
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>

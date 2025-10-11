@@ -1,13 +1,13 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom"; 
-import { GlobalContext } from "../component/GlobalContext"; 
+import { useNavigate, useParams } from "react-router-dom";
+import { GlobalContext } from "../component/GlobalContext";
 
-import { Button } from "../component/button"; 
-import { Card, CardContent, CardHeader, CardTitle } from "../component/Card"; 
-import { Badge } from "../component/badge"; 
+import { Button } from "../component/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
+import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
-import { FAQSection } from "../component/FAQSection"; 
-import { locationsData } from "../assets/dummy"; 
+import { FAQSection } from "../component/FAQSection";
+import { locationsData } from "../assets/dummy"; // Assuming locationsData is exported from here
 
 import {
   ArrowLeft,
@@ -30,16 +30,25 @@ import {
   Home,
   Users,
   Thermometer,
+  Info,
 } from "lucide-react";
 
 // Map icon names (strings) to Lucide React components
 const iconMap = {
   Car: Car,
   Train: Train,
+  Bus: Bus,
   Mountain: Mountain,
   Home: Home,
   Users: Users,
   Thermometer: Thermometer,
+  Sunrise: Sunrise,
+  Camera: Camera,
+  TreePine: TreePine,
+  Clock: Clock,
+  Waves: Waves, // Added Waves for "whatToExpect" or similar sections
+  Binoculars: Binoculars, // Added Binoculars
+  Info: Info, // Ensure Info is mapped if it's used dynamically
   // Add other icons if you use them as strings in locationsData
 };
 
@@ -77,13 +86,13 @@ export default function NainitalDetailsPage() {
   }, [locationId]); // Re-run effect when locationId changes
 
   const nextImage = useCallback(() => {
-    if (locationDetails && locationDetails.images.length > 0) {
+    if (locationDetails && locationDetails.images && locationDetails.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % locationDetails.images.length);
     }
   }, [locationDetails]);
 
   const prevImage = useCallback(() => {
-    if (locationDetails && locationDetails.images.length > 0) {
+    if (locationDetails && locationDetails.images && locationDetails.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + locationDetails.images.length) % locationDetails.images.length);
     }
   }, [locationDetails]);
@@ -112,13 +121,14 @@ export default function NainitalDetailsPage() {
       adventure: `/place-details/${id}`,
       wildlife: `/place-details/${id}`,
       temple: `/place-details/${id}`,
+      // Add other types as needed from your dummy data
     };
-    const path = routeMap[type.toLowerCase()] || "/";
+    const path = routeMap[type.toLowerCase()] || "/"; // Default to home if type not found
     navigate(path);
   }, [navigate, setSelectedItemId, setSelectedDetailType]);
 
   const handleBookHotel = useCallback((hotelId) => {
-    navigate(`/book-hotel/${hotelId}`);
+    navigate(`/book-hotel/${hotelId}`); // This route needs to be defined in App.js
   }, [navigate]);
 
   if (loading) {
@@ -149,6 +159,23 @@ export default function NainitalDetailsPage() {
   const displayImage = locationDetails.images[currentImageIndex];
   const mainBackgroundImage = locationDetails.images[0]; // Or choose another default
 
+  // Derive 'whatToExpect' from locationDetails if not explicitly present, or use a default
+  // This helps integrate the structure from the original PlaceDetailsPage
+  const whatToExpectItems = locationDetails.whatToExpect && locationDetails.whatToExpect.length > 0
+    ? locationDetails.whatToExpect.map(item => ({
+        ...item,
+        icon: iconMap[item.icon] || Info // Map icon string to component, default to Info
+      }))
+    : [ // Default items if no specific 'whatToExpect' is provided in locationsData
+        { icon: Mountain, title: "Scenic Beauty", desc: "Breathtaking views of surrounding hills" },
+        { icon: Camera, title: "Photography Hotspot", desc: "Capture stunning landscapes" },
+        { icon: Binoculars, title: "Explore Wildlife", desc: "Spot local fauna in natural habitats" },
+        { icon: Waves, title: "Water Activities", desc: "Boating, paddling, and lakeside relaxation" },
+      ].map(item => ({
+        ...item,
+        icon: item.icon // These are already Lucide components
+      }));
+
   return (
     <div
       className="min-h-screen"
@@ -174,33 +201,37 @@ export default function NainitalDetailsPage() {
               alt={`${locationDetails.name} - Image ${currentImageIndex + 1}`}
               className="w-full h-full object-cover"
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={prevImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={nextImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-              {locationDetails.images.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
-                    index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                  }`}
-                  onClick={() => setCurrentImageIndex(index)}
-                />
-              ))}
-            </div>
+            {locationDetails.images && locationDetails.images.length > 1 && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                  {locationDetails.images.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
+                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      }`}
+                      onClick={() => setCurrentImageIndex(index)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -220,35 +251,40 @@ export default function NainitalDetailsPage() {
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                       <span className="font-medium">{locationDetails.rating}</span>
-                      <span className="text-muted-foreground">({locationDetails.reviewCount.toLocaleString()} reviews)</span>
+                      <span className="text-muted-foreground">({locationDetails.reviewCount ? locationDetails.reviewCount.toLocaleString() : 0} reviews)</span>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">{locationDetails.elevation}</Badge>
-                    <Badge variant="outline">{locationDetails.bestTime}</Badge>
+                    {/* Elevation or similar main badge */}
+                    {locationDetails.elevation && (
+                       <Badge className="bg-green-100 text-green-800">{locationDetails.elevation}</Badge>
+                    )}
+                    {locationDetails.bestTime && (
+                      <Badge variant="outline">{locationDetails.bestTime}</Badge>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Quick Info */}
+              {/* Quick Info - Adjusted for dynamic Nainital data */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50/80 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Thermometer className="w-4 h-4 text-primary" />
                   <div>
                     <div className="text-sm font-medium">Best Weather</div>
-                    <div className="text-xs text-muted-foreground">{locationDetails.bestTime}</div>
+                    <div className="text-xs text-muted-foreground">{locationDetails.bestTime || "N/A"}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Mountain className="w-4 h-4 text-primary" />
                   <div>
                     <div className="text-sm font-medium">Elevation</div>
-                    <div className="text-xs text-muted-foreground">{locationDetails.elevation}</div>
+                    <div className="text-xs text-muted-foreground">{locationDetails.elevation || "N/A"}</div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4 text-primary" />
                   <div>
                     <div className="text-sm font-medium">Annual Visitors</div>
-                    <div className="text-xs text-muted-foreground">500K+</div> {/* Placeholder, or add to data */}
+                    <div className="text-xs text-muted-foreground">{locationDetails.annualVisitors ? locationDetails.annualVisitors.toLocaleString() : "N/A"}</div>
                   </div>
                 </div>
               </div>
@@ -268,6 +304,39 @@ export default function NainitalDetailsPage() {
                     <p className="text-muted-foreground leading-relaxed">{locationDetails.description}</p>
                   </div>
 
+                  {locationDetails.highlights && locationDetails.highlights.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-3">Highlights</h3>
+                      <div className="grid md:grid-cols-2 gap-2">
+                        {locationDetails.highlights.map((highlight, index) => (
+                          <div key={index} className="flex items-center space-x-2">
+                            <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+                            <span className="text-sm">{highlight}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {whatToExpectItems && whatToExpectItems.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-3">What to Expect</h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {whatToExpectItems.map((item, index) => {
+                           const IconComponent = item.icon;
+                          return (
+                          <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
+                            <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium text-sm">{item.title}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                            </div>
+                          </div>
+                        )})}
+                      </div>
+                    </div>
+                  )}
+
                   {locationDetails.localFood && locationDetails.localFood.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">Local Food Specialties</h3>
@@ -280,72 +349,97 @@ export default function NainitalDetailsPage() {
                       </div>
                     </div>
                   )}
+
+                  {locationDetails.tips && locationDetails.tips.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold mb-3">
+                        <Info className="w-4 h-4 inline mr-2" />
+                        Visitor Tips
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        {locationDetails.tips.map((tip, index) => (
+                          <li key={index} className="flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="routes" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-4">How to Reach {locationDetails.name.split(' - ')[0]}</h3>
                     <div className="space-y-4">
-                      {locationDetails.routes.map((route, index) => {
-                        const IconComponent = iconMap[route.icon] || Car; // Default to Car if icon not found
-                        return (
-                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
-                            <div className="flex items-start space-x-3">
-                              <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                              <div className="flex-1">
-                                <h4 className="font-medium text-sm mb-1">{route.mode}</h4>
-                                <div className="grid md:grid-cols-2 gap-2 text-xs text-muted-foreground mb-2">
-                                  <span>Distance: {route.distance}</span>
-                                  <span>Duration: {route.duration}</span>
+                      {locationDetails.routes && locationDetails.routes.length > 0 ? (
+                        locationDetails.routes.map((route, index) => {
+                          const IconComponent = iconMap[route.icon] || Car; // Default to Car if icon not found
+                          return (
+                            <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
+                              <div className="flex items-start space-x-3">
+                                <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm mb-1">{route.mode}</h4>
+                                  <div className="grid md:grid-cols-2 gap-2 text-xs text-muted-foreground mb-2">
+                                    <span>Distance: {route.distance}</span>
+                                    <span>Duration: {route.duration}</span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mb-2">{route.route}</p>
+                                  <p className="text-xs">{route.details}</p>
                                 </div>
-                                <p className="text-xs text-muted-foreground mb-2">{route.route}</p>
-                                <p className="text-xs">{route.details}</p>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })
+                      ) : (
+                        <p className="text-muted-foreground">No route information available for this location.</p>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="attractions" className="space-y-6 mt-6">
                   <div>
-                    <h3 className="font-semibold mb-4">Popular Attractions ({locationDetails.popularSpots.length}+ Spots)</h3>
+                    <h3 className="font-semibold mb-4">Popular Attractions ({locationDetails.popularSpots ? locationDetails.popularSpots.length : 0}+ Spots)</h3>
                     <div className="grid gap-4">
-                      {locationDetails.popularSpots.slice(0, showAllViewpoints ? locationDetails.popularSpots.length : 6).map((spot, index) => (
-                        <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer" onClick={() => handleViewDetails(spot.id, spot.type)}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h4 className="font-medium text-sm">{spot.name}</h4>
-                                <Badge variant="outline" className="text-xs">{spot.type}</Badge>
-                              </div>
-                              <p className="text-xs text-muted-foreground mb-2">{spot.description}</p>
-                              <div className="flex items-center space-x-4 text-xs">
-                                <div className="flex items-center space-x-1">
-                                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                  <span>{spot.rating}</span>
+                      {locationDetails.popularSpots && locationDetails.popularSpots.length > 0 ? (
+                        locationDetails.popularSpots.slice(0, showAllViewpoints ? locationDetails.popularSpots.length : 6).map((spot, index) => (
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer" >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <h4 className="font-medium text-sm">{spot.name}</h4>
+                                  <Badge variant="outline" className="text-xs">{spot.type}</Badge>
                                 </div>
-                                <span className="text-muted-foreground">{spot.visitors} annual visitors</span>
+                                <p className="text-xs text-muted-foreground mb-2">{spot.description}</p>
+                                <div className="flex items-center space-x-4 text-xs">
+                                  <div className="flex items-center space-x-1">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span>{spot.rating}</span>
+                                  </div>
+                                  <span className="text-muted-foreground">{spot.visitors} annual visitors</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1 mt-2">
+                                  {spot.activities && spot.activities.map((activity, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs py-0 px-2">
+                                      {activity}
+                                    </Badge>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {spot.activities.map((activity, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs py-0 px-2">
-                                    {activity}
-                                  </Badge>
-                                ))}
-                              </div>
+                              <Button variant="outline" size="sm" onClick={() => handleViewDetails(spot.id, spot.type)}>
+                                <Navigation className="w-3 h-3 mr-1" />
+                                Visit
+                              </Button>
                             </div>
-                            <Button variant="outline" size="sm">
-                              <Navigation className="w-3 h-3 mr-1" />
-                              Visit
-                            </Button>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No popular attractions listed for this location.</p>
+                      )}
                     </div>
-                    {!showAllViewpoints && locationDetails.popularSpots.length > 6 && (
+                    {!showAllViewpoints && locationDetails.popularSpots && locationDetails.popularSpots.length > 6 && (
                       <Button
                         variant="outline"
                         onClick={() => setShowAllViewpoints(true)}
@@ -361,43 +455,47 @@ export default function NainitalDetailsPage() {
                   <div>
                     <h3 className="font-semibold mb-4">Recommended Hotels</h3>
                     <div className="grid gap-4">
-                      {locationDetails.hotels.slice(0, showAllHotels ? locationDetails.hotels.length : 3).map((hotel, index) => (
-                        <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h4 className="font-medium text-sm">{hotel.name}</h4>
-                                <div className="flex items-center space-x-1">
-                                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs">{hotel.rating}</span>
+                      {locationDetails.hotels && locationDetails.hotels.length > 0 ? (
+                        locationDetails.hotels.slice(0, showAllHotels ? locationDetails.hotels.length : 3).map((hotel, index) => (
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <h4 className="font-medium text-sm">{hotel.name}</h4>
+                                  <div className="flex items-center space-x-1">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs">{hotel.rating}</span>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-2">{hotel.description}</p>
+                                <div className="flex items-center space-x-4 text-xs mb-2">
+                                  <span className="text-muted-foreground">{hotel.distance}</span>
+                                  <span className="text-primary font-medium">{hotel.price}/night</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {hotel.features && hotel.features.map((feature, idx) => (
+                                    <Badge key={idx} variant="secondary" className="text-xs py-0 px-2">
+                                      {feature}
+                                    </Badge>
+                                  ))}
                                 </div>
                               </div>
-                              <p className="text-xs text-muted-foreground mb-2">{hotel.description}</p>
-                              <div className="flex items-center space-x-4 text-xs mb-2">
-                                <span className="text-muted-foreground">{hotel.distance}</span>
-                                <span className="text-primary font-medium">{hotel.price}/night</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {hotel.features.map((feature, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs py-0 px-2">
-                                    {feature}
-                                  </Badge>
-                                ))}
-                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleBookHotel(hotel.id)}
+                              >
+                                <Home className="w-3 h-3 mr-1" />
+                                Book
+                              </Button>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleBookHotel(hotel.id)}
-                            >
-                              <Home className="w-3 h-3 mr-1" />
-                              Book
-                            </Button>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No recommended hotels listed for this location.</p>
+                      )}
                     </div>
-                    {!showAllHotels && locationDetails.hotels.length > 3 && (
+                    {!showAllHotels && locationDetails.hotels && locationDetails.hotels.length > 3 && (
                       <Button
                         variant="outline"
                         onClick={() => setShowAllHotels(true)}
@@ -410,7 +508,7 @@ export default function NainitalDetailsPage() {
                 </TabsContent>
 
                 <TabsContent value="activities" className="space-y-6 mt-6">
-                  {locationDetails.boatingPoints && locationDetails.boatingPoints.length > 0 && (
+                  {locationDetails.boatingPoints && locationDetails.boatingPoints.length > 0 ? (
                     <div>
                       <h3 className="font-semibold mb-4">Boating Points & Activities</h3>
                       <div className="space-y-4">
@@ -429,7 +527,7 @@ export default function NainitalDetailsPage() {
                             <div className="mt-3">
                               <span className="font-medium text-xs">Rates:</span>
                               <div className="flex flex-wrap gap-2 mt-1">
-                                {Object.entries(point.rates).map(([type, rate]) => (
+                                {Object.entries(point.rates || {}).map(([type, rate]) => (
                                   <Badge key={type} variant="outline" className="text-xs">
                                     {type}: {rate}
                                   </Badge>
@@ -439,17 +537,17 @@ export default function NainitalDetailsPage() {
                             <div className="mt-2">
                               <span className="font-medium text-xs">Views:</span>
                               <span className="text-xs text-muted-foreground ml-1">
-                                {point.views.join(", ")}
+                                {point.views ? point.views.join(", ") : "N/A"}
                               </span>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  )}
-                  {(!locationDetails.boatingPoints || locationDetails.boatingPoints.length === 0) && (
+                  ) : (
                       <p className="text-muted-foreground">No specific boating activities listed for this location.</p>
                   )}
+                  {/* You can add more activity types here from locationsData if available */}
                 </TabsContent>
               </Tabs>
             </div>
@@ -479,17 +577,17 @@ export default function NainitalDetailsPage() {
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">From Delhi:</span>
                           <span className="font-medium">
-                            {locationDetails.routes.find(r => r.mode.includes("Delhi"))?.distance || "N/A"} /
-                            {locationDetails.routes.find(r => r.mode.includes("Delhi"))?.duration || "N/A"}
+                            {locationDetails.routes && locationDetails.routes.find(r => r.mode.includes("Delhi"))?.distance || "N/A"} /
+                            {locationDetails.routes && locationDetails.routes.find(r => r.mode.includes("Delhi"))?.duration || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Best Season:</span>
-                          <span>{locationDetails.bestTime}</span>
+                          <span>{locationDetails.bestTime || "N/A"}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Annual Visitors:</span>
-                          <span className="text-green-600">500K+</span> {/* Still hardcoded as it wasn't in dynamic data */}
+                          <span className="text-green-600">{locationDetails.annualVisitors ? locationDetails.annualVisitors.toLocaleString() : "N/A"}</span>
                         </div>
                       </div>
                     </div>
