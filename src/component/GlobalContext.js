@@ -142,7 +142,7 @@ const GlobalProvider = ({ children }) => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [focusArea, setFocusArea] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
-  const [selectedDetailType, setSelectedDetailType] = useState("hotel");
+  const [selectedDetailType, setSelectedDetailType] = useState(" ");
 
   // UI state
   const [showAIChat, setShowAIChat] = useState(false);
@@ -220,11 +220,12 @@ const GlobalProvider = ({ children }) => {
     setSelectedCategory('');
     setFocusArea('');
     setSelectedItemId('');
-    setSelectedDetailType('hotel');
+    setSelectedDetailType('');
     setShowAIChat(false);
     setShowMobileMenu(false);
     setSelectedLocationId(null); // Clear selected location ID on logout
 
+    
     // Remove authentication tokens or other sensitive data from localStorage
     localStorage.removeItem('authToken'); // Example
     localStorage.removeItem('userPreferences'); // Example

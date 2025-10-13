@@ -143,6 +143,7 @@ export default function NainitalDetailsPage() {
     return (
       <div className="flex justify-center items-center min-h-screen text-red-600">
         Error: {error}
+        <Button variant="link" onClick={handleBack}>Go Back</Button>         
       </div>
     );
   }
@@ -151,6 +152,8 @@ export default function NainitalDetailsPage() {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-600">
         No location data available.
+        <Button variant="link" onClick={handleBack}>Go Back</Button>
+                   
       </div>
     );
   }
@@ -180,7 +183,11 @@ export default function NainitalDetailsPage() {
     <div
       className="min-h-screen"
       style={{
-        background: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('${mainBackgroundImage}') center/cover fixed`,
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('${mainBackgroundImage}')`,
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
         backgroundColor: '#f9fafb'
       }}
     >
@@ -508,50 +515,69 @@ export default function NainitalDetailsPage() {
                 </TabsContent>
 
                 <TabsContent value="activities" className="space-y-6 mt-6">
-                  {locationDetails.boatingPoints && locationDetails.boatingPoints.length > 0 ? (
-                    <div>
-                      <h3 className="font-semibold mb-4">Boating Points & Activities</h3>
-                      <div className="space-y-4">
-                        {locationDetails.boatingPoints.map((point, index) => (
-                          <div key={index} className="border rounded-lg p-4 bg-blue-50/50">
-                            <h4 className="font-medium text-sm mb-2">{point.name}</h4>
-                            <p className="text-xs text-muted-foreground mb-3">{point.description}</p>
-                            <div className="grid md:grid-cols-2 gap-4 text-xs">
-                              <div>
-                                <span className="font-medium">Location:</span> {point.location}
+                      {locationDetails.boatingPoints && locationDetails.boatingPoints.length > 0 ? (
+                          <div>
+                              <h3 className="font-semibold mb-4">Boating Points & Activities</h3>
+                              <div className="space-y-4">
+                                  {locationDetails.boatingPoints.map((point, index) => (
+                                      <div key={index} className="border rounded-lg p-4 bg-blue-50/50 shadow-sm">
+                                          <h4 className="font-medium text-sm mb-2">{point.name}</h4>
+                                          <p className="text-xs text-muted-foreground mb-3">{point.description}</p>
+                                          <div className="grid md:grid-cols-2 gap-4 text-xs">
+                                              <div>
+                                                  <span className="font-medium">Location:</span> {point.location}
+                                              </div>
+                                              <div>
+                                                  <span className="font-medium">Timings:</span> {point.timings}
+                                              </div>
+                                          </div>
+                                          <div className="mt-3">
+                                              <span className="font-medium text-xs">Rates:</span>
+                                              <div className="flex flex-wrap gap-2 mt-1">
+                                                  {Object.entries(point.rates || {}).map(([type, rate]) => (
+                                                      <Badge key={type} variant="outline" className="text-xs">
+                                                          {type}: {rate}
+                                                      </Badge>
+                                                  ))}
+                                              </div>
+                                          </div>
+                                          <div className="mt-2">
+                                              <span className="font-medium text-xs">Views:</span>
+                                              <span className="text-xs text-muted-foreground ml-1">
+                                                  {point.views ? point.views.join(", ") : "N/A"}
+                                              </span>
+                                          </div>
+                                      </div>
+                                  ))}
                               </div>
-                              <div>
-                                <span className="font-medium">Timings:</span> {point.timings}
-                              </div>
-                            </div>
-                            <div className="mt-3">
-                              <span className="font-medium text-xs">Rates:</span>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {Object.entries(point.rates || {}).map(([type, rate]) => (
-                                  <Badge key={type} variant="outline" className="text-xs">
-                                    {type}: {rate}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="mt-2">
-                              <span className="font-medium text-xs">Views:</span>
-                              <span className="text-xs text-muted-foreground ml-1">
-                                {point.views ? point.views.join(", ") : "N/A"}
-                              </span>
-                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                      <p className="text-muted-foreground">No specific boating activities listed for this location.</p>
-                  )}
-                  {/* You can add more activity types here from locationsData if available */}
+                      ) : (
+                          <p className="text-muted-foreground">No specific boating activities listed for this location.</p>
+                      )}
+                      {/* You can add more activity types here from locationsData if available */}
+                      {locationDetails.otherActivities && locationDetails.otherActivities.length > 0 && (
+                          <div className="mt-6">
+                              <h3 className="font-semibold mb-4">Other Adventures & Activities</h3>
+                              <div className="grid md:grid-cols-2 gap-4">
+                                  {locationDetails.otherActivities.map((activity, index) => (
+                                      <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 shadow-sm">
+                                          <div className="flex items-start space-x-3">
+                                              <Info className="w-5 h-5 text-primary mt-1 flex-shrink-0" /> {/* Generic icon for now */}
+                                              <div>
+                                                  <h4 className="font-medium text-sm mb-1">{activity.name}</h4>
+                                                  <p className="text-xs text-muted-foreground mb-2">{activity.description}</p>
+                                                  {activity.price && <p className="text-xs font-medium">Price: {activity.price}</p>}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      )}
                 </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+            </Tabs>
+        </div>
+    </div>
 
           {/* Quick Actions Sidebar */}
           <div className="lg:col-span-1">

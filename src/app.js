@@ -29,7 +29,7 @@ function App(){
                     <Route path="/listings/:id" element={<ListingDetail />} />
                     <Route path="/location-details/:locationId" element={<NainitalDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
-                    <Route path="/place-details/:id" element={<PlaceDetailsPage />} />
+                    <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>
