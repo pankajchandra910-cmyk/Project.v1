@@ -135,7 +135,7 @@ const GlobalProvider = ({ children }) => {
 
   // New state for currently selected location ID for details page
   const [selectedLocationId, setSelectedLocationId] = useState(null);
-
+   const [locationDetails, setLocationDetails] = useState(null);
 
   // Search and selection
   const [searchQuery, setSearchQuery] = useState("");
@@ -224,7 +224,7 @@ const GlobalProvider = ({ children }) => {
     setShowAIChat(false);
     setShowMobileMenu(false);
     setSelectedLocationId(null); // Clear selected location ID on logout
-
+    setLocationDetails(null)
     
     // Remove authentication tokens or other sensitive data from localStorage
     localStorage.removeItem('authToken'); // Example
@@ -281,6 +281,7 @@ const GlobalProvider = ({ children }) => {
     showAIChat, setShowAIChat,
     showMobileMenu, setShowMobileMenu,
     isMobile,
+    locationDetails, setLocationDetails
   };
 
   return (

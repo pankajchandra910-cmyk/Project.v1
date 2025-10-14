@@ -11,6 +11,7 @@ import  OwnerDashboard  from "./pages/OwnerDashboard";
 import  ListingDetail  from './component/ListingDetail';
 import  NainitalDetailsPage  from './pages/NainitalDetailsPage';
 import PlaceDetailsPage from "./pages/PlaceDetailsPage";
+import MapViewPage from "./pages/MapViewPage";
 
 
 function App(){
@@ -30,6 +31,7 @@ function App(){
                     <Route path="/location-details/:locationId" element={<NainitalDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
+                    <Route path="/map-view/:focusId" element={<MapViewPage/>} /> 
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>

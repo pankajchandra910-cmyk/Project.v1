@@ -62,7 +62,7 @@ const iconMap = {
 export default function PlaceDetailsPage() {
   const navigate = useNavigate();
   const { placeId } = useParams(); // Get placeId from the URL (e.g., /place-details/:placeId)
-  const { setSelectedItemId, setSelectedDetailType } = useContext(GlobalContext);
+  const { setSelectedItemId, setSelectedDetailType ,setFocusArea} = useContext(GlobalContext);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [placeData, setPlaceData] = useState(null); // State to hold dynamic place data
@@ -94,12 +94,14 @@ export default function PlaceDetailsPage() {
     navigate(-1); // Go back to the previous page in history
   }, [navigate]);
 
-  const handleGetDirections = useCallback((locationName) => {
-    // Implement your navigation to a directions page or external map
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(locationName)}`, '_blank');
-    // Or navigate to an internal directions page:
-    // navigate(`/directions?to=${encodeURIComponent(locationName)}`);
-  }, []);
+  const handleGetDirections = useCallback((lat, lng, name) => {
+    // Determine the focus area for the map. You might want to use the main location
+    // or the specific place's parent location if available in your data.
+    // For now, let's use the placeId itself as the focus area ID.
+    const focusId = placeId.toLowerCase().replace(/\s/g, '-');
+    setFocusArea(focusId);
+    navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
+  }, [navigate, setFocusArea, placeId]); // Added placeId to dependency array
 
   const handleViewDetails = useCallback((id, type) => {
     setSelectedItemId(id); // Set global context if needed for other components

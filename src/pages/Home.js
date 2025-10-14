@@ -46,7 +46,9 @@ export default function Home() {
     userType,
     isLoggedIn,
     profession,
-    setSelectedLocationId, 
+    setSelectedLocationId,
+    setFocusArea,
+    
   } = useContext(GlobalContext);
 
    const handleViewDetails = useCallback((id, type = "hotel") => {
@@ -106,6 +108,12 @@ export default function Home() {
     navigate(`/location-details/${locationId}`); // Navigate to the dynamic route
   }, [navigate, setSelectedLocationId]);
 
+  const handleGetDirections = useCallback((locationIdParam, lat, lng, name) => {
+    const focusId = locationIdParam.toLowerCase().replace(/\s/g, '-');
+    setFocusArea(focusId); // Set the focus area in context
+    navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
+  }, [navigate, setFocusArea]);
+
   return (
     <>
       <div className="min-h-screen bg-gray-50">
@@ -152,7 +160,7 @@ export default function Home() {
 
           {/* Enhanced Banners */}
           <section className="grid md:grid-cols-2 gap-6">
-            <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleExploreMore("Nainital")}>
+            <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"  onClick={() => handleGetDirections("nainital", 29.391775, 79.455979, "Nainital Lake")}>
               <div className="relative h-48">
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -174,7 +182,7 @@ export default function Home() {
               </div>
             </Card>
 
-            <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleExploreMore("Lakes")}>
+            <Card className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow" onClick={() =>handleGetDirections("bhimtal", 29.3503, 79.5539, "Bhimtal Lake")}>
               <div className="relative h-48">
                 <div
                   className="absolute inset-0 bg-cover bg-center"
