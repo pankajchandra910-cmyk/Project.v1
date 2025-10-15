@@ -1,14 +1,12 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
-
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
 import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { FAQSection } from "../component/FAQSection";
-import { locationsData } from "../assets/dummy";
-
+import { locationsData } from "../assets/dummy"; // Assuming this path is correct
 import {
   ArrowLeft,
   Star,
@@ -31,8 +29,12 @@ import {
   Users,
   Thermometer,
   Info,
+  ShoppingCart, // Added for 'otherActivities' if applicable
+  Utensils, // Added for 'localFood' if applicable
+  Footprints// For "Walk" in routes/activities
 } from "lucide-react";
 
+// Make sure this iconMap is comprehensive for all icons you intend to use as strings
 const iconMap = {
   Car: Car,
   Train: Train,
@@ -48,13 +50,15 @@ const iconMap = {
   Waves: Waves,
   Binoculars: Binoculars,
   Info: Info,
+  ShoppingCart: ShoppingCart, // Example for activities
+  Utensils: Utensils, // Example for local food
+  Walking: Footprints,
 };
 
 export default function NainitalDetailsPage() {
   const navigate = useNavigate();
   const { locationId } = useParams();
   const { setSelectedItemId, setSelectedDetailType, setFocusArea, locationDetails, setLocationDetails } = useContext(GlobalContext);
-
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllViewpoints, setShowAllViewpoints] = useState(false);
   const [showAllHotels, setShowAllHotels] = useState(false);
@@ -81,17 +85,15 @@ export default function NainitalDetailsPage() {
       setLoading(false);
       setLocationDetails(null);
     }
-  }, [locationId, setLocationDetails]); // Added setLocationDetails to dependency array
+  }, [locationId, setLocationDetails]);
 
   const nextImage = useCallback(() => {
-    // *** Correction here: Use locationDetails.gallery ***
     if (locationDetails && locationDetails.gallery && locationDetails.gallery.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % locationDetails.gallery.length);
     }
   }, [locationDetails]);
 
   const prevImage = useCallback(() => {
-    // *** Correction here: Use locationDetails.gallery ***
     if (locationDetails && locationDetails.gallery && locationDetails.gallery.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + locationDetails.gallery.length) % locationDetails.gallery.length);
     }
@@ -123,6 +125,9 @@ export default function NainitalDetailsPage() {
       adventure: `/place-details/${id}`,
       wildlife: `/place-details/${id}`,
       temple: `/place-details/${id}`,
+      "nature trail": `/place-details/${id}`, // Added for Sukhatal
+      "wildlife sanctuary": `/place-details/${id}`, // Added for Pangoot
+      "temple/ashram": `/place-details/${id}`, // Added for Kainchi Dham
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
@@ -158,24 +163,28 @@ export default function NainitalDetailsPage() {
     );
   }
 
-  // *** Correction here: Use locationDetails.gallery ***
   const displayImage = locationDetails.gallery[currentImageIndex];
   const mainBackgroundImage = locationDetails.gallery[0];
 
+  // Dynamically map icon strings to actual Lucide React components for 'whatToExpect'
   const whatToExpectItems = locationDetails.whatToExpect && locationDetails.whatToExpect.length > 0
     ? locationDetails.whatToExpect.map(item => ({
-      ...item,
-      icon: iconMap[item.icon] || Info
-    }))
-    : [
-      { icon: Mountain, title: "Scenic Beauty", desc: "Breathtaking views of surrounding hills" },
-      { icon: Camera, title: "Photography Hotspot", desc: "Capture stunning landscapes" },
-      { icon: Binoculars, title: "Explore Wildlife", desc: "Spot local fauna in natural habitats" },
-      { icon: Waves, title: "Water Activities", desc: "Boating, paddling, and lakeside relaxation" },
-    ].map(item => ({
-      ...item,
-      icon: item.icon
-    }));
+        ...item,
+        icon: iconMap[item.icon] || Info // Fallback to Info icon if not found
+      }))
+    : []; // Default to empty array if no data
+
+  // Dynamically map icon strings to actual Lucide React components for 'otherActivities'
+  // If 'otherActivities' items also have an 'icon' property, map it here.
+  // Assuming 'otherActivities' items might have an 'icon' or we can default one.
+  const otherActivitiesItems = locationDetails.otherActivities && locationDetails.otherActivities.length > 0
+    ? locationDetails.otherActivities.map(activity => ({
+        ...activity,
+        // Assuming activity objects might have an 'icon' property.
+        // If not, you might assign a default icon or derive one based on activity name.
+        icon: iconMap[activity.icon] || Info
+      }))
+    : [];
 
   return (
     <div
@@ -204,7 +213,6 @@ export default function NainitalDetailsPage() {
               alt={`${locationDetails.name} - Image ${currentImageIndex + 1}`}
               className="w-full h-full object-cover"
             />
-            {/* *** Correction here: Use locationDetails.gallery *** */}
             {locationDetails.gallery && locationDetails.gallery.length > 1 && (
               <>
                 <Button
@@ -224,7 +232,6 @@ export default function NainitalDetailsPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {/* *** Correction here: Use locationDetails.gallery *** */}
                   {locationDetails.gallery.map((_, index) => (
                     <div
                       key={index}
@@ -319,12 +326,13 @@ export default function NainitalDetailsPage() {
                     </div>
                   )}
 
+                  {/* What to Expect Section */}
                   {whatToExpectItems && whatToExpectItems.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">What to Expect</h3>
                       <div className="grid md:grid-cols-2 gap-4">
                         {whatToExpectItems.map((item, index) => {
-                          const IconComponent = item.icon;
+                          const IconComponent = item.icon; // Already mapped to component above
                           return (
                             <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
                               <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
@@ -376,7 +384,7 @@ export default function NainitalDetailsPage() {
                     <div className="space-y-4">
                       {locationDetails.routes && locationDetails.routes.length > 0 ? (
                         locationDetails.routes.map((route, index) => {
-                          const IconComponent = iconMap[route.icon] || Car;
+                          const IconComponent = iconMap[route.icon] || Car; // Use iconMap here
                           return (
                             <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
                               <div className="flex items-start space-x-3">
@@ -407,7 +415,7 @@ export default function NainitalDetailsPage() {
                     <div className="grid gap-4">
                       {locationDetails.popularSpots && locationDetails.popularSpots.length > 0 ? (
                         locationDetails.popularSpots.slice(0, showAllViewpoints ? locationDetails.popularSpots.length : 6).map((spot, index) => (
-                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer" >
+                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 cursor-pointer" onClick={() => handleViewDetails(spot.id, spot.type)}>
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 mb-1">
@@ -430,7 +438,7 @@ export default function NainitalDetailsPage() {
                                   ))}
                                 </div>
                               </div>
-                              <Button variant="outline" size="sm" onClick={() => handleViewDetails(spot.id, spot.type)}>
+                              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(spot.id, spot.type); }}>
                                 <Navigation className="w-3 h-3 mr-1" />
                                 Visit
                               </Button>
@@ -549,22 +557,27 @@ export default function NainitalDetailsPage() {
                   ) : (
                     <p className="text-muted-foreground">No specific boating activities listed for this location.</p>
                   )}
-                  {locationDetails.otherActivities && locationDetails.otherActivities.length > 0 && (
+
+                  {/* Other Activities Section */}
+                  {otherActivitiesItems && otherActivitiesItems.length > 0 && (
                     <div className="mt-6">
                       <h3 className="font-semibold mb-4">Other Adventures & Activities</h3>
                       <div className="grid md:grid-cols-2 gap-4">
-                        {locationDetails.otherActivities.map((activity, index) => (
-                          <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 shadow-sm">
-                            <div className="flex items-start space-x-3">
-                              <Info className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                              <div>
-                                <h4 className="font-medium text-sm mb-1">{activity.name}</h4>
-                                <p className="text-xs text-muted-foreground mb-2">{activity.description}</p>
-                                {activity.price && <p className="text-xs font-medium">Price: {activity.price}</p>}
+                        {otherActivitiesItems.map((activity, index) => {
+                          const IconComponent = activity.icon; // Already mapped to component above
+                          return (
+                            <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 shadow-sm">
+                              <div className="flex items-start space-x-3">
+                                <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                                <div>
+                                  <h4 className="font-medium text-sm mb-1">{activity.name}</h4>
+                                  <p className="text-xs text-muted-foreground mb-2">{activity.description}</p>
+                                  {activity.price && <p className="text-xs font-medium">Price: {activity.price}</p>}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -583,7 +596,8 @@ export default function NainitalDetailsPage() {
                   <Button
                     className="w-full bg-primary hover:bg-primary/90"
                     size="lg"
-                    onClick={() => handleGetDirections(locationDetails.name)}
+                    // Pass actual lat/lng for directions if available, otherwise default
+                    onClick={() => handleGetDirections(locationDetails.lat, locationDetails.lng, locationDetails.name)}
                   >
                     <Navigation className="w-4 h-4 mr-2" />
                     Get Directions

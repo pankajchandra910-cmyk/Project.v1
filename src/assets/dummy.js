@@ -41,6 +41,191 @@
   }
 ];
 
+export const hotelDetailsData = {
+  "naina-devi-temple": {
+    id: "mountain-view-resort-bhimtal",
+    name: "Mountain View Resort Bhimtal",
+    location: "2km from Bhimtal Lake, Uttarakhand",
+    rating: 4.5,
+    reviewCount: 128,
+    price: "₹4,500",
+    priceNote: "per night",
+    checkInTime: "2:00 PM",
+    checkOutTime: "11:00 AM",
+    images: [
+      "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMHJvb20lMjBsdXh1cnl8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHBob3RlbCUyMHBvb2wlMjByZXNvcnR8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwaW50ZXJpb3J8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    description: "Luxury resort with spectacular lake views, modern amenities, and spa facilities. Perfect for families and couples seeking a peaceful mountain retreat with easy access to Bhimtal's attractions.",
+    amenities: [
+      { icon: "Wifi", name: "Free WiFi" },
+      { icon: "Car", name: "Free Parking" },
+      { icon: "Waves", name: "Swimming Pool" },
+      { icon: "Coffee", name: "Spa & Wellness" },
+      { icon: "Utensils", name: "Multi-cuisine Restaurant" },
+      { icon: "Shield", name: "24/7 Security" }
+    ],
+    roomTypes: [
+      {
+        name: "Standard Room",
+        price: "₹2,500",
+        features: ["Lake View", "AC", "TV", "WiFi"],
+        available: true
+      },
+      {
+        name: "Deluxe Room",
+        price: "₹3,500",
+        features: ["Lake View", "Balcony", "AC", "TV", "WiFi", "Mini Bar"],
+        available: true
+      },
+      {
+        name: "Suite",
+        price: "₹5,500",
+        features: ["Panoramic View", "Separate Living Area", "Jacuzzi", "All Premium Amenities"],
+        available: false
+      }
+    ],
+    nearbyAttractions: [ // Renamed from 'nearby' to align with PlaceDetails structure
+      { id: "bhimtal-lake", name: "Bhimtal Lake", distance: "2km", type: "lake", rating: 4.6 },
+      { id: "naukuchiatal", name: "Naukuchiatal", distance: "8km", type: "lake", rating: 4.5 },
+      { id: "tiffin-top-trek", name: "Tiffin Top Trek", distance: "12km", type: "viewpoint", rating: 4.7 },
+      { id: "naina-peak-trek", name: "Naina Peak Trek", distance: "15km", type: "trek", rating: 4.8 }
+    ],
+    contact: {
+      phone: "+91 9876543210",
+      email: "info@mountainviewresort.com"
+    },
+    policies: [
+      "Check-in: 2:00 PM | Check-out: 11:00 AM",
+      "Cancellation: Free cancellation up to 24 hours before arrival",
+      "Children: Children under 12 stay free with existing bedding",
+      "Pets: Pet-friendly rooms available on request"
+    ],
+    reviews: [
+        {
+            author: "Rajesh Kumar",
+            rating: 5,
+            date: "2 days ago",
+            comment: "Amazing stay with beautiful lake views! The staff was very helpful and the food was excellent. Perfect location for exploring Bhimtal and nearby attractions."
+        },
+        {
+            author: "Priya Sharma",
+            rating: 4,
+            date: "1 week ago",
+            comment: "Great mountain resort experience. Room was clean and comfortable. The spa facilities were relaxing after a day of trekking."
+        }
+    ],
+    faqs: [
+      {
+        question: "Is there a swimming pool?",
+        answer: "Yes, the resort has a spacious outdoor swimming pool accessible to all guests."
+      },
+      {
+        question: "Do rooms have lake views?",
+        answer: "Many of our rooms offer spectacular lake views. Please specify your preference when booking."
+      },
+      {
+        question: "Is parking available?",
+        answer: "Yes, we provide ample free parking for all our guests."
+      },
+      {
+        question: "Are pets allowed?",
+        answer: "We have designated pet-friendly rooms available upon request. Additional charges may apply."
+      }
+    ]
+  },
+  "the-naini-retreat": {
+    id: "the-naini-retreat",
+    name: "The Naini Retreat",
+    location: "Ayarpata, Nainital, Uttarakhand",
+    rating: 4.7,
+    reviewCount: 250,
+    price: "₹6,800",
+    priceNote: "per night",
+    checkInTime: "3:00 PM",
+    checkOutTime: "12:00 PM",
+    images: [
+      "https://images.unsplash.com/photo-1582719424888-8255018e6e58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwbHV4dXJ5fGVufDF8fHx8MTc1NzYxNjk5MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1549294413-26f195200c8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMHJlc3RhdXJhbnQlMjBudXhlcnl8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1563299797-0bfe122a6d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwcG9vbHxlbnwxfHx8MTczNzAzODQwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+    ],
+    description: "An erstwhile residence of the Maharaja of Pilibhit, The Naini Retreat is a luxury heritage hotel offering majestic views of the Naini Lake and surrounding mountains. Experience colonial charm with modern comforts.",
+    amenities: [
+      { icon: "Wifi", name: "Free WiFi" },
+      { icon: "Car", name: "Valet Parking" },
+      { icon: "Waves", name: "Heated Swimming Pool" },
+      { icon: "Coffee", name: "Spa & Massage" },
+      { icon: "Utensils", name: "Fine Dining Restaurant" },
+      { icon: "Users", name: "Conference Facilities" }
+    ],
+    roomTypes: [
+      {
+        name: "Heritage Room",
+        price: "₹6,800",
+        features: ["Lake View", "Antique Decor", "Heater", "TV", "WiFi"],
+        available: true
+      },
+      {
+        name: "Superior Room",
+        price: "₹8,500",
+        features: ["Garden View", "Balcony", "Modern Amenities", "Mini Bar"],
+        available: true
+      },
+      {
+        name: "Maharaja Suite",
+        price: "₹15,000",
+        features: ["Panoramic Lake View", "Separate Living Area", "Fireplace", "Personal Butler"],
+        available: true
+      }
+    ],
+    nearbyAttractions: [
+      { id: "naini-lake", name: "Naini Lake", distance: "1km", type: "lake", rating: 4.7 },
+      { id: "mall-road", name: "Mall Road", distance: "1.5km", type: "market", rating: 4.5 },
+      { id: "naina-devi-temple", name: "Naina Devi Temple", distance: "2km", type: "temple", rating: 4.7 }
+    ],
+    contact: {
+      phone: "+91 7654321098",
+      email: "reservations@nainiretreat.com"
+    },
+    policies: [
+      "Check-in: 3:00 PM | Check-out: 12:00 PM",
+      "Cancellation: 48-hour free cancellation policy",
+      "Children: Kids Club available",
+      "Pets: Not allowed"
+    ],
+    reviews: [
+        {
+            author: "Ananya Singh",
+            rating: 5,
+            date: "3 days ago",
+            comment: "Absolutely stunning property with breathtaking views of Naini Lake. The service was impeccable, and the heritage feel added so much charm to our stay."
+        },
+        {
+            author: "Vikram Mehta",
+            rating: 4,
+            date: "2 weeks ago",
+            comment: "A wonderful experience! The food was delicious, and the staff went above and beyond to make us comfortable. Highly recommended for a luxurious getaway."
+        }
+    ],
+    faqs: [
+      {
+        question: "Is breakfast included?",
+        answer: "Yes, a complimentary buffet breakfast is included with all room bookings."
+      },
+      {
+        question: "Do you have a shuttle service?",
+        answer: "We offer shuttle services to Mall Road and other local attractions. Please inquire at the reception."
+      },
+      {
+        question: "Are there vegetarian food options?",
+        answer: "Our multi-cuisine restaurant offers a wide array of vegetarian and vegan dishes."
+      }
+    ]
+  }
+};
+
 export const viewpoints = [
   { id: "1", name: "Tiffin Top (Dorothy's Seat)", distance: "4km", rating: 4.7, description: "Panoramic views, 4km trek from Nainital" },
   { id: "2", name: "Snow View Point", distance: "2.5km", rating: 4.6, description: "Cable car access, Himalayan vistas" },
@@ -213,10 +398,10 @@ export const locationsData = {
       "Boating and Trekking opportunities"
     ],
     whatToExpect: [
-      "Pleasant weather in summer",
-      "Charming colonial buildings",
-      "Crowded during peak season",
-      "Lush green hills and serene lakes"
+      { icon: "Mountain", title: "Scenic Beauty", desc: "Breathtaking views of surrounding hills" },
+      { icon: "Camera", title: "Photography Hotspot", desc: "Capture stunning landscapes" },
+      { icon: "Binoculars", title: "Explore Wildlife", desc: "Spot local fauna in natural habitats" },
+      { icon: "Waves", title: "Water Activities", desc: "Boating, paddling, and lakeside relaxation" }
     ],
     tips: [
       "Book accommodations in advance during peak season.",
@@ -353,11 +538,11 @@ export const locationsData = {
       "Local Honey varieties"
     ],
     otherActivities: [
-      "Shopping on Mall Road",
-      "Cable Car Ride to Snow View Point",
-      "Boating in Naini Lake",
-      "Trekking to Tiffin Top or Naina Peak",
-      "Visiting Naina Devi Temple"
+      { name: "Shopping on Mall Road", icon: "ShoppingCart", description: "Browse local handicrafts and souvenirs." }, // Added icon
+      { name: "Cable Car Ride to Snow View Point", icon: "Mountain", description: "Enjoy panoramic views via a thrilling cable car ride." }, // Added icon
+      { name: "Boating in Naini Lake", icon: "Waves", description: "Classic experience on the pristine Naini Lake." }, // Added icon
+      { name: "Trekking to Tiffin Top or Naina Peak", icon: "Walking", description: "Adventure treks with rewarding views." }, // Added icon
+      { name: "Visiting Naina Devi Temple", icon: "Info", description: "Seek blessings at this revered Shakti Peeth." } // Added icon
     ],
     faqs: [
       { question: "What's the best time to visit Nainital?", answer: "March-June (15-25°C) for pleasant weather. Avoid monsoons (July-August) due to landslides. Winter (Dec-Feb) is cold but offers snow views." },
@@ -396,10 +581,10 @@ export const locationsData = {
     "Variety of water activities"
     ],
     whatToExpect: [
-    "Calm and tranquil environment",
-    "Good for family outings",
-    "Limited nightlife options",
-    "Lush greenery around the lake"
+      { icon: "Waves", title: "Calm Lake", desc: "Serene waters perfect for relaxation" }, // Example icon
+      { icon: "TreePine", title: "Nature Walks", desc: "Explore lush trails around the lake" }, // Example icon
+      { icon: "Users", title: "Family Fun", desc: "Ideal for family picnics and activities" }, // Example icon
+      { icon: "Clock", title: "Quiet Escape", desc: "A peaceful retreat from city bustle" } // Example icon
     ],
     tips: [
     "Visit the Bhimtal Island aquarium.",
@@ -473,10 +658,10 @@ export const locationsData = {
     "Bal Mithai"
     ],
     otherActivities: [
-    "Bird watching",
-    "Nature walks",
-    "Visiting Sattal (Seven Lakes)",
-    "Butterfly Research Centre"
+      { name: "Bird watching", icon: "Binoculars", description: "Spot various avian species around the lake." }, // Added icon
+      { name: "Nature walks", icon: "Walking", description: "Explore the surrounding forests and trails." }, // Added icon
+      { name: "Visiting Sattal (Seven Lakes)", icon: "Waves", description: "A cluster of seven interconnected freshwater lakes." }, // Added icon
+      { name: "Butterfly Research Centre", icon: "Info", description: "Learn about various butterfly species." } // Added icon
     ],
     faqs: [
     { question: "What is Bhimtal known for?", answer: "Bhimtal is known for its large, pristine lake with an island in the middle, offering a peaceful environment for boating and nature walks." },
@@ -507,10 +692,10 @@ export const locationsData = {
   "Surrounded by lush forests"
   ],
   whatToExpect: [
-  "Quiet and calm atmosphere",
-  "Opportunities for nature walks",
-  "Limited commercial activities",
-  "Good for solitude and relaxation"
+    { icon: "Cloud", title: "Quiet and Calm", desc: "Experience a tranquil atmosphere perfect for relaxation." },
+    { icon: "TreePine", title: "Nature Walks", desc: "Enjoy serene strolls amidst lush greenery and fresh air." },
+    { icon: "Camera", title: "Photography", desc: "Capture the serene landscapes and unique seasonal changes." },
+    { icon: "Binoculars", title: "Bird Watching", desc: "Spot various bird species in their natural habitat." }
   ],
   tips: [
   "Carry your camera for beautiful shots.",
@@ -538,9 +723,10 @@ export const locationsData = {
   "Local snacks and tea from small vendors"
   ],
   otherActivities: [
-  "Bird Watching",
-  "Nature Photography",
-  "Picnics"
+    { name: "Bird Watching", icon: "Binoculars", description: "Observe various bird species in their natural habitat." },
+    { name: "Nature Photography", icon: "Camera", description: "Capture the serene landscapes and wildlife." },
+    { name: "Picnics", icon: "Umbrella", description: "Enjoy a peaceful meal amidst nature." },
+    { name: "Meditation", icon: "Lotus", description: "Find solitude and peace in the tranquil surroundings." }
   ],
   faqs: [
   { question: "What is special about Sukhatal?", answer: "Sukhatal is a unique seasonal lake. It's known for its peaceful environment and as a place where Naini Lake is believed to have originated from an underground channel." },
@@ -570,10 +756,10 @@ export const locationsData = {
   "Opportunity for peaceful treks"
   ],
   whatToExpect: [
-  "Cool and crisp mountain air",
-  "Quiet and reverent atmosphere",
-  "Breathtaking natural beauty",
-  "Good for photography"
+    { icon: "Mountain", title: "Majestic Views", desc: "Breathtaking panoramic views of the Himalayan ranges." },
+    { icon: "Cloud", title: "Spiritual Calm", desc: "Experience a serene and meditative atmosphere." },
+    { icon: "Camera", title: "Sunrise Spectacle", desc: "Witness stunning sunrises over the mountains." },
+    { icon: "Walking", title: "Peaceful Treks", desc: "Enjoy gentle walks and short treks in nature." }
   ],
   tips: [
   "Visit early morning for sunrise views.",
@@ -601,9 +787,10 @@ export const locationsData = {
   "Simple local meals at small eateries"
   ],
   otherActivities: [
-  "Trekking to nearby spots",
-  "Photography of landscapes",
-  "Meditation and spiritual retreats"
+    { name: "Trekking to nearby spots", icon: "Walking", description: "Explore the surrounding hills and trails." },
+    { name: "Photography of landscapes", icon: "Camera", description: "Capture stunning views of the Himalayas and valleys." },
+    { name: "Meditation and spiritual retreats", icon: "Lotus", description: "Find peace and connect with nature at the temple." },
+    { name: "Sunrise Viewing", icon: "Sun", description: "Witness a spectacular sunrise over the snow-capped peaks." }
   ],
   faqs: [
   { question: "What is the main attraction of Brahmsthali?", answer: "The Brahma Temple and the breathtaking panoramic views of the Himalayan range, especially at sunrise." },
@@ -633,10 +820,10 @@ export const locationsData = {
   "Panoramic views of Nainital and Himalayas"
   ],
   whatToExpect: [
-  "Moderate trekking difficulty",
-  "Refreshing mountain air",
-  "Beautiful photographic opportunities",
-  "Can be crowded during peak season"
+    { icon: "Walking", title: "Moderate Trekking", desc: "Enjoy diverse trails ranging from easy walks to moderate climbs." },
+    { icon: "Wind", title: "Fresh Mountain Air", desc: "Breathe in crisp, clean air while surrounded by nature." },
+    { icon: "Camera", title: "Stunning Photography", desc: "Capture picturesque landscapes and panoramic vistas." },
+    { icon: "Users", title: "Popular Trails", desc: "Experience well-trodden paths that can be bustling during peak times." }
   ],
   tips: [
   "Wear comfortable trekking shoes.",
@@ -664,10 +851,12 @@ export const locationsData = {
   "Small food stalls at viewpoints selling tea, coffee, and quick snacks."
   ],
   otherActivities: [
-  "Horse riding to Tiffin Top",
-  "Photography walks",
-  "Bird watching during treks"
+    { name: "Horse riding to Tiffin Top", icon: "Horse", description: "Enjoy a unique way to reach Tiffin Top." },
+    { name: "Photography walks", icon: "Camera", description: "Explore and capture the natural beauty of the trails." },
+    { name: "Bird watching during treks", icon: "Binoculars", description: "Spot various bird species in the dense forests." },
+    { name: "Picnic at scenic spots", icon: "Umbrella", description: "Relax and enjoy a meal with breathtaking views." }
   ],
+
   faqs: [
   { question: "What is the Naini Track?", answer: "Naini Track refers to the network of popular walking and trekking trails around Nainital that lead to various viewpoints and scenic spots." },
   { question: "How long does it take to trek to Tiffin Top?", answer: "It typically takes about 1-1.5 hours to trek to Tiffin Top from Nainital (one way), depending on your pace." }
@@ -696,10 +885,10 @@ export const locationsData = {
   "Beautiful natural surroundings"
   ],
   whatToExpect: [
-  "Devotional atmosphere",
-  "Large crowds during festivals (June 15th)",
-  "Opportunities for meditation",
-  "Picturesque valley and river views"
+        { icon: "Temple", title: "Devotional Atmosphere", desc: "Experience a spiritual and devotional ambiance." },
+        { icon: "Users", title: "Crowds during Festivals", desc: "Be prepared for large gatherings, especially on June 15th." },
+        { icon: "Meditation", title: "Meditation Opportunities", desc: "Find quiet spots for introspection and meditation." },
+        { icon: "Mountain", title: "Picturesque Views", desc: "Enjoy beautiful valley and river views." }
   ],
   tips: [
   "Dress modestly when visiting the temple.",
@@ -741,10 +930,10 @@ export const locationsData = {
   "Local snacks from nearby shops"
   ],
   otherActivities: [
-  "Participate in Aarti and prayers",
-  "Explore the scenic Kosi Valley",
-  "Photography of the temple architecture"
-  ],
+      { name: "Participate in Aarti and prayers", icon: "Pray", description: "Engage in the spiritual rituals and prayers at the ashram." },
+      { name: "Explore the scenic Kosi Valley", icon: "Mountain", description: "Take walks around the beautiful valley surrounding the dham." },
+      { name: "Photography of the temple architecture", icon: "Camera", description: "Capture the unique architecture and serene surroundings of the temple." }
+    ],
   faqs: [
   { question: "Who founded Kainchi Dham?", answer: "Kainchi Dham was founded by the revered spiritual guru Neem Karoli Baba." },
   { question: "What is the best time to visit Kainchi Dham?", answer: "It can be visited throughout the year, but avoid June 15th if you prefer smaller crowds, as it's the annual Bhandara (feast) day." }
@@ -773,10 +962,10 @@ export const locationsData = {
   "Beautiful views of the lake"
   ],
   whatToExpect: [
-  "Crowded, especially during festivals",
-  "Devotional atmosphere",
-  "Opportunity to offer prayers and seek blessings",
-  "Easy accessibility from Mall Road"
+      { icon: "Users", title: "Crowded during Festivals", desc: "Expect large crowds, especially during auspicious festivals." },
+      { icon: "Temple", title: "Devotional Atmosphere", desc: "Immerse yourself in a strong spiritual and devotional environment." },
+      { icon: "Pray", title: "Prayers and Blessings", desc: "Opportunity to offer prayers and seek blessings from the goddess." },
+      { icon: "Walk", title: "Easy Accessibility", desc: "Conveniently located and easily accessible from Mall Road." }
   ],
   tips: [
   "Remove your shoes before entering the temple.",
@@ -804,8 +993,8 @@ export const locationsData = {
   "Prasad and small devotional offerings"
   ],
   otherActivities: [
-  "Shopping for religious items",
-  "Strolling on Mall Road after the visit"
+  { name: "Shopping for religious items", icon: "Shop", description: "Browse and purchase religious artifacts and souvenirs near the temple." },
+  { name: "Strolling on Mall Road after the visit", icon: "Walk", description: "Enjoy a leisurely walk along the bustling Mall Road after your temple visit." }
   ],
   faqs: [
   { question: "What is the history of Naina Devi Temple?", answer: "The temple is believed to be one of the 51 Shakti Peeths, where the eyes (Nain) of Goddess Sati fell after Lord Shiva carried her body." },
@@ -835,11 +1024,11 @@ export const locationsData = {
   "Challenging but rewarding trek"
   ],
   whatToExpect: [
-  "Steep ascent in some sections",
-  "Cooler temperatures at the summit",
-  "Unparalleled natural beauty",
-  "Peaceful environment away from crowds"
-  ],
+      { icon: "Walking", title: "Steep Ascent", desc: "Be ready for challenging uphill sections during the trek." },
+      { icon: "Snow", title: "Cooler Temperatures", desc: "Expect significantly cooler weather at the summit." },
+      { icon: "Mountain", title: "Unparalleled Natural Beauty", desc: "Witness breathtaking landscapes and pristine nature." },
+      { icon: "Peace", title: "Peaceful Environment", desc: "Enjoy tranquility away from the usual tourist crowds." }
+    ],
   tips: [
   "Start the trek early morning to catch the sunrise.",
   "Wear sturdy trekking shoes and comfortable clothing.",
@@ -866,9 +1055,9 @@ export const locationsData = {
   "Packed lunches/snacks to carry on the trek."
   ],
   otherActivities: [
-  "Bird watching",
-  "Photography of landscapes and wildlife"
-  ],
+      { name: "Bird watching",icon: "Binoculars", description: "Spot various bird species in the dense forests along the trail." },
+      { name: "Photography of landscapes and wildlife", icon: "Camera", description: "Capture stunning panoramic views and occasional wildlife sightings." }
+    ],
   faqs: [
   { question: "Is China Peak suitable for beginners?", answer: "It's a moderately challenging trek. Beginners with good physical fitness can attempt it, but it's advisable to be prepared for uphill climbs." },
   { question: "What can I see from China Peak?", answer: "You can see panoramic views of Nainital town, Naini Lake, and a vast expanse of the snow-clad Himalayan peaks, including Nanda Devi." }
@@ -900,10 +1089,10 @@ export const locationsData = {
       "Valley viewpoints"
     ],
     whatToExpect: [
-      "Clear mountain views on a good day",
-      "Cooler temperatures due to higher elevation",
-      "Relatively quiet compared to central Nainital",
-      "Limited commercial establishments"
+      { icon: "Mountain", title: "Clear Mountain Views", desc: "Enjoy unobstructed views of the Himalayas on clear days." },
+      { icon: "Snow", title: "Cooler Temperatures", desc: "Experience cooler weather due to the higher elevation." },
+      { icon: "Peace", title: "Relatively Quiet", desc: "A peaceful escape compared to the more bustling areas of Nainital." },
+      { icon: "Shop", title: "Limited Commercial Establishments", desc: "Fewer shops or restaurants, offering a more natural experience." }
     ],
     tips: [
       "Visit early morning for sunrise views and clearer skies.",
@@ -955,8 +1144,8 @@ export const locationsData = {
       "Simple local snacks"
     ],
     otherActivities: [
-      "Stargazing on clear nights",
-      "Short walks around the viewpoint"
+      { name: "Stargazing on clear nights", icon: "Star", description: "Experience spectacular stargazing opportunities due to minimal light pollution." },
+      { name: "Short walks around the viewpoint", icon: "Walk", description: "Take leisurely short walks to explore the immediate surroundings of the viewpoint." }
     ],
     faqs: [
       {
@@ -994,11 +1183,11 @@ export const locationsData = {
       "Rich biodiversity",
       "Eco-friendly environment"
     ],
-    whatToExpect: [
-      "Opportunities to spot diverse bird species",
-      "Peaceful walks amidst dense forests",
-      "Cool and pleasant weather",
-      "A quiet escape from city life"
+   whatToExpect: [
+      { icon: "Bird", title: "Bird Spotting Opportunities", desc: "High chances of encountering a wide variety of bird species." },
+      { icon: "Walking", title: "Peaceful Forest Walks", desc: "Enjoy tranquil strolls through lush oak and pine forests." },
+      { icon: "Wind", title: "Cool and Pleasant Weather", desc: "Experience comfortable and refreshing temperatures." },
+      { icon: "Peace", title: "Quiet Escape", desc: "A serene retreat perfect for escaping urban hustle." }
     ],
     tips: [
       "Carry binoculars and a bird identification guide.",
@@ -1062,8 +1251,8 @@ export const locationsData = {
       "Freshly prepared local dishes"
     ],
     otherActivities: [
-      "Photography of flora and fauna",
-      "Village walks and interaction with locals"
+      { name: "Photography of flora and fauna", icon: "Camera", description: "Capture the rich plant and animal life of the region." },
+      { name: "Village walks and interaction with locals", icon: "Users", description: "Explore the charming village and engage with the local community." }
     ],
     faqs: [
       {

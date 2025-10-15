@@ -12,6 +12,7 @@ import  ListingDetail  from './component/ListingDetail';
 import  NainitalDetailsPage  from './pages/NainitalDetailsPage';
 import PlaceDetailsPage from "./pages/PlaceDetailsPage";
 import MapViewPage from "./pages/MapViewPage";
+import HotelDetailsPage from './pages/HotelDetailsPage';
 
 
 function App(){
@@ -32,6 +33,7 @@ function App(){
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
                     <Route path="/map-view/:focusId" element={<MapViewPage/>} /> 
+                    <Route path="/hotel-details/:hotelId" element={<HotelDetailsPage />} /> 
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>
