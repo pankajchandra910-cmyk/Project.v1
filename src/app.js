@@ -9,12 +9,15 @@ import SearchView from "./pages/SearchView";
 import ProfileView from "./pages/ProfileView";
 import  OwnerDashboard  from "./pages/OwnerDashboard"; 
 import  ListingDetail  from './component/ListingDetail';
-import  NainitalDetailsPage  from './pages/NainitalDetailsPage';
+import  LocationDetailsPage  from './pages/LocationDetailsPage';
 import PlaceDetailsPage from "./pages/PlaceDetailsPage";
 import MapViewPage from "./pages/MapViewPage";
-import HotelDetailsPage from './pages/HotelDetailsPage';
-
-
+import PopularDetailsPage from './pages/PopularDetailsPage';
+import BookingPage from './pages/BookingPage';
+import About from "./pages/About"; // Assuming you put them in the pages folder
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 function App(){
 
     return(
@@ -23,17 +26,23 @@ function App(){
                 <BrowserRouter>
                     <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/search" element={<SearchView/>} />
                     <Route path="/profile" element={<ProfileView/>} />
                     <Route path="/owner-dashboard/:profession" element={<OwnerDashboard />} />
                     <Route path="/listings/:id" element={<ListingDetail />} />
-                    <Route path="/location-details/:locationId" element={<NainitalDetailsPage />} />
+                    <Route path="/location-details/:locationId" element={<LocationDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
                     <Route path="/map-view/:focusId" element={<MapViewPage/>} /> 
-                    <Route path="/hotel-details/:hotelId" element={<HotelDetailsPage />} /> 
+                    <Route path="/popular-details/:popularId" element={<PopularDetailsPage/>} /> 
+                    <Route path="/book-item/:itemId" element={<BookingPage />} />
+                    
                     </Routes>
                 </BrowserRouter>
             </GlobalProvider>

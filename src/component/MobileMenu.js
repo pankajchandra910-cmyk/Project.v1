@@ -1,4 +1,3 @@
-// src/component/MobileMenu.jsx
 import React, { useContext, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "./GlobalContext";
@@ -14,7 +13,7 @@ import {
   BookOpen,
   LogOut,
   LogIn,
-  HomeIcon, // Added HomeIcon for dashboard navigation
+  Home as HomeIcon, // Renamed to HomeIcon to avoid conflict with default export
 } from "lucide-react";
 import { Button } from "./button";
 
@@ -25,7 +24,6 @@ export default function MobileMenu({ onClose, userType, profession }) {
     setIsLoggedIn,
     setShowAIChat,
     logout1
-    // Note: setShowMobileMenu is correctly managed via onClose prop, which updates global context
   } = useContext(GlobalContext);
 
   const menuRef = useRef(null);
@@ -59,12 +57,6 @@ export default function MobileMenu({ onClose, userType, profession }) {
     onClose();
   };
 
-  // const handleLogout = () => {
-    
-  //   // After logout, always redirect to login page
-  //   handleNavigation("/login");
-  // };
-
   const handleLogin = () => {
     handleNavigation("/login");
   };
@@ -75,14 +67,13 @@ export default function MobileMenu({ onClose, userType, profession }) {
 
   const handleDashboardNavigation = () => {
     if (userType === "owner") {
-      handleNavigation(`/owner-dashboard/${profession}`); // Simplified path
+      handleNavigation(`/owner-dashboard/${profession}`);
     } else if (userType === "user") {
-      handleNavigation("/profile"); // This is typically the user's main dashboard
+      handleNavigation("/profile");
     } else {
-      handleNavigation("/"); // Fallback for other user types or just a home link
+      handleNavigation("/");
     }
   };
-
 
   return (
     <div
@@ -112,9 +103,18 @@ export default function MobileMenu({ onClose, userType, profession }) {
         </div>
 
         <div className="p-6 space-y-4 mt-6">
+          {/* Home Button - Added here */}
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
+            onClick={() => handleNavigation("/")}
+          >
+            <HomeIcon className="w-4 h-4 mr-2" />
+            Home
+          </Button>
+
           {isLoggedIn && (
             <>
-              {/* Conditional rendering for Dashboard/Profile link */}
               <Button
                 variant="ghost"
                 className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
@@ -132,6 +132,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
                   </>
                 )}
               </Button>
+              {/* Assuming AIChat also has a route, if not, adjust or remove */}
               <Button
                 variant="ghost"
                 className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
@@ -145,7 +146,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           <Button
             variant="ghost"
             className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
-            onClick={() => handleExploreMore("Nainital")}
+            onClick={() => handleExploreMore("Nainital")} // This will navigate to /location-details/nainital
           >
             <Navigation className="w-4 h-4 mr-2" />
             Explore Map
@@ -153,6 +154,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
 
           <hr className="my-4 border-gray-200 dark:border-gray-700" />
 
+          {/* Corrected paths for About Us, Contact, Privacy Policy, Terms of Service */}
           <Button
             variant="ghost"
             className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
@@ -172,7 +174,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           <Button
             variant="ghost"
             className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
-            onClick={() => handleNavigation("/privacy-policy")}
+            onClick={() => handleNavigation("/privacy")} // Corrected path
           >
             <Lock className="w-4 h-4 mr-2" />
             Privacy Policy
@@ -180,7 +182,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
           <Button
             variant="ghost"
             className="w-full justify-start text-left dark:text-gray-50 dark:hover:bg-gray-700"
-            onClick={() => handleNavigation("/terms-of-service")}
+            onClick={() => handleNavigation("/terms")} // Corrected path
           >
             <BookOpen className="w-4 h-4 mr-2" />
             Terms of Service
@@ -192,7 +194,7 @@ export default function MobileMenu({ onClose, userType, profession }) {
             <Button
               variant="ghost"
               className="w-full justify-start text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900"
-              onClick={logout1}
+              onClick={logout1} // Make sure logout1 correctly sets isLoggedIn to false and handles state
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout

@@ -1,95 +1,150 @@
-
 import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
 import { Button } from "../component/button";
-import { Input } from "../component/Input";   
-import { Card, CardContent } from "../component/Card"; 
-import { Badge } from "../component/badge";   
-import { GlobalContext } from "../component/GlobalContext"; 
+import { Input } from "../component/input";
+import { Card, CardContent } from "../component/Card";
+import { Badge } from "../component/badge";
+import { GlobalContext } from "../component/GlobalContext";
 import { ArrowLeft, Search, ZoomIn, ZoomOut, MapPin, Navigation, Star, X } from "lucide-react";
-import { ImageWithFallback } from "../component/ImageWithFallback"; 
-import { locationsData } from "../assets/dummy"; 
+import { ImageWithFallback } from "../component/ImageWithFallback";
+import { locationsData } from "../assets/dummy"; // Assuming this contains all your location data
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function MapViewPage() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [selectedPin, setSelectedPin] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPins, setFilteredPins] = useState([]);
   const [activeFilter, setActiveFilter] = useState(null);
-  const {setSelectedItemId, setSelectedDetailType,focusArea} = useContext(GlobalContext);
+
+  // Global context for managing selected items and focus areas
+  const {
+    setSelectedItemId,
+    setSelectedDetailType,
+    focusArea,
+    setFocusArea,
+  } = useContext(GlobalContext);
 
   const mapRef = useRef(null);
   const googleMap = useRef(null);
   const markersRef = useRef([]);
+  const allMapPins = useRef([]); // Store all original pins extracted from dummy data
 
   // Function to extract and normalize all relevant map pins from locationsData
   const extractMapPins = useCallback(() => {
     const pins = [];
     Object.values(locationsData).forEach((locationDetail) => {
-      // Main location pin (e.g., Nainital itself)
+      // Add the main location as a pin if it has coordinates
       if (locationDetail.lat && locationDetail.lng) {
         pins.push({
           id: locationDetail.id,
-          type: locationDetail.type || "other", // Use location type from dummy data
+          type: locationDetail.type || "place", // Default to 'place' if not specified
           name: locationDetail.name,
-          distance: locationDetail.distance || "N/A", // Assume distance might be present or N/A
+          location: locationDetail.location,
+          distance: locationDetail.distance || "N/A",
           rating: locationDetail.rating || 0,
-          image: locationDetail.images && locationDetail.images.length > 0 ? locationDetail.images[0] : "",
+          image: locationDetail.gallery?.[0] || locationDetail.image?.[0] || "",
           description: locationDetail.description,
           lat: locationDetail.lat,
           lng: locationDetail.lng,
-          // Add any other specific properties needed for rendering the info card
-          price: locationDetail.price, // Example: for hotels
-          features: locationDetail.features, // Example: for hotels
-          activities: locationDetail.activities, // Example: for viewpoints/lakes
+          // Specific properties for info card
+          price: locationDetail.price,
+          features: locationDetail.features,
+          activities: locationDetail.activities, // Direct activities for the main place
+          parentLocationId: locationDetail.id, // This pin is the parent
+          parentLocationName: locationDetail.name,
         });
       }
 
-      // Add popular spots as pins
-      locationDetail.popularSpots?.forEach(spot => {
+      // Add popular spots (attractions, viewpoints, lakes, etc.) as pins
+      locationDetail.popularSpots?.forEach((spot) => {
         if (spot.lat && spot.lng) {
           pins.push({
             id: spot.id,
-            type: spot.type,
+            type: spot.type.toLowerCase().includes("hotel") || spot.type.toLowerCase().includes("resort") ? "hotel" : spot.type.toLowerCase(),
             name: spot.name,
+            location: spot.location || locationDetail.location,
             distance: spot.distance || "N/A",
             rating: spot.rating || 0,
-            image: spot.image || (locationDetail.images && locationDetail.images.length > 0 ? locationDetail.images[0] : ""),
+            image: spot.image || locationDetail.gallery?.[0] || locationDetail.images?.[0] || "",
             description: spot.description,
             lat: spot.lat,
             lng: spot.lng,
-            activities: spot.activities,
+            activities: spot.activities, // Activities specific to the spot
+            parentLocationId: locationDetail.id,
+            parentLocationName: locationDetail.name,
           });
         }
       });
 
       // Add hotels as pins
-      locationDetail.hotels?.forEach(hotel => {
+      locationDetail.hotels?.forEach((hotel) => {
         if (hotel.lat && hotel.lng) {
           pins.push({
             id: hotel.id,
             type: "hotel",
             name: hotel.name,
-            distance: hotel.distance,
-            rating: hotel.rating,
-            image: hotel.image || (locationDetail.images && locationDetail.images.length > 0 ? locationDetail.images[0] : ""),
+            location: hotel.location || locationDetail.location,
+            distance: hotel.distance || "N/A",
+            rating: hotel.rating || 0,
+            image: hotel.image || locationDetail.gallery?.[0] || locationDetail.images?.[0] || "",
             description: hotel.description,
             lat: hotel.lat,
             lng: hotel.lng,
             price: hotel.price,
             features: hotel.features,
+            parentLocationId: locationDetail.id,
+            parentLocationName: locationDetail.name,
           });
         }
       });
-      // You can add more categories like restaurants, treks, etc. if they have lat/lng
+
+      // Add other activities/boating points as pins if they have coordinates
+      locationDetail.boatingPoints?.forEach(point => {
+        if (point.lat && point.lng) {
+          pins.push({
+            id: point.id || `${locationDetail.id}-${point.name.replace(/\s/g, '-').toLowerCase()}`,
+            type: "activity", // Or 'boating' if you want a specific filter
+            name: point.name,
+            location: point.location || locationDetail.location,
+            distance: "N/A", // Can be calculated if needed
+            rating: 0, // Or average from location if available
+            image: locationDetail.gallery?.[0] || locationDetail.images?.[0] || "",
+            description: point.description,
+            lat: point.lat,
+            lng: point.lng,
+            activities: ["Boating", "Photography"], // Specific activities
+            parentLocationId: locationDetail.id,
+            parentLocationName: locationDetail.name,
+          });
+        }
+      });
+
+      locationDetail.otherActivities?.forEach(activity => {
+        if (activity.lat && activity.lng) {
+          pins.push({
+            id: activity.id || `${locationDetail.id}-${activity.name.replace(/\s/g, '-').toLowerCase()}`,
+            type: "activity",
+            name: activity.name,
+            location: activity.location || locationDetail.location,
+            distance: "N/A",
+            rating: 0,
+            image: locationDetail.gallery?.[0] || locationDetail.images?.[0] || "",
+            description: activity.description,
+            lat: activity.lat,
+            lng: activity.lng,
+            activities: [activity.name],
+            parentLocationId: locationDetail.id,
+            parentLocationName: locationDetail.name,
+          });
+        }
+      });
     });
     return pins;
   }, []);
 
-  const allMapPins = useRef([]); // Store all original pins
 
-  // Initialize all pins once
+  // Initialize all pins once when component mounts
   useEffect(() => {
     allMapPins.current = extractMapPins();
     setFilteredPins(allMapPins.current);
@@ -106,33 +161,54 @@ export default function MapViewPage() {
     if (searchQuery) {
       currentPins = currentPins.filter(pin =>
         pin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pin.description.toLowerCase().includes(searchQuery.toLowerCase())
+        pin.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pin.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     setFilteredPins(currentPins);
-    // Markers are rendered in a separate effect that watches filteredPins
-  }, [searchQuery, activeFilter]);
+  }, [searchQuery, activeFilter]); // Depend on searchQuery and activeFilter
+
 
   const getPinColor = (type) => {
     switch (type) {
-      case "viewpoint": return "#3b82f6"; // blue-500
-      case "hotel": return "#22c55e"; // green-500
-      case "lake": return "#06b6d4"; // cyan-500
-      case "trek": return "#f97316"; // orange-500
-      case "activity": return "#8b5cf6"; // violet-500
-      default: return "#6b7280"; // gray-500
+      case "viewpoint":
+      case "place":
+        return "#3b82f6"; // blue-500
+      case "hotel":
+        return "#22c55e"; // green-500
+      case "lake":
+        return "#06b6d4"; // cyan-500
+      case "trek":
+        return "#f97316"; // orange-500
+      case "activity":
+        return "#8b5cf6"; // violet-500
+      default:
+        return "#6b7280"; // gray-500
     }
   };
 
   const getPinIconHTML = (type) => {
     let iconEmoji = "📍";
     switch (type) {
-      case "viewpoint": iconEmoji = "🏔️"; break;
-      case "hotel": iconEmoji = "🏨"; break;
-      case "lake": iconEmoji = "🏞️"; break;
-      case "trek": iconEmoji = "🥾"; break;
-      case "activity": iconEmoji = "🚣"; break;
-      default: iconEmoji = "📍"; break;
+      case "viewpoint":
+      case "place":
+        iconEmoji = "🏔️";
+        break;
+      case "hotel":
+        iconEmoji = "🏨";
+        break;
+      case "lake":
+        iconEmoji = "🏞️";
+        break;
+      case "trek":
+        iconEmoji = "🥾";
+        break;
+      case "activity":
+        iconEmoji = "🚣";
+        break;
+      default:
+        iconEmoji = "📍";
+        break;
     }
     const color = getPinColor(type);
     return `
@@ -160,25 +236,35 @@ export default function MapViewPage() {
       let initialLocation = { lat: 29.391775, lng: 79.455979 }; // Default to Nainital center
       let initialZoom = 12;
 
-      // Check if a destination is provided in the URL for directions
       const destLat = searchParams.get('destLat');
       const destLng = searchParams.get('destLng');
-      const destName = searchParams.get('destName');
+      const destName = searchParams.get('destName'); // Optional, for pre-selecting pin
 
+      // Determine initial map center and zoom
       if (destLat && destLng) {
         initialLocation = { lat: parseFloat(destLat), lng: parseFloat(destLng) };
-        initialZoom = 15; // Zoom in if a specific destination is given
-        // Optionally, select the pin for immediate display
-        const preSelectedPin = allMapPins.current.find(pin => pin.lat === initialLocation.lat && pin.lng === initialLocation.lng && pin.name === destName);
+        initialZoom = 15; // Zoom in for a specific destination
+        // Attempt to pre-select the pin if destName matches
+        const preSelectedPin = allMapPins.current.find(pin =>
+          Math.abs(pin.lat - parseFloat(destLat)) < 0.0001 &&
+          Math.abs(pin.lng - parseFloat(destLng)) < 0.0001 &&
+          pin.name === destName
+        );
         if (preSelectedPin) {
           setSelectedPin(preSelectedPin);
         }
       } else {
-        // Fallback to focusArea if no specific destination
-        const areaData = Object.values(locationsData).find(loc => loc.id === focusArea.toLowerCase().replace(/\s/g, '-'));
+        // Use focusArea from context if available and valid
+        const areaId = focusArea ? focusArea.toLowerCase().replace(/\s/g, '-') : 'nainital-area';
+        const areaData = Object.values(locationsData).find(loc => loc.id === areaId);
         if (areaData && areaData.lat && areaData.lng) {
           initialLocation.lat = areaData.lat;
           initialLocation.lng = areaData.lng;
+          // Optionally, if the focusArea itself is a location pin, select it
+          const focusAreaPin = allMapPins.current.find(pin => pin.id === areaId);
+          if(focusAreaPin) {
+            setSelectedPin(focusAreaPin);
+          }
         }
       }
 
@@ -191,53 +277,54 @@ export default function MapViewPage() {
         zoomControl: true,
       });
 
-      // Add a listener for map clicks to deselect pin
       googleMap.current.addListener("click", () => {
         setSelectedPin(null);
       });
     }
-  }, [focusArea, searchParams]); // Rerun effect if searchParams change for new directions request
+  }, [searchParams, focusArea]); // Depend on searchParams and focusArea to re-initialize map if needed
+
 
   // Render markers on the map
   const renderMarkers = useCallback((pins) => {
     if (!googleMap.current) return;
 
-    // Clear existing markers
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
     const bounds = new window.google.maps.LatLngBounds();
+    let atLeastOnePinHasCoords = false;
 
     pins.forEach(pin => {
-      const marker = new window.google.maps.Marker({
-        position: { lat: pin.lat, lng: pin.lng },
-        map: googleMap.current,
-        title: pin.name,
-        icon: {
-          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(getPinIconHTML(pin.type))}`,
-          anchor: new window.google.maps.Point(16, 16), // Center the icon
-          scaledSize: new window.google.maps.Size(32, 32),
-        },
-      });
+      if (pin.lat && pin.lng) { // Ensure pin has valid coordinates
+        atLeastOnePinHasCoords = true;
+        const marker = new window.google.maps.Marker({
+          position: { lat: pin.lat, lng: pin.lng },
+          map: googleMap.current,
+          title: pin.name,
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(getPinIconHTML(pin.type))}`,
+            anchor: new window.google.maps.Point(16, 16),
+            scaledSize: new window.google.maps.Size(32, 32),
+          },
+        });
 
-      marker.addListener("click", (e) => {
-        e.stop(); // Stop event propagation to prevent map click from deselecting
-        setSelectedPin(pin);
-        // Center the map on the clicked marker
-        googleMap.current?.panTo({ lat: pin.lat, lng: pin.lng });
-      });
-      markersRef.current.push(marker);
-      bounds.extend(marker.getPosition());
+        marker.addListener("click", (e) => {
+          e.stop();
+          setSelectedPin(pin);
+          googleMap.current?.panTo({ lat: pin.lat, lng: pin.lng });
+        });
+        markersRef.current.push(marker);
+        bounds.extend(marker.getPosition());
+      }
     });
 
-    if (pins.length > 0) {
-      // Only fit bounds if not coming from a direct directions request (which already set center/zoom)
-      if (!searchParams.get('destLat')) {
+    // Only fit bounds if there are pins with valid coordinates and we're not focusing on a specific destination
+    const destLat = searchParams.get('destLat');
+    if (atLeastOnePinHasCoords && !destLat) {
         googleMap.current.fitBounds(bounds);
-        if (googleMap.current.getZoom() > 15) { // Prevent zooming in too much if only one pin
-          googleMap.current.setZoom(15);
+        if (googleMap.current.getZoom() > 15) {
+            googleMap.current.setZoom(15);
         }
-      }
     }
   }, [getPinIconHTML, searchParams]);
 
@@ -246,34 +333,36 @@ export default function MapViewPage() {
     if (googleMap.current) {
       renderMarkers(filteredPins);
     }
-  }, [filteredPins, renderMarkers]); // Removed googleMap.current from deps to avoid re-rendering markers on map object change, already handled by map ref.
+  }, [filteredPins, renderMarkers]);
+
 
   const handleBack = useCallback(() => {
-      navigate(-1); // Go back to the previous page in history
+    navigate(-1);
   }, [navigate]);
 
-    const handleViewDetails = useCallback((id, type) => {
-      setSelectedItemId(id); // Set global context if needed for other components
-      setSelectedDetailType(type); // Set global context if needed for other components
-      const routeMap = {
-        hotel: `/hotel-details/${id}`,
-        place: `/place-details/${id}`,
-        trek: `/trek-details/${id}`,
-        bike: `/bike-details/${id}`,
-        cab: `/cab-details/${id}`,
-        guide: `/guide-details/${id}`,
-        resort: `/hotel-details/${id}`, // Assuming 'resort' maps to hotel details
-        viewpoint: `/place-details/${id}`,
-        lake: `/place-details/${id}`,
-        adventure: `/place-details/${id}`,
-        wildlife: `/place-details/${id}`,
-        temple: `/place-details/${id}`,
-        "historic site": `/place-details/${id}`, // Added for Gurney House
-        // Add other types as needed from your dummy data
-      };
-      const path = routeMap[type.toLowerCase()] || "/"; // Default to home if type not found
-      navigate(path);
-    }, [navigate, setSelectedItemId, setSelectedDetailType]);
+  const handleViewDetails = useCallback((id, type) => {
+    setSelectedItemId(id);
+    setSelectedDetailType(type);
+    const routeMap = {
+      hotel: `/hotel-details/${id}`,
+      popular: `/popular-details/${id}`,
+      place: `/place-details/${id}`,
+      trek: `/trek-details/${id}`,
+      bike: `/bike-details/${id}`,
+      cab: `/cab-details/${id}`,
+      guide: `/guide-details/${id}`,
+      resort: `/hotel-details/${id}`,
+      viewpoint: `/place-details/${id}`,
+      lake: `/place-details/${id}`,
+      adventure: `/place-details/${id}`,
+      wildlife: `/place-details/${id}`,
+      temple: `/place-details/${id}`,
+      "historic site": `/place-details/${id}`,
+      activity: `/place-details/${id}` // Generic route for activities, adjust if you have specific activity pages
+    };
+    const path = routeMap[type.toLowerCase()] || "/";
+    navigate(path);
+  }, [navigate, setSelectedItemId, setSelectedDetailType]);
 
   const handleZoomIn = () => {
     if (googleMap.current) {
@@ -289,33 +378,35 @@ export default function MapViewPage() {
 
   const handleRecenter = () => {
     if (googleMap.current) {
-      const initialLocation = { lat: 29.391775, lng: 79.455979 };
-      const areaData = Object.values(locationsData).find(loc => loc.id === focusArea.toLowerCase().replace(/\s/g, '-'));
+      let centerLat = 29.391775;
+      let centerLng = 79.455979; // Default to Nainital
+      let defaultZoom = 12;
+
+      // Try to recenter to the current focusArea if available
+      const areaId = focusArea ? focusArea.toLowerCase().replace(/\s/g, '-') : 'nainital-area';
+      const areaData = Object.values(locationsData).find(loc => loc.id === areaId);
       if (areaData && areaData.lat && areaData.lng) {
-        initialLocation.lat = areaData.lat;
-        initialLocation.lng = areaData.lng;
+        centerLat = areaData.lat;
+        centerLng = areaData.lng;
+        defaultZoom = 12; // Maintain a broader view for the main area
       }
-      googleMap.current.panTo(initialLocation);
-      googleMap.current.setZoom(12); // Reset zoom
+
+      googleMap.current.panTo({ lat: centerLat, lng: centerLng });
+      googleMap.current.setZoom(defaultZoom);
     }
   };
 
-  const handleGetDirectionsExternal = useCallback((lat, lng) => {
-    // Open Google Maps in a new tab with directions
-    const destination = `${lat},${lng}`;
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
-  }, []);
+  const handleGetDirections = useCallback((lat, lng, name, parentId) => {
+    // Set the focusArea to the parent location ID if the selected pin is a sub-item,
+    // otherwise, use the pin's own ID as the focus area.
+    const currentFocusId = parentId || selectedPin?.id || focusArea || "nainital-area";
+    setFocusArea(currentFocusId);
+    navigate(`/map-view/${currentFocusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
+  }, [navigate, setFocusArea, focusArea, selectedPin]);
 
   const handleQuickFilter = (type) => {
     setActiveFilter(prev => (prev === type ? null : type)); // Toggle filter
   };
-
-  // Dummy nearby hotels for the info card (can be dynamically fetched if needed)
-  const nearbyHotels = [
-    { name: "Lake View Inn", distance: "1.2km", rating: 4.3, id: "fake-hotel-1", type: "hotel" },
-    { name: "Hill Station Resort", distance: "2.1km", rating: 4.6, id: "fake-hotel-2", type: "hotel" },
-    { name: "Mountain Lodge", distance: "2.8km", rating: 4.1, id: "fake-hotel-3", type: "hotel" }
-  ];
 
 
   return (
@@ -330,7 +421,7 @@ export default function MapViewPage() {
                 Back
               </Button>
               <h1 className="text-xl font-semibold">
-                {focusArea} Area Map
+                {focusArea ? `${focusArea.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')} Area Map` : "Explore Map"}
               </h1>
             </div>
 
@@ -380,7 +471,7 @@ export default function MapViewPage() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm">Viewpoints</span>
+                    <span className="text-sm">Viewpoints/Places</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 bg-green-500 rounded-full"></div>
@@ -411,12 +502,12 @@ export default function MapViewPage() {
                 <h3 className="font-semibold mb-3">Quick Filters</h3>
                 <div className="space-y-2">
                   <Button
-                    variant={activeFilter === "viewpoint" ? "default" : "outline"}
+                    variant={activeFilter === "place" || activeFilter === "viewpoint" ? "default" : "outline"}
                     size="sm"
                     className="w-full justify-start"
-                    onClick={() => handleQuickFilter("viewpoint")}
+                    onClick={() => handleQuickFilter("place")}
                   >
-                    🏔️ Viewpoints
+                    🏔️ Viewpoints & Places
                   </Button>
                   <Button
                     variant={activeFilter === "hotel" ? "default" : "outline"}
@@ -458,7 +549,7 @@ export default function MapViewPage() {
             <Card>
               <CardContent className="p-4">
                 <h3 className="font-semibold mb-3">
-                  {activeFilter ? `Filtered ${activeFilter}s` : "Popular Spots"}
+                  {activeFilter ? `Filtered ${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s` : "Popular Spots"}
                 </h3>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {filteredPins.length > 0 ? (
@@ -470,11 +561,15 @@ export default function MapViewPage() {
                       >
                         <div>
                           <p className="font-medium text-sm">{pin.name}</p>
-                          <p className="text-xs text-muted-foreground">{pin.distance}</p>
+                          <p className="text-xs text-muted-foreground">{pin.location}</p>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                          <span className="text-xs">{pin.rating}</span>
+                          {pin.rating > 0 && (
+                            <>
+                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs">{pin.rating}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))
@@ -509,15 +604,17 @@ export default function MapViewPage() {
                   <div>
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">{selectedPin.name}</h3>
-                      <Badge className="text-white" style={{backgroundColor: getPinColor(selectedPin.type)}}>
-                        {selectedPin.type}
+                      <Badge className="text-white" style={{ backgroundColor: getPinColor(selectedPin.type) }}>
+                        {selectedPin.type.charAt(0).toUpperCase() + selectedPin.type.slice(1)}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">{selectedPin.distance}</p>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm">{selectedPin.rating}</span>
-                    </div>
+                    <p className="text-sm text-muted-foreground">{selectedPin.location}</p>
+                    {selectedPin.rating > 0 && (
+                      <div className="flex items-center space-x-1 mt-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{selectedPin.rating}</span>
+                      </div>
+                    )}
                   </div>
 
                   <p className="text-sm">{selectedPin.description}</p>
@@ -543,26 +640,9 @@ export default function MapViewPage() {
                     </>
                   )}
 
-                  {selectedPin.type === "viewpoint" && (
+                  {(selectedPin.type === "viewpoint" || selectedPin.type === "place" || selectedPin.type === "activity" || selectedPin.type === "lake" || selectedPin.type === "trek") && selectedPin.activities && selectedPin.activities.length > 0 && (
                     <div>
-                      <h4 className="font-medium text-sm mb-2">Nearby Hotels:</h4>
-                      <div className="space-y-1">
-                        {nearbyHotels.map((hotel, index) => (
-                          <div key={index} className="flex items-center justify-between text-xs">
-                            <span>{hotel.name}</span>
-                            <div className="flex items-center space-x-1">
-                              <span className="text-muted-foreground">{hotel.distance}</span>
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              <span>{hotel.rating}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                   {selectedPin.activities && selectedPin.activities.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-2">Activities:</h4>
+                      <h4 className="font-medium text-sm mb-2">Activities/Highlights:</h4>
                       <div className="flex flex-wrap gap-1">
                         {selectedPin.activities.map((activity, idx) => (
                           <Badge key={idx} variant="secondary" className="text-xs">
@@ -581,12 +661,11 @@ export default function MapViewPage() {
                     >
                       View Details
                     </Button>
-                    {/* Direct link for external Google Maps directions */}
                     <Button
                       size="sm"
                       variant="outline"
                       className="flex-1"
-                      onClick={() => handleGetDirectionsExternal(selectedPin.lat, selectedPin.lng)}
+                      onClick={() => handleGetDirections(selectedPin.lat, selectedPin.lng, selectedPin.name, selectedPin.parentLocationId)}
                     >
                       <Navigation className="w-4 h-4 mr-2" />
                       Get Directions

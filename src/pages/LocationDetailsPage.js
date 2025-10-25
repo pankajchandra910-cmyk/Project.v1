@@ -29,12 +29,11 @@ import {
   Users,
   Thermometer,
   Info,
-  ShoppingCart, // Added for 'otherActivities' if applicable
-  Utensils, // Added for 'localFood' if applicable
-  Footprints// For "Walk" in routes/activities
+  ShoppingCart,
+  Utensils,
+  Footprints
 } from "lucide-react";
 
-// Make sure this iconMap is comprehensive for all icons you intend to use as strings
 const iconMap = {
   Car: Car,
   Train: Train,
@@ -50,12 +49,12 @@ const iconMap = {
   Waves: Waves,
   Binoculars: Binoculars,
   Info: Info,
-  ShoppingCart: ShoppingCart, // Example for activities
-  Utensils: Utensils, // Example for local food
+  ShoppingCart: ShoppingCart,
+  Utensils: Utensils,
   Walking: Footprints,
 };
 
-export default function NainitalDetailsPage() {
+export default function LocationDetailsPage() {
   const navigate = useNavigate();
   const { locationId } = useParams();
   const { setSelectedItemId, setSelectedDetailType, setFocusArea, locationDetails, setLocationDetails } = useContext(GlobalContext);
@@ -69,7 +68,6 @@ export default function NainitalDetailsPage() {
     setLoading(true);
     setError(null);
     if (locationId) {
-      // Ensure locationsData[locationId] returns an object, not an array of objects
       const data = Array.isArray(locationsData[locationId]) ? locationsData[locationId][0] : locationsData[locationId];
       if (data) {
         setLocationDetails(data);
@@ -114,6 +112,7 @@ export default function NainitalDetailsPage() {
     setSelectedDetailType(type);
     const routeMap = {
       hotel: `/hotel-details/${id}`,
+      popular:`/popular-details/${id}`,
       place: `/place-details/${id}`,
       trek: `/trek-details/${id}`,
       bike: `/bike-details/${id}`,
@@ -125,9 +124,9 @@ export default function NainitalDetailsPage() {
       adventure: `/place-details/${id}`,
       wildlife: `/place-details/${id}`,
       temple: `/place-details/${id}`,
-      "nature trail": `/place-details/${id}`, // Added for Sukhatal
-      "wildlife sanctuary": `/place-details/${id}`, // Added for Pangoot
-      "temple/ashram": `/place-details/${id}`, // Added for Kainchi Dham
+      "nature trail": `/place-details/${id}`,
+      "wildlife sanctuary": `/place-details/${id}`,
+      "temple/ashram": `/place-details/${id}`,
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
@@ -166,22 +165,16 @@ export default function NainitalDetailsPage() {
   const displayImage = locationDetails.gallery[currentImageIndex];
   const mainBackgroundImage = locationDetails.gallery[0];
 
-  // Dynamically map icon strings to actual Lucide React components for 'whatToExpect'
   const whatToExpectItems = locationDetails.whatToExpect && locationDetails.whatToExpect.length > 0
     ? locationDetails.whatToExpect.map(item => ({
         ...item,
-        icon: iconMap[item.icon] || Info // Fallback to Info icon if not found
+        icon: iconMap[item.icon] || Info
       }))
-    : []; // Default to empty array if no data
+    : [];
 
-  // Dynamically map icon strings to actual Lucide React components for 'otherActivities'
-  // If 'otherActivities' items also have an 'icon' property, map it here.
-  // Assuming 'otherActivities' items might have an 'icon' or we can default one.
   const otherActivitiesItems = locationDetails.otherActivities && locationDetails.otherActivities.length > 0
     ? locationDetails.otherActivities.map(activity => ({
         ...activity,
-        // Assuming activity objects might have an 'icon' property.
-        // If not, you might assign a default icon or derive one based on activity name.
         icon: iconMap[activity.icon] || Info
       }))
     : [];
@@ -252,7 +245,7 @@ export default function NainitalDetailsPage() {
             <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{locationDetails.name}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{locationDetails.name.split(' - ')[0]}</h1>
                   <div className="flex items-center space-x-2 text-muted-foreground mb-2">
                     <MapPin className="w-4 h-4" />
                     <span>{locationDetails.location}</span>
@@ -326,13 +319,12 @@ export default function NainitalDetailsPage() {
                     </div>
                   )}
 
-                  {/* What to Expect Section */}
                   {whatToExpectItems && whatToExpectItems.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">What to Expect</h3>
                       <div className="grid md:grid-cols-2 gap-4">
                         {whatToExpectItems.map((item, index) => {
-                          const IconComponent = item.icon; // Already mapped to component above
+                          const IconComponent = item.icon;
                           return (
                             <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
                               <IconComponent className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
@@ -384,7 +376,7 @@ export default function NainitalDetailsPage() {
                     <div className="space-y-4">
                       {locationDetails.routes && locationDetails.routes.length > 0 ? (
                         locationDetails.routes.map((route, index) => {
-                          const IconComponent = iconMap[route.icon] || Car; // Use iconMap here
+                          const IconComponent = iconMap[route.icon] || Car;
                           return (
                             <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50">
                               <div className="flex items-start space-x-3">
@@ -558,13 +550,12 @@ export default function NainitalDetailsPage() {
                     <p className="text-muted-foreground">No specific boating activities listed for this location.</p>
                   )}
 
-                  {/* Other Activities Section */}
                   {otherActivitiesItems && otherActivitiesItems.length > 0 && (
                     <div className="mt-6">
                       <h3 className="font-semibold mb-4">Other Adventures & Activities</h3>
                       <div className="grid md:grid-cols-2 gap-4">
                         {otherActivitiesItems.map((activity, index) => {
-                          const IconComponent = activity.icon; // Already mapped to component above
+                          const IconComponent = activity.icon;
                           return (
                             <div key={index} className="border rounded-lg p-4 hover:bg-gray-50/50 shadow-sm">
                               <div className="flex items-start space-x-3">
@@ -596,7 +587,6 @@ export default function NainitalDetailsPage() {
                   <Button
                     className="w-full bg-primary hover:bg-primary/90"
                     size="lg"
-                    // Pass actual lat/lng for directions if available, otherwise default
                     onClick={() => handleGetDirections(locationDetails.lat, locationDetails.lng, locationDetails.name)}
                   >
                     <Navigation className="w-4 h-4 mr-2" />

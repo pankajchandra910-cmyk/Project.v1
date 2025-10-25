@@ -33,10 +33,8 @@ import {
   Bird,
   Activity,
   Book,
-  // Add other Lucide icons as needed that might be used as strings in 'whatToExpect'
 } from "lucide-react";
 
-// Map icon names (strings) to Lucide React components directly in this file
 const iconMap = {
   Car: Car,
   Plane: Plane,
@@ -56,16 +54,15 @@ const iconMap = {
   Bird: Bird,
   Activity: Activity,
   Book: Book,
-  // Add other icons if you use them as strings in your dummy data's 'whatToExpect'
 };
 
 export default function PlaceDetailsPage() {
   const navigate = useNavigate();
-  const { placeId } = useParams(); // Get placeId from the URL (e.g., /place-details/:placeId)
+  const { placeId } = useParams();
   const { setSelectedItemId, setSelectedDetailType ,setFocusArea} = useContext(GlobalContext);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [placeData, setPlaceData] = useState(null); // State to hold dynamic place data
+  const [placeData, setPlaceData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -73,11 +70,11 @@ export default function PlaceDetailsPage() {
     setLoading(true);
     setError(null);
     if (placeId) {
-      const data = placeDetailsData[placeId]; // Fetch data using the ID
+      const data = placeDetailsData[placeId];
       if (data) {
         setPlaceData(data);
         setLoading(false);
-        setCurrentImageIndex(0); // Reset image index for new place
+        setCurrentImageIndex(0);
       } else {
         setError("Place not found.");
         setLoading(false);
@@ -88,41 +85,38 @@ export default function PlaceDetailsPage() {
       setLoading(false);
       setPlaceData(null);
     }
-  }, [placeId]); // Re-run effect when placeId changes
+  }, [placeId]);
 
   const handleBack = useCallback(() => {
-    navigate(-1); // Go back to the previous page in history
+    navigate(-1);
   }, [navigate]);
 
   const handleGetDirections = useCallback((lat, lng, name) => {
-    // Determine the focus area for the map. You might want to use the main location
-    // or the specific place's parent location if available in your data.
-    // For now, let's use the placeId itself as the focus area ID.
     const focusId = placeId.toLowerCase().replace(/\s/g, '-');
     setFocusArea(focusId);
     navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
-  }, [navigate, setFocusArea, placeId]); // Added placeId to dependency array
+  }, [navigate, setFocusArea, placeId]);
 
   const handleViewDetails = useCallback((id, type) => {
-    setSelectedItemId(id); // Set global context if needed for other components
-    setSelectedDetailType(type); // Set global context if needed for other components
+    setSelectedItemId(id);
+    setSelectedDetailType(type);
     const routeMap = {
       hotel: `/hotel-details/${id}`,
+      popular:`/popular-details/${id}`,
       place: `/place-details/${id}`,
       trek: `/trek-details/${id}`,
       bike: `/bike-details/${id}`,
       cab: `/cab-details/${id}`,
       guide: `/guide-details/${id}`,
-      resort: `/hotel-details/${id}`, // Assuming 'resort' maps to hotel details
+      resort: `/hotel-details/${id}`,
       viewpoint: `/place-details/${id}`,
       lake: `/place-details/${id}`,
       adventure: `/place-details/${id}`,
       wildlife: `/place-details/${id}`,
       temple: `/place-details/${id}`,
-      "historic site": `/place-details/${id}`, // Added for Gurney House
-      // Add other types as needed from your dummy data
+      "historic site": `/place-details/${id}`,
     };
-    const path = routeMap[type.toLowerCase()] || "/"; // Default to home if type not found
+    const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
   }, [navigate, setSelectedItemId, setSelectedDetailType]);
 
@@ -164,15 +158,13 @@ export default function PlaceDetailsPage() {
     );
   }
 
-  // Map 'whatToExpect' items to actual Lucide icons
   const whatToExpectItems = placeData.whatToExpect
     ? placeData.whatToExpect.map(item => ({
         ...item,
-        icon: iconMap[item.icon] || Info // Map icon string to component, default to Info
+        icon: iconMap[item.icon] || Info
       }))
     : [];
 
-  // Determine if it's a 'hotel' type page to adjust UI
   const isHotelPage = placeData.id.includes("hotel") || placeData.id.includes("resort");
 
   return (
@@ -187,7 +179,6 @@ export default function PlaceDetailsPage() {
         backgroundColor: '#f9fafb'
       }}
     >
-      {/* Header */}
       <div className="bg-white/95 backdrop-blur-sm shadow-sm px-4 py-3 md:px-6 sticky top-0 z-10">
         <Button variant="ghost" onClick={handleBack} className="mb-0">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -196,7 +187,6 @@ export default function PlaceDetailsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Image Carousel */}
         <div className="relative mb-6">
           <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-lg">
             <img
@@ -239,9 +229,7 @@ export default function PlaceDetailsPage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Place Info */}
             <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
@@ -262,16 +250,15 @@ export default function PlaceDetailsPage() {
                     {placeData.difficulty && (
                       <Badge variant="outline">{placeData.difficulty}</Badge>
                     )}
-                    {isHotelPage && placeData.price && ( // Display price for hotels
+                    {isHotelPage && placeData.price && (
                        <Badge className="bg-primary text-primary-foreground">Starting from {placeData.price}</Badge>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Quick Info - Dynamic based on type */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                {!isHotelPage ? ( // Show these for regular places
+                {!isHotelPage ? (
                   <>
                     {placeData.duration && (
                       <div className="flex items-center space-x-2">
@@ -301,7 +288,7 @@ export default function PlaceDetailsPage() {
                       </div>
                     )}
                   </>
-                ) : ( // Show these for hotels
+                ) : (
                   <>
                     <div className="flex items-center space-x-2">
                       <Star className="w-4 h-4 text-primary" />
@@ -310,7 +297,7 @@ export default function PlaceDetailsPage() {
                         <div className="text-xs text-muted-foreground">{placeData.rating} ({placeData.reviewCount} reviews)</div>
                       </div>
                     </div>
-                    {placeData.checkInTime && ( // Assuming these props for hotels
+                    {placeData.checkInTime && (
                       <div className="flex items-center space-x-2">
                         <Clock className="w-4 h-4 text-primary" />
                         <div>
@@ -546,7 +533,6 @@ export default function PlaceDetailsPage() {
             </div>
           </div>
 
-          {/* Quick Actions Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-20 space-y-4">
               <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
@@ -558,7 +544,7 @@ export default function PlaceDetailsPage() {
                     <Button
                       className="w-full bg-primary hover:bg-primary/90"
                       size="lg"
-                      onClick={() => console.log(`Booking ${placeData.name}`)} // Implement actual booking logic
+                      onClick={() => console.log(`Booking ${placeData.name}`)}
                     >
                       <Home className="w-4 h-4 mr-2" />
                       Book Now
@@ -567,13 +553,13 @@ export default function PlaceDetailsPage() {
                     <Button
                       className="w-full bg-primary hover:bg-primary/90"
                       size="lg"
-                      onClick={() => handleGetDirections(placeData.name)}
+                      // Ensure lat and lng are passed for directions
+                      onClick={() => handleGetDirections(placeData.lat, placeData.lng, placeData.name)}
                     >
                       <Navigation className="w-4 h-4 mr-2" />
                       Get Directions
                     </Button>
                   )}
-
 
                   <div className="space-y-3 text-sm">
                     <div className="p-3 bg-gray-50 rounded-lg">
@@ -615,8 +601,7 @@ export default function PlaceDetailsPage() {
                 </CardContent>
               </Card>
 
-              {/* Guide/Other Card */}
-              {!isHotelPage && ( // Only show "Need a Guide?" for places, not hotels
+              {!isHotelPage && (
                 <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-base">Need a Guide?</CardTitle>
@@ -632,8 +617,6 @@ export default function PlaceDetailsPage() {
                 </Card>
               )}
 
-
-              {/* FAQ Section */}
               {placeData.faqs && placeData.faqs.length > 0 && (
                 <FAQSection faqs={placeData.faqs} className="bg-white/95 backdrop-blur-sm shadow-sm" />
               )}

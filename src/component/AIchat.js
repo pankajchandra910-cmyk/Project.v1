@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Button } from "./button";
-import { Input } from "./Input";
+import { Input } from "./input";
 import { ScrollArea } from "./scroll-area";
 import { Send, Bot, User } from "lucide-react";
 

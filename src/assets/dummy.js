@@ -7,7 +7,7 @@
     price: "Free Entry",
     rating: 4.7,
     description: "Visited by 500K+ annually—iconic spiritual destination ⭐ 4.7/5",
-    
+    type: "Popular"
   },
   {
     id: "china-peak",
@@ -17,7 +17,7 @@
     price: "₹50",
     rating: 4.8,
     description: "Top for adventure views—highest peak around Nainital ⭐ 4.8/5",
-    
+    type: "Popular"
   },
   {
     id: "bhimtal-lake",
@@ -27,7 +27,7 @@
     price: "₹30",
     rating: 4.6,
     description: "Popular family spot—larger than Naini Lake ⭐ 4.6/5",
-    
+    type: "Popular"
   },
   {
     id: "tiffin-top",
@@ -37,26 +37,26 @@
     price: "Free",
     rating: 4.5,
     description: "Eco-trail favorite—perfect for nature walks ⭐ 4.5/5",
-    type: "Place"
+    type: "Popular"
   }
 ];
 
 export const hotelDetailsData = {
-  "naina-devi-temple": {
-    id: "mountain-view-resort-bhimtal",
+  "bhimtal-lake": { // Ensure this ID matches the format used in routes and context
+    id: "bhimtal-lake",
     name: "Mountain View Resort Bhimtal",
     location: "2km from Bhimtal Lake, Uttarakhand",
     rating: 4.5,
     reviewCount: 128,
-    price: "₹4,500",
+    price: "4500", // Base price, individual room types have their own prices
     priceNote: "per night",
     checkInTime: "2:00 PM",
     checkOutTime: "11:00 AM",
     images: [
       "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMHJvb20lMjBsdXh1cnl8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHBob3RlbCUyMHBvb2wlMjByZXNvcnR8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXN0YXVyYW50JTIwaW50ZXJpb3J8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080"
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHhob3RlbCUyMHBvb2wlMjByZXNvcnR8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxyZXN0YXVyYW50JTIwaW50ZXJpb3J8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080"
     ],
     description: "Luxury resort with spectacular lake views, modern amenities, and spa facilities. Perfect for families and couples seeking a peaceful mountain retreat with easy access to Bhimtal's attractions.",
     amenities: [
@@ -70,24 +70,24 @@ export const hotelDetailsData = {
     roomTypes: [
       {
         name: "Standard Room",
-        price: "₹2,500",
+        price: "2500", // Updated to number-like string for easier parsing
         features: ["Lake View", "AC", "TV", "WiFi"],
         available: true
       },
       {
         name: "Deluxe Room",
-        price: "₹3,500",
+        price: "3500",
         features: ["Lake View", "Balcony", "AC", "TV", "WiFi", "Mini Bar"],
         available: true
       },
       {
         name: "Suite",
-        price: "₹5,500",
+        price: "5500",
         features: ["Panoramic View", "Separate Living Area", "Jacuzzi", "All Premium Amenities"],
         available: false
       }
     ],
-    nearbyAttractions: [ // Renamed from 'nearby' to align with PlaceDetails structure
+    nearbyAttractions: [
       { id: "bhimtal-lake", name: "Bhimtal Lake", distance: "2km", type: "lake", rating: 4.6 },
       { id: "naukuchiatal", name: "Naukuchiatal", distance: "8km", type: "lake", rating: 4.5 },
       { id: "tiffin-top-trek", name: "Tiffin Top Trek", distance: "12km", type: "viewpoint", rating: 4.7 },
@@ -136,19 +136,19 @@ export const hotelDetailsData = {
       }
     ]
   },
-  "the-naini-retreat": {
-    id: "the-naini-retreat",
+  "naina-devi-temple": { // Ensure this ID matches the format used in routes and context
+    id: "naina-devi-temple",
     name: "The Naini Retreat",
     location: "Ayarpata, Nainital, Uttarakhand",
     rating: 4.7,
     reviewCount: 250,
-    price: "₹6,800",
+    price: "6800", // Base price
     priceNote: "per night",
     checkInTime: "3:00 PM",
     checkOutTime: "12:00 PM",
     images: [
-      "https://images.unsplash.com/photo-1582719424888-8255018e6e58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwbHV4dXJ5fGVufDF8fHx8MTc1NzYxNjk5MHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1549294413-26f195200c8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMHJlc3RhdXJhbnQlMjBudXhlcnl8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1582719424888-8255018e6e58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwbHV4dXJ5fGVufDF8fHx8MTc1NzYxNjk5MHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1549294413-26f195200c8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHhob3RlbCUyMHJlc3RhdXJhbnQlMjBudXhlcnl8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1563299797-0bfe122a6d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwcG9vbHxlbnwxfHx8MTczNzAzODQwMHww&ixlib=rb-4.1.0&q=80&w=1080",
     ],
     description: "An erstwhile residence of the Maharaja of Pilibhit, The Naini Retreat is a luxury heritage hotel offering majestic views of the Naini Lake and surrounding mountains. Experience colonial charm with modern comforts.",
@@ -163,19 +163,19 @@ export const hotelDetailsData = {
     roomTypes: [
       {
         name: "Heritage Room",
-        price: "₹6,800",
+        price: "6800",
         features: ["Lake View", "Antique Decor", "Heater", "TV", "WiFi"],
         available: true
       },
       {
         name: "Superior Room",
-        price: "₹8,500",
+        price: "8500",
         features: ["Garden View", "Balcony", "Modern Amenities", "Mini Bar"],
         available: true
       },
       {
         name: "Maharaja Suite",
-        price: "₹15,000",
+        price: "15000",
         features: ["Panoramic Lake View", "Separate Living Area", "Fireplace", "Personal Butler"],
         available: true
       }
@@ -223,9 +223,186 @@ export const hotelDetailsData = {
         answer: "Our multi-cuisine restaurant offers a wide array of vegetarian and vegan dishes."
       }
     ]
-  }
+  },
+  "china-peak": { 
+    id: "china-peak",
+    name: "Himalayan Heights Resort",
+    location: "Near China Peak, Nainital, Uttarakhand",
+    rating: 4.8,
+    reviewCount: 180,
+    price: "5200", 
+    priceNote: "per night",
+    checkInTime: "2:00 PM",
+    checkOutTime: "11:00 AM",
+    images: [
+      "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMGhvdGVsJTIwaGltYWxheWF8ZW58MXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1596436889218-e362c3e1b714?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxhbHBpbmUlMjBob3RlbCUyMHJvb20lMjBhbWVuZGl0aWVzfGVufDF8fHx8MTczNzAzODQwMnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1625243171358-1c4b901e1a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtb3VudGFpbiUyMGhvdyUyMGdhcmRlbnxlbnwxfHx8fDE3MzcwMzg0MDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    ],
+    description: "Perched high with panoramic views of the Himalayas, Himalayan Heights Resort offers an exhilarating stay for adventure seekers and nature lovers. Enjoy trekking, paragliding, and cozy accommodations.",
+    amenities: [
+      { icon: "Wifi", name: "Free WiFi" },
+      { icon: "Car", name: "Parking Available" },
+      { icon: "Hiking", name: "Trekking Guides" },
+      { icon: "Coffee", name: "Cafe & Lounge" },
+      { icon: "Utensils", name: "Local Cuisine Restaurant" },
+      { icon: "Fire", name: "Bonfire Area" }
+    ],
+    roomTypes: [
+      {
+        name: "Mountain View Room",
+        price: "4000",
+        features: ["Himalayan View", "Heater", "TV", "WiFi"],
+        available: true
+      },
+      {
+        name: "Deluxe Cottage",
+        price: "6000",
+        features: ["Private Balcony", "Fireplace", "Luxurious Bedding", "Mini Bar"],
+        available: true
+      },
+      {
+        name: "Family Suite",
+        price: "8500",
+        features: ["Two Bedrooms", "Living Area", "Kitchenette", "Panoramic Views"],
+        available: false
+      }
+    ],
+    nearbyAttractions: [
+      { id: "china-peak-viewpoint", name: "China Peak Viewpoint", distance: "1km", type: "viewpoint", rating: 4.8 },
+      { id: "snow-view-point", name: "Snow View Point", distance: "5km", type: "viewpoint", rating: 4.6 },
+      { id: "naini-lake", name: "Naini Lake", distance: "7km", type: "lake", rating: 4.7 }
+    ],
+    contact: {
+      phone: "+91 8765432109",
+      email: "info@himalayanheights.com"
+    },
+    policies: [
+      "Check-in: 2:00 PM | Check-out: 11:00 AM",
+      "Cancellation: 48-hour free cancellation",
+      "Children: Kids friendly activities",
+      "Pets: Not allowed"
+    ],
+    reviews: [
+        {
+            author: "Arjun Singh",
+            rating: 5,
+            date: "1 day ago",
+            comment: "The views from this resort are absolutely mesmerizing! Perfect base for exploring China Peak and nearby treks. The staff was incredibly helpful."
+        },
+        {
+            author: "Neha Reddy",
+            rating: 4,
+            date: "1 month ago",
+            comment: "A great experience for adventure lovers. The food was good, and the rooms were comfortable. A bit chilly, but heaters were provided."
+        }
+    ],
+    faqs: [
+      {
+        question: "Is trekking available from the resort?",
+        answer: "Yes, we can arrange guided treks to China Peak and other scenic trails directly from the resort."
+      },
+      {
+        question: "Do you have heating in the rooms?",
+        answer: "All rooms are equipped with heaters to ensure a comfortable stay during colder months."
+      },
+      {
+        question: "Is there a restaurant?",
+        answer: "Yes, our restaurant serves delicious local and international cuisine."
+      }
+    ]
+  },
+  "tiffin-top": {
+    id: "tiffin-top",
+    name: "Tiffin Top Retreat",
+    location: "Near Tiffin Top, Nainital, Uttarakhand",
+    rating: 4.5,
+    reviewCount: 110,
+    price: "3200",
+    priceNote: "per night",
+    checkInTime: "1:00 PM",
+    checkOutTime: "10:00 AM",
+    images: [
+      "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080", // Using a similar image for a hill resort feel
+      "https://images.unsplash.com/photo-1544474705-592f763a8a0e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYWJpbiUyMHJvb20lMjBub29ub3NzfGVufDF8fHx8MTczNzAzODQwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1582210815598-f2b7b3d3f9b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXR1cmUlMjB3YWxrJTIwc2NlbmljfGVuMXx8fHwxNzM3MDM4NDAzfDB&ixlib=rb-4.1.0&q=80&w=1080",
+    ],
+    description: "Experience tranquility at Tiffin Top Retreat, a charming eco-friendly resort ideal for nature lovers and those seeking peaceful walks and stunning sunrise views. Close to the popular Tiffin Top.",
+    amenities: [
+      { icon: "Wifi", name: "Free WiFi (Lobby)" },
+      { icon: "Car", name: "Limited Parking" },
+      { icon: "Footprints", name: "Nature Trails" },
+      { icon: "Tree", name: "Garden Area" },
+      { icon: "Utensils", name: "Cafe & Snacks" },
+      { icon: "Sun", name: "Sunrise Views" }
+    ],
+    roomTypes: [
+      {
+        name: "Standard Double Room",
+        price: "2800",
+        features: ["Garden View", "Basic Amenities"],
+        available: true
+      },
+      {
+        name: "Deluxe Forest Cottage",
+        price: "3800",
+        features: ["Forest View", "Balcony", "Peaceful Setting"],
+        available: true
+      },
+      {
+        name: "Premium Hill View",
+        price: "4500",
+        features: ["Panoramic Hill View", "Spacious Room", "Cozy Decor"],
+        available: false
+      }
+    ],
+    nearbyAttractions: [
+      { id: "tiffin-top-viewpoint", name: "Tiffin Top", distance: "0.5km", type: "viewpoint", rating: 4.5 },
+      { id: "dorothy-seat", name: "Dorothy's Seat", distance: "0.6km", type: "viewpoint", rating: 4.5 },
+      { id: "naini-lake", name: "Naini Lake", distance: "4km", type: "lake", rating: 4.7 }
+    ],
+    contact: {
+      phone: "+91 9988776655",
+      email: "contact@tiffintopretreat.com"
+    },
+    policies: [
+      "Check-in: 1:00 PM | Check-out: 10:00 AM",
+      "Cancellation: 24-hour free cancellation",
+      "Children: Welcome, special arrangements on request",
+      "Pets: Small pets allowed on request (extra charge)"
+    ],
+    reviews: [
+        {
+            author: "Sameer Joshi",
+            rating: 4,
+            date: "4 days ago",
+            comment: "A lovely quiet place, very close to Tiffin Top. Great for morning walks and enjoying the serene environment. The staff was courteous."
+        },
+        {
+            author: "Disha Varma",
+            rating: 4,
+            date: "2 weeks ago",
+            comment: "Enjoyed the peaceful atmosphere. The rooms were clean, and the basic amenities were good. Food was simple but tasty."
+        }
+    ],
+    faqs: [
+      {
+        question: "How far is Tiffin Top from the resort?",
+        answer: "Tiffin Top is just a short 10-15 minute walk from the resort, making it easily accessible for sunrise views."
+      },
+      {
+        question: "Do rooms have WiFi?",
+        answer: "WiFi is available in the common areas and lobby. Some rooms might have limited connectivity due to the hilly terrain."
+      },
+      {
+        question: "Is food service available all day?",
+        answer: "Our cafe offers breakfast, lunch, and dinner, along with snacks and beverages throughout the day."
+      }
+    ]
+  },
 };
 
+  
 export const viewpoints = [
   { id: "1", name: "Tiffin Top (Dorothy's Seat)", distance: "4km", rating: 4.7, description: "Panoramic views, 4km trek from Nainital" },
   { id: "2", name: "Snow View Point", distance: "2.5km", rating: 4.6, description: "Cable car access, Himalayan vistas" },
@@ -1264,8 +1441,159 @@ export const locationsData = {
         answer: "You can spot over 250 species including Himalayan Griffon, Lammergeier, Blue-winged Minla, and various thrushes, tits, and finches."
       }
     ]
-  } 
+  } ,
+  "naukuchiatal": {
+    id: "11",
+    name: "Naukuchiatal",
+    location: "Kumaon region, Uttarakhand, India",
+    rating: 4.5,
+    reviewCount: 10000,
+    elevation: "1,220 meters (4,000 ft)",
+    bestTime: "March-June (20-30°C)",
+    peakSeason: "April-June, September-October",
+    annualVisitors: 600000,
+    lat: 29.3175,
+    lng: 79.5960,
+    image: "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    gallery: [
+      "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+      "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBzaG9yZXN8ZW58MXx8fHwxNzA2MjY5MTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1589182373030-a9b0c7a7b8e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoYWlkYWtoYW4lMjB0ZW1wbGUlMjBiaGltdGFsfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "https://images.unsplash.com/photo-1628173516327-0243e8b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxhZHZlbnR1cmUlMjBzcG9ydHMlMjBsYWtlfGVufDF8fHx8MTcwNjI2OTI0MHww&ixlib=rb-4.1.0&q=80&w=1080"
+    ],
+    description: "Naukuchiatal, the 'lake of nine corners,' is a mesmerizing freshwater lake nestled in a picturesque valley. It's known for its unique shape, serene environment, and a variety of adventure activities, making it a perfect blend of tranquility and thrill.",
+    highlights: [
+      "Nine-cornered lake",
+      "Peaceful and scenic",
+      "Adventure sports hub",
+      "Boating and paragliding"
+    ],
+    whatToExpect: [
+      { icon: "Waves", title: "Serene Waters", desc: "Enjoy boating, kayaking, and a peaceful atmosphere on the unique nine-cornered lake." },
+      { icon: "Trees", title: "Lush Greenery", desc: "Surrounded by dense forests, perfect for nature walks and bird watching." },
+      { icon: "Mountain", title: "Adventure Hub", desc: "Opportunities for paragliding, zorbing, and other thrilling activities." },
+      { icon: "Camera", title: "Photography", desc: "Capture stunning landscapes and vibrant sunsets over the lake." }
+    ],
+    tips: [
+      "Try paragliding for an aerial view of the lake.",
+      "Explore the local market for unique handicrafts.",
+      "Enjoy a quiet evening by the lakeside.",
+      "Carry sunscreen and comfortable walking shoes."
+    ],
+    routes: [
+      {
+        mode: "By Road from Delhi",
+        distance: "320km",
+        duration: "7.5 hours",
+        route: "Delhi → Moradabad → Rampur → Rudrapur → Haldwani → Naukuchiatal",
+        icon: "Car",
+        details: "Well-connected by road, scenic drive through Kumaon hills."
+      },
+      {
+        distance: "Kathgodam Station (26km)",
+        mode: "By Train + Taxi",
+        duration: "1 hour from station",
+        route: "Kathgodam Railway Station → NH109 → Naukuchiatal",
+        icon: "Train",
+        details: "Nearest railhead, taxis and shared cabs readily available."
+      }
+    ],
+    popularSpots: [
+      { name: "Naukuchiatal Lake", id: "naukuchiatal-lake", visitors: "400K+", type: "Lake", rating: 4.6, activities: ["Boating", "Kayaking", "Paragliding", "Fishing"], description: "The deep, nine-cornered lake, famous for its legend and tranquil surroundings.", lat: 29.3175, lng: 79.5960, image: "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral" },
+      { name: "Hanuman Temple", id: "hanuman-temple-naukuchiatal", visitors: "100K+", type: "Temple", rating: 4.2, activities: ["Spiritual Visit", "Photography"], description: "A popular temple with a 52-foot Hanuman statue, offering great views.", lat: 29.3200,lng: 79.6000, image: "https://images.unsplash.com/photo-1589182373030-a9b0c7a7b8e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoYWlkYWtoYW4lMjB0ZW1wbGUlMjBiaGltdGFsfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080" },
+      { name: "Naukuchiatal Adventure Park", id: "naukuchiatal-adventure-park", visitors: "80K+", type: "Adventure", rating: 4.1,activities: ["Zorbing", "Paragliding", "Boating"], description: "Offers various adventure activities including paragliding take-off points.", lat: 29.3150, lng: 79.5900, image: "https://images.unsplash.com/photo-1628173516327-0243e8b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxhZHZlbnR1cmUlMjBzcG9ydHMlMjBsYWtlfGVufDF8fHx8MTcwNjI2OTI0MHww&ixlib=rb-4.1.0&q=80&w=1080" }
+    ],
+    boatingPoints: [
+      {
+        name: "Naukuchiatal Main Boating Point",
+        location: "Lakeside near the Hanuman Temple",
+        timings: "8:00 AM - 6:00 PM",
+        rates: {
+          paddle: "₹180/hour",
+          rowboat: "₹150/hour",
+          shikara: "₹300/round"
+        },
+        views: ["Lake corners", "Surrounding hills", "Hanuman Temple"],
+        description: "The main hub for boating and other water sports on the lake."
+      }
+    ],
+    hotels: [
+      {
+        id: "lake-resort-naukuchiatal",
+        name: "The Lake Resort Naukuchiatal",
+        description: "Luxurious stay with excellent lake views and amenities.",
+        distance: "0.5km from lake",
+        rating: 4.7,
+        price: "₹6,000",
+        features: ["Lake View", "Pool", "Multi-cuisine Restaurant", "Spa", "Free Wi-Fi"],
+        lat: 29.3160,
+        lng: 79.5980,
+        image: "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      },
+      {
+      id: "club-mahindra-naukuchiatal",
+      name: "Club Mahindra Naukuchiatal",
+      description: "Family-friendly resort with activities and comfortable rooms.",
+      distance: "2km from lake",
+      rating: 4.5,
+      price: "₹7,500",
+      features: ["Family Resort", "Kids Club", "Activities", "Dining Options", "Free Wi-Fi"],
+      lat: 29.3250,
+      lng: 79.6050,
+      image: "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBzaG9yZXN8ZW58MXx8fHwxNzA2MjY5MTk0fDA&ixlib=rb-4.1.0&q=80&w=1080"
+    }
+  ],
+  localFood: [
+    "Kumaoni Raita",
+    "Aloo ke Gutke",
+    "Gahat ki Dal",
+    "Bal Mithai",
+    "Singori"
+  ],
+  otherActivities: [
+    {
+      name: "Paragliding",
+      icon: "Mountain",
+      description: "Experience thrilling aerial views of the lake and surrounding valley."
+    },{
+      name: "Zorbing",
+      icon: "Footprints",
+      description: "Roll down a hill in a giant inflatable ball for fun and adventure."
+    },
+    {
+      name: "Kayaking and Paddle Boating",
+      icon: "Waves",
+      description: "Enjoy water activities on the tranquil Naukuchiatal Lake."
+    },
+    {
+      name: "Fishing",
+      icon: "Fish",
+      description: "Relax by the lake and try your hand at fishing."
+    },
+    {
+      name: "Bird Watching",
+      icon: "Binoculars",
+      description: "Spot various migratory and local bird species in the dense forests."
+    }
+  ],
+  faqs: [
+    {
+      question: "What is the legend behind Naukuchiatal?",
+      answer: "It is believed that if one can see all nine corners of the lake simultaneously, they will achieve nirvana or attain salvation."
+    },
+    {
+      question: "Is Naukuchiatal suitable for adventure sports?",
+      answer: "Yes, Naukuchiatal is a popular spot for adventure sports like paragliding, zorbing, kayaking, and boating."
+    },
+    {
+      question: "How far is Naukuchiatal from Bhimtal?",
+      answer: "Naukuchiatal is about 4-5 kilometers (approx. 2.5-3 miles) from Bhimtal."
+    }
+  ]
 
+
+
+  }
 };
 // --- Global helper to generate unique IDs and slugs ---
 const generateSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

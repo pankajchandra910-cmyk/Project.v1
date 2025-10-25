@@ -1,13 +1,18 @@
-import React, { useState, useCallback, useEffect, useContext } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { GlobalContext } from "../component/GlobalContext"; // Adjust path as needed
-import { hotelDetailsData } from "../assets/dummy"; // Import hotelDetailsData
+import React, { useState, useCallback, useEffect, useContext, useRef } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { GlobalContext } from "../component/GlobalContext";
+import { hotelDetailsData } from "../assets/dummy";
 
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
+import { Input } from "../component/input"; // Import Input for date selection
 import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
-import { FAQSection } from "../component/FAQSection"; // Assuming you have an FAQSection component
+import { FAQSection } from "../component/FAQSection";
+import { ImageWithFallback } from "../component/ImageWithFallback";
+// ADD THESE IMPORTS:
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";
+
 
 import {
   ArrowLeft,
@@ -26,10 +31,9 @@ import {
   Phone,
   Mail,
   Shield,
-  Info // Default icon for unmapped amenities
+  Info
 } from "lucide-react";
 
-// Map icon names (strings) to Lucide React components
 const iconMap = {
   Wifi: Wifi,
   Car: Car,
@@ -44,44 +48,56 @@ const iconMap = {
   Star: Star,
   MapPin: MapPin,
   Navigation: Navigation,
-  Info: Info, // Default fallback
-  // Add any other Lucide icons you might use as strings in your amenity data
+  Info: Info,
 };
 
-export default function HotelDetailsPage() {
+export default function PopularDetailsPage() {
   const navigate = useNavigate();
-  const { hotelId } = useParams(); // Get hotelId from the URL (e.g., /hotel-details/:hotelId)
+  const { popularId } = useParams();
+  const location = useLocation();
   const { setFocusArea, setSelectedItemId, setSelectedDetailType } = useContext(GlobalContext);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [hotelData, setHotelData] = useState(null); // State to hold dynamic hotel data
+  const [popularItemData, setPopularItemData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Ref to measure the height of the booking card for dynamic FAQ sticky top
-  const bookingCardRef = React.useRef(null);
-  const [faqStickyTop, setFaqStickyTop] = useState(450); // Default, will be calculated dynamically
+  const [checkInDate, setCheckInDate] = useState("");
+  const [checkOutDate, setCheckOutDate] = useState("");
+  const [guests, setGuests] = useState("2");
+  const [selectedRoomType, setSelectedRoomType] = useState("");
+
+  const bookingCardRef = useRef(null);
+  const [faqStickyTop, setFaqStickyTop] = useState(450);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
-    if (hotelId) {
-      const data = hotelDetailsData[hotelId]; // Fetch data using the ID
+    if (popularId) {
+      const data = hotelDetailsData[popularId];
       if (data) {
-        setHotelData(data);
+        setPopularItemData(data);
         setLoading(false);
-        setCurrentImageIndex(0); // Reset image index for new hotel
+        setCurrentImageIndex(0); // Reset image index for new item
+
+        // Parse query parameters for pre-filled booking data
+        const params = new URLSearchParams(location.search);
+        setCheckInDate(params.get("checkIn") || "");
+        setCheckOutDate(params.get("checkOut") || "");
+        setGuests(params.get("guests") || "2");
+        setSelectedRoomType(params.get("roomType") || (data.roomTypes.length > 0 ? data.roomTypes[0].name : ""));
+
       } else {
-        setError("Hotel not found.");
+        setError("Popular item not found.");
         setLoading(false);
-        setHotelData(null);
+        setPopularItemData(null);
       }
     } else {
-      setError("No hotel ID provided.");
+      setError("No popular ID provided.");
       setLoading(false);
-      setHotelData(null);
+      setPopularItemData(null);
     }
-  }, [hotelId]); // Re-run effect when hotelId changes
+  }, [popularId, location.search]); // Re-run effect when popularId or location.search changes
 
   // Effect to calculate the sticky top for FAQ section
   useEffect(() => {
@@ -97,41 +113,45 @@ export default function HotelDetailsPage() {
     calculateFaqStickyTop(); // Calculate on initial render
 
     // Recalculate if window resizes (heights might change)
-    window.addEventListener('resize', calculateFaqStickyTop);
-    // Recalculate if hotelData changes (content might change height)
-    // This is a simplified approach, a MutationObserver might be more robust for content changes
-    if (hotelData) {
-      setTimeout(calculateFaqStickyTop, 100); // Small delay to ensure content is rendered
-    }
+    window.addEventListener('resize', calculateFaqStickyTop); // Changed to calculateFaqStickyTop
+    // Recalculate if popularItemData changes (content might change height)
+    // Small delay to ensure content is rendered before calculating height
+    const timer = setTimeout(calculateFaqStickyTop, 100);
 
 
     return () => {
       window.removeEventListener('resize', calculateFaqStickyTop);
+      clearTimeout(timer);
     };
-  }, [hotelData]); // Recalculate when hotelData changes
+  }, [popularItemData, checkInDate, checkOutDate, guests, selectedRoomType]); // Recalculate when popularItemData or booking inputs change
 
   const handleBack = useCallback(() => {
     navigate(-1); // Go back to the previous page in history
   }, [navigate]);
 
   const handleBookNow = useCallback((id) => {
-    console.log("Booking hotel with ID:", id);
-    // Implement actual booking logic here, e.g., navigate to a booking form
-    // navigate(`/book-hotel/${id}`);
-  }, []);
+    // Navigate to the booking page with the item ID and current booking data
+    const queryParams = new URLSearchParams();
+    if (checkInDate) queryParams.append("checkIn", checkInDate);
+    if (checkOutDate) queryParams.append("checkOut", checkOutDate);
+    if (guests) queryParams.append("guests", guests);
+    if (selectedRoomType) queryParams.append("roomType", selectedRoomType);
+
+    navigate(`/book-item/${id}?${queryParams.toString()}`);
+  }, [navigate, checkInDate, checkOutDate, guests, selectedRoomType]);
 
   const handleViewMap = useCallback((locationName) => {
-    // This assumes your map view can handle a location name directly, or you'd pass coordinates
-    const focusId = hotelId.toLowerCase().replace(/\s/g, '-');
+    const focusId = popularId.toLowerCase().replace(/\s/g, '-');
     setFocusArea(focusId); // Set focus area in global context for the map
     navigate(`/map-view/${focusId}?destName=${encodeURIComponent(locationName)}`);
-  }, [navigate, setFocusArea, hotelId]);
+  }, [navigate, setFocusArea, popularId]);
 
   const handleViewNearbyDetails = useCallback((id, type) => {
     setSelectedItemId(id);
     setSelectedDetailType(type);
     const routeMap = {
       hotel: `/hotel-details/${id}`,
+      popular: `/popular-details/${id}`,
       place: `/place-details/${id}`,
       trek: `/trek-details/${id}`,
       lake: `/place-details/${id}`,
@@ -143,21 +163,47 @@ export default function HotelDetailsPage() {
   }, [navigate, setSelectedItemId, setSelectedDetailType]);
 
   const nextImage = useCallback(() => {
-    if (hotelData && hotelData.images && hotelData.images.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % hotelData.images.length);
+    if (popularItemData && popularItemData.images && popularItemData.images.length > 0) {
+      setCurrentImageIndex((prev) => (prev + 1) % popularItemData.images.length);
     }
-  }, [hotelData]);
+  }, [popularItemData]);
 
   const prevImage = useCallback(() => {
-    if (hotelData && hotelData.images && hotelData.images.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + hotelData.images.length) % hotelData.images.length);
+    if (popularItemData && popularItemData.images && popularItemData.images.length > 0) {
+      setCurrentImageIndex((prev) => (prev - 1 + popularItemData.images.length) % popularItemData.images.length);
     }
-  }, [hotelData]);
+  }, [popularItemData]);
+
+  const calculateNumberOfNights = () => {
+    if (!checkInDate || !checkOutDate) return 0;
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const timeDiff = checkOut.getTime() - checkIn.getTime();
+    const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return dayDiff > 0 ? dayDiff : 0;
+  };
+
+  const calculateTotalPreview = () => {
+    if (!popularItemData || !selectedRoomType) return 0;
+    const room = popularItemData.roomTypes.find(rt => rt.name === selectedRoomType);
+    if (!room) return 0;
+
+    const roomPrice = parseFloat(room.price); // Parse directly as it's just a number string now
+    const nights = calculateNumberOfNights();
+    const basePrice = roomPrice * nights;
+    const taxesAndFees = 500; // Mock taxes and fees
+    return basePrice + taxesAndFees;
+  };
+
+  const today = new Date().toISOString().split('T')[0];
+  const minCheckoutDate = checkInDate || today;
+
+  const isBookNowDisabled = !checkInDate || !checkOutDate || calculateNumberOfNights() <= 0 || !selectedRoomType;
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        Loading hotel details...
+        Loading popular item details...
       </div>
     );
   }
@@ -171,10 +217,10 @@ export default function HotelDetailsPage() {
     );
   }
 
-  if (!hotelData) {
+  if (!popularItemData) {
     return (
       <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50 text-gray-600">
-        <p>No hotel data available.</p>
+        <p>No popular item data available.</p>
         <Button variant="link" onClick={handleBack}>Go Back</Button>
       </div>
     );
@@ -194,12 +240,12 @@ export default function HotelDetailsPage() {
         {/* Image Carousel */}
         <div className="relative mb-6">
           <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-lg">
-            <img
-              src={hotelData.images[currentImageIndex]}
-              alt={`${hotelData.name} - Image ${currentImageIndex + 1}`}
+            <ImageWithFallback
+              src={popularItemData.images[currentImageIndex]}
+              alt={`${popularItemData.name} - Image ${currentImageIndex + 1}`}
               className="w-full h-full object-cover"
             />
-            {hotelData.images.length > 1 && (
+            {popularItemData.images.length > 1 && (
               <>
                 <Button
                   variant="secondary"
@@ -218,7 +264,7 @@ export default function HotelDetailsPage() {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {hotelData.images.map((_, index) => (
+                  {popularItemData.images.map((_, index) => (
                     <div
                       key={index}
                       className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
@@ -236,27 +282,27 @@ export default function HotelDetailsPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Hotel Info */}
+            {/* Popular Item Info */}
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{hotelData.name}</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{popularItemData.name}</h1>
                   <div className="flex items-center space-x-2 text-muted-foreground mb-2">
                     <MapPin className="w-4 h-4" />
-                    <span>{hotelData.location}</span>
+                    <span>{popularItemData.location}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{hotelData.rating}</span>
+                      <span className="font-medium">{popularItemData.rating}</span>
                     </div>
-                    <span className="text-muted-foreground">({hotelData.reviewCount} reviews)</span>
+                    <span className="text-muted-foreground">({popularItemData.reviewCount} reviews)</span>
                     <Badge className="bg-green-100 text-green-800">Available Today</Badge>
                   </div>
                 </div>
                 <div className="mt-4 md:mt-0 text-right">
-                  <div className="text-2xl font-bold text-primary">{hotelData.price}</div>
-                  <div className="text-sm text-muted-foreground">{hotelData.priceNote}</div>
+                  <div className="text-2xl font-bold text-primary">₹{popularItemData.price}</div>
+                  <div className="text-sm text-muted-foreground">{popularItemData.priceNote || "/night"}</div>
                 </div>
               </div>
 
@@ -271,14 +317,14 @@ export default function HotelDetailsPage() {
                 <TabsContent value="overview" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-3">About This Property</h3>
-                    <p className="text-muted-foreground leading-relaxed">{hotelData.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">{popularItemData.description}</p>
                   </div>
 
-                  {hotelData.amenities && hotelData.amenities.length > 0 && (
+                  {popularItemData.amenities && popularItemData.amenities.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">Amenities</h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {hotelData.amenities.map((amenity, index) => {
+                        {popularItemData.amenities.map((amenity, index) => {
                           const IconComponent = iconMap[amenity.icon] || Info; // Use mapped icon or fallback
                           return (
                             <div key={index} className="flex items-center space-x-2">
@@ -291,16 +337,16 @@ export default function HotelDetailsPage() {
                     </div>
                   )}
 
-                  {hotelData.roomTypes && hotelData.roomTypes.length > 0 && (
+                  {popularItemData.roomTypes && popularItemData.roomTypes.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">Room Types</h3>
                       <div className="space-y-3">
-                        {hotelData.roomTypes.map((room, index) => (
+                        {popularItemData.roomTypes.map((room, index) => (
                           <div key={index} className={`p-4 border rounded-lg ${!room.available ? 'opacity-60 bg-gray-50' : ''}`}>
                             <div className="flex justify-between items-start mb-2">
                               <h4 className="font-medium">{room.name}</h4>
                               <div className="text-right">
-                                <div className="font-semibold text-primary">{room.price}/night</div>
+                                <div className="font-semibold text-primary">₹{room.price}/night</div>
                                 {!room.available && <Badge variant="secondary">Sold Out</Badge>}
                               </div>
                             </div>
@@ -315,11 +361,11 @@ export default function HotelDetailsPage() {
                     </div>
                   )}
 
-                  {hotelData.policies && hotelData.policies.length > 0 && (
+                  {popularItemData.policies && popularItemData.policies.length > 0 && (
                     <div>
                       <h3 className="font-semibold mb-3">Policies</h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
-                        {hotelData.policies.map((policy, index) => (
+                        {popularItemData.policies.map((policy, index) => (
                           <li key={index}>• {policy}</li>
                         ))}
                       </ul>
@@ -329,11 +375,11 @@ export default function HotelDetailsPage() {
 
                 <TabsContent value="photos" className="mt-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {hotelData.images.map((image, index) => (
+                    {popularItemData.images.map((image, index) => (
                       <img
                         key={index}
                         src={image}
-                        alt={`${hotelData.name} - Photo ${index + 1}`}
+                        alt={`${popularItemData.name} - Photo ${index + 1}`}
                         className="w-full h-32 md:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                         onClick={() => setCurrentImageIndex(index)}
                       />
@@ -343,8 +389,8 @@ export default function HotelDetailsPage() {
 
                 <TabsContent value="reviews" className="mt-6">
                   <div className="space-y-4">
-                    {hotelData.reviews && hotelData.reviews.length > 0 ? (
-                        hotelData.reviews.map((review, index) => (
+                    {popularItemData.reviews && popularItemData.reviews.length > 0 ? (
+                        popularItemData.reviews.map((review, index) => (
                             <div key={index} className="border-b pb-4 last:border-b-0">
                                 <div className="flex items-center space-x-2 mb-2">
                                     <div className="flex">
@@ -366,8 +412,8 @@ export default function HotelDetailsPage() {
 
                 <TabsContent value="nearby" className="mt-6">
                   <div className="grid md:grid-cols-2 gap-4">
-                    {hotelData.nearbyAttractions && hotelData.nearbyAttractions.length > 0 ? (
-                      hotelData.nearbyAttractions.map((place, index) => (
+                    {popularItemData.nearbyAttractions && popularItemData.nearbyAttractions.length > 0 ? (
+                      popularItemData.nearbyAttractions.map((place, index) => (
                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm">
                           <div>
                             <h4 className="font-medium">{place.name}</h4>
@@ -409,73 +455,112 @@ export default function HotelDetailsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium">Check-in Date</label>
-                    <div className="flex items-center mt-1 p-2 border rounded-md bg-gray-50">
-                      <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">Select date</span>
-                    </div>
+                    <label htmlFor="popular-checkin" className="text-sm font-medium">Check-in Date</label>
+                    <Input
+                      id="popular-checkin"
+                      type="date"
+                      value={checkInDate}
+                      onChange={(e) => setCheckInDate(e.target.value)}
+                      min={today}
+                      className="mt-1"
+                    />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Check-out Date</label>
-                    <div className="flex items-center mt-1 p-2 border rounded-md bg-gray-50">
-                      <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">Select date</span>
-                    </div>
+                    <label htmlFor="popular-checkout" className="text-sm font-medium">Check-out Date</label>
+                    <Input
+                      id="popular-checkout"
+                      type="date"
+                      value={checkOutDate}
+                      onChange={(e) => setCheckOutDate(e.target.value)}
+                      min={minCheckoutDate}
+                      disabled={!checkInDate}
+                      className="mt-1"
+                    />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Guests</label>
-                    <div className="flex items-center mt-1 p-2 border rounded-md bg-gray-50">
-                      <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">2 adults</span>
-                    </div>
+                    <label htmlFor="popular-guests" className="text-sm font-medium">Guests</label>
+                    <Select value={guests} onValueChange={setGuests}>
+                      <SelectTrigger id="popular-guests" className="mt-1">
+                        <SelectValue placeholder="Select guests" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Guest</SelectItem>
+                        <SelectItem value="2">2 Guests</SelectItem>
+                        <SelectItem value="3">3 Guests</SelectItem>
+                        <SelectItem value="4">4 Guests</SelectItem>
+                        <SelectItem value="5">5+ Guests</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  {popularItemData.roomTypes && popularItemData.roomTypes.length > 0 && (
+                    <div>
+                      <label htmlFor="popular-room-type" className="text-sm font-medium">Room Type</label>
+                      <Select
+                        value={selectedRoomType}
+                        onValueChange={setSelectedRoomType}
+                        disabled={popularItemData.roomTypes.filter(room => room.available).length === 0}
+                      >
+                        <SelectTrigger id="popular-room-type" className="mt-1">
+                          <SelectValue placeholder="Select a room type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {popularItemData.roomTypes.map((room) => (
+                            <SelectItem key={room.name} value={room.name} disabled={!room.available}>
+                              {room.name} (₹{room.price}/night) {!room.available && "(Sold Out)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t pt-4">
                   <div className="flex justify-between mb-2">
-                    <span>Room rate (per night)</span>
-                    <span>{hotelData.price}</span>
+                    <span>Room rate {selectedRoomType && popularItemData.roomTypes.find(rt => rt.name === selectedRoomType) ? `(₹${popularItemData.roomTypes.find(rt => rt.name === selectedRoomType).price}/night)` : ''} × {calculateNumberOfNights()} nights</span>
+                    <span>₹{popularItemData.roomTypes.find(rt => rt.name === selectedRoomType) ? (parseFloat(popularItemData.roomTypes.find(rt => rt.name === selectedRoomType).price) * calculateNumberOfNights()).toFixed(2) : '0.00'}</span>
                   </div>
                   <div className="flex justify-between mb-2 text-sm text-muted-foreground">
                     <span>Taxes & fees</span>
-                    <span>₹500</span>
+                    <span>₹500.00</span>
                   </div>
                   <div className="flex justify-between font-semibold text-lg border-t pt-2">
                     <span>Total</span>
-                    <span>₹5,000</span> {/* This total is hardcoded for now, calculate dynamically if needed */}
+                    <span>₹{calculateTotalPreview().toFixed(2)}</span>
                   </div>
                 </div>
 
                 <Button
                   className="w-full bg-primary hover:bg-primary/90"
                   size="lg"
-                  onClick={() => handleBookNow(hotelData.id)}
+                  onClick={() => handleBookNow(popularItemData.id)}
+                  disabled={isBookNowDisabled}
                 >
                   Book Now
                 </Button>
 
                 <div className="text-center space-y-2 text-sm text-muted-foreground">
-                  {hotelData.contact?.phone && (
+                  {popularItemData.contact?.phone && (
                     <div className="flex items-center justify-center space-x-2">
                       <Phone className="w-4 h-4" />
-                      <span>{hotelData.contact.phone}</span>
+                      <span>{popularItemData.contact.phone}</span>
                     </div>
                   )}
-                  {hotelData.contact?.email && (
+                  {popularItemData.contact?.email && (
                     <div className="flex items-center justify-center space-x-2">
                       <Mail className="w-4 h-4" />
-                      <span>{hotelData.contact.email}</span>
+                      <span>{popularItemData.contact.email}</span>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {hotelData.faqs && hotelData.faqs.length > 0 && (
+            {popularItemData.faqs && popularItemData.faqs.length > 0 && (
               <FAQSection
-                faqs={hotelData.faqs}
+                faqs={popularItemData.faqs}
                 className={`bg-white shadow-sm sticky`}
-                style={{ top: faqStickyTop }} // Dynamically set the top value
+                style={{ top: faqStickyTop }}
               />
             )}
           </div>

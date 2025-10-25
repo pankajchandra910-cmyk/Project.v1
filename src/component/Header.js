@@ -1,11 +1,12 @@
-import { Search, User, Menu, X, LogOut } from "lucide-react"; // Import LogOut icon
+import { Search, User, Menu, X, LogOut } from "lucide-react";
 import { Button } from "./button";
-import { Input } from "./Input";
+import { Input } from "./input";
 import React, { useContext } from "react";
 import { GlobalContext } from "./GlobalContext";
-import Logo from '../assets/Logo.jpg';
+import { Link } from "react-router-dom"; // <--- ADD THIS LINE
+import LogoSvg from '../assets/buddy-in-hills-logo.svg';
 
-export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
+export default function Header({ onSearch, onProfileClick, onLogoClick, onMenuToggle }) {
   const {
     isLoggedIn,
     userName,
@@ -13,8 +14,8 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
     setSearchQuery,
     showMobileMenu,
     setShowMobileMenu,
-    userType, // Assuming you have a userRole in GlobalContext (e.g., 'user', 'owner', null)
-    logout1, // Assuming you have a logout function in GlobalContext
+    userType,
+    logout1,
   } = useContext(GlobalContext);
 
   const handleSearch = (e) => {
@@ -25,17 +26,17 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
+    <header className="sticky top-0 z-50 bg-white border-b shadow-sm dark:bg-gray-900 dark:border-gray-700">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <img
-              src={Logo}
-              alt="Buddy In Hills Logo"
-              className="h-12 w-auto cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={onLogoClick}
-            />
+          {/* Logo - Now using SVG */}
+          <div className="flex items-center">
+            <Link to="/" onClick={onLogoClick} className="flex items-center">
+             <LogoSvg
+                className="h-14 w-auto cursor-pointer hover:opacity-80 transition-opacity
+                          text-[#4A6472]"
+              />
+            </Link>
             <div
               className="text-xl font-bold text-primary cursor-pointer hover:opacity-80 transition-opacity hidden sm:block"
               onClick={onLogoClick}
@@ -52,14 +53,14 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
                 placeholder="Search hotels, treks, cabs in Nainital..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
+                className="pr-10 dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <Button
                 type="submit"
                 size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 bg-primary"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 bg-primary dark:bg-blue-600 dark:hover:bg-blue-700"
               >
-                <Search className="w-4 h-4" />
+                <Search className="w-4 h-4 text-white" />
               </Button>
             </div>
           </form>
@@ -70,7 +71,7 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="md:hidden dark:text-gray-50 dark:hover:bg-gray-700"
               onClick={onMenuToggle}
             >
               {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -81,8 +82,8 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center space-x-2"
-                onClick={onLogoClick} 
+                className="flex items-center space-x-2 dark:text-gray-50 dark:hover:bg-gray-700"
+                onClick={onProfileClick}
               >
                 <User className="w-5 h-5" />
                 {isLoggedIn && userName && (
@@ -91,15 +92,15 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
               </Button>
 
               {/* Logout Button (Desktop View Only) */}
-              {isLoggedIn && (userType=== 'owner' || userType === 'user') && (
+              {isLoggedIn && (userType === 'owner' || userType === 'user') && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="hidden md:flex items-center space-x-1"
-                  onClick={logout1} // Call the logout function from GlobalContext
+                  className="hidden md:flex items-center space-x-1 dark:text-gray-50 dark:hover:bg-gray-700"
+                  onClick={logout1}
                 >
                   <LogOut className="w-5 h-5" />
-                  <span className="hidden lg:inline">Logout</span> {/* Optional: show text on larger screens */}
+                  <span className="hidden lg:inline">Logout</span>
                 </Button>
               )}
             </div>
@@ -114,14 +115,14 @@ export default function Header({ onSearch, onLogoClick, onMenuToggle }) {
               placeholder="Search hotels, treks, cabs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pr-10"
+              className="pr-10 dark:bg-gray-700 dark:text-white dark:border-gray-600"
             />
             <Button
               type="submit"
               size="sm"
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 bg-primary"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 bg-primary dark:bg-blue-600 dark:hover:bg-blue-700"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4 text-white" />
             </Button>
           </div>
         </form>
