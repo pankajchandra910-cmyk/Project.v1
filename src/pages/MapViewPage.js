@@ -414,31 +414,33 @@ export default function MapViewPage() {
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={handleBack}>
+          {/* Header content: Back button, Title, Search and Map controls */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center space-x-4 mb-4 md:mb-0"> {/* Added mb-4 for spacing on small screens */}
+              <Button variant="ghost" onClick={handleBack} className="flex-shrink-0">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-lg md:text-xl font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
                 {focusArea ? `${focusArea.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')} Area Map` : "Explore Map"}
               </h1>
             </div>
 
             {/* Search Bar and Map Controls */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input
                   placeholder="Search locations..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-64"
+                  className="pl-10 w-full sm:w-64" // Full width on small, 64 on small-medium and up
                 />
               </div>
 
-              {/* Map Controls */}
-              <div className="flex space-x-2">
+              {/* Map Controls - moved to the next line on small/medium */}
+              <div className="flex space-x-2 mt-2 sm:mt-0 justify-start sm:justify-end w-full sm:w-auto">
                 <Button variant="outline" size="sm" onClick={handleZoomIn}>
                   <ZoomIn className="w-4 h-4" />
                 </Button>
@@ -455,7 +457,7 @@ export default function MapViewPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8"> {/* Changed to grid-cols-1 for small screens */}
           {/* Map Section */}
           <div className="lg:col-span-3">
             <Card className="overflow-hidden">

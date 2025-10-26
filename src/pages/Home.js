@@ -166,7 +166,7 @@ export default function Home() {
                     backgroundImage: `url('https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
                   }}
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-30" />
+                <div className="absolute inset-0" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Nainital</h3>
@@ -188,7 +188,7 @@ export default function Home() {
                     backgroundImage: `url('https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
                   }}
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-30" />
+                <div className="absolute inset-0" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Lakes</h3>

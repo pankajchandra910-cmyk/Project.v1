@@ -1,17 +1,15 @@
-import { useState, useRef, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
 import { Button } from "./button";
 import { Input } from "./Input";
 import { ScrollArea } from "./scroll-area";
 import { Send, Bot, User } from "lucide-react";
 
-
-
 /**
  * @typedef {object} AIChatProps
  * @property {boolean} isOpen
  * @property {() => void} onClose
- * @property {string} language - 'en' for English, 'hi' for Hindi
+ * @property {'en' | 'hi'} language - 'en' for English, 'hi' for Hindi
  */
 
 /**
@@ -30,47 +28,55 @@ export default function AIchat({ isOpen, onClose, language }) {
   /** @type {[Message[], import('react').Dispatch<import('react').SetStateAction<Message[]>>]} */
   const [messages, setMessages] = useState(() => [
     {
-      id: '1',
+      id: 'initial-ai',
       type: 'ai',
-      content: language === 'hi'
-        ? 'नमस्ते! मैं आपका NainiExplore AI सहायक हूं। उत्तराखंड के होटल, झीलों, बाइक रेंटल, टैक्सी और ट्रेकिंग के बारे में पूछें।'
-        : 'Hello! I\'m your NainiExplore AI assistant. Ask me about Uttarakhand hotels, lakes, bike rentals, taxis, and trekking.',
-      timestamp: new Date()
-    }
+      content:
+        language === 'hi'
+          ? 'नमस्ते! मैं आपका NainiExplore AI सहायक हूं। उत्तराखंड के होटल, झीलों, बाइक रेंटल, टैक्सी और ट्रेकिंग के बारे में पूछें।'
+          : "Hello! I'm your NainiExplore AI assistant. Ask me about Uttarakhand hotels, lakes, bike rentals, taxis, and trekking.",
+      timestamp: new Date(),
+    },
   ]);
+
   /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [inputMessage, setInputMessage] = useState("");
+
   /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isTyping, setIsTyping] = useState(false);
+
   const scrollAreaRef = useRef(null);
+  const messagesEndRef = useRef(null); // Ref for the last message to scroll into view
 
   // Scroll to the bottom of the chat when messages change or dialog opens
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]); // Added isTyping to re-scroll when typing indicator appears/disappears
 
-  const quickQuestions = language === 'hi' ? [
-    "नैनीताल में सबसे अच्छे होटल कौन से हैं?",
-    "भीमताल में बाइक रेंटल की कीमत क्या है?",
-    "नैना पीक ट्रेक कैसे करें?",
-    "स्थानीय टैक्सी की दरें क्या हैं?"
-  ] : [
-    "Best hotels in Nainital?",
-    "Bike rental prices in Bhimtal?",
-    "How to trek to Naina Peak?",
-    "Local taxi rates?"
-  ];
+  const quickQuestions =
+    language === 'hi'
+      ? [
+          "नैनीताल में सबसे अच्छे होटल कौन से हैं?",
+          "भीमताल में बाइक रेंटल की कीमत क्या है?",
+          "नैना पीक ट्रेक कैसे करें?",
+          "स्थानीय टैक्सी की दरें क्या हैं?",
+        ]
+      : [
+          "Best hotels in Nainital?",
+          "Bike rental prices in Bhimtal?",
+          "How to trek to Naina Peak?",
+          "Local taxi rates?",
+        ];
 
   /**
    * Generates an AI response based on the user's message.
    * @param {string} userMessage
    * @returns {string}
    */
-  const getAIResponse = (userMessage) => {
+  const getAIResponse = useCallback((userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
-    
+
     if (language === 'hi') {
       if (lowerMessage.includes('होटल') || lowerMessage.includes('hotel')) {
         return "नैनीताल के टॉप होटल:\n1. माउंटेन व्यू रिज़ॉर्ट - ₹4,500/रात\n2. लेक साइड इन - ₹3,200/रात\n3. हिल स्टेशन लॉज - ₹2,800/रात\n\nसभी में WiFi, पार्किंग और झील का दृश्य उपलब्ध है।";
@@ -106,9 +112,9 @@ export default function AIchat({ isOpen, onClose, language }) {
       }
       return "I can help with information about Uttarakhand hotels, trekking, bike rentals, taxi services, and lakes. Please ask more specific questions.";
     }
-  };
+  }, [language]); // Depend on language
 
-  const handleSendMessage = () => {
+  const handleSendMessage = useCallback(() => {
     if (!inputMessage.trim()) return;
 
     /** @type {Message} */
@@ -116,10 +122,10 @@ export default function AIchat({ isOpen, onClose, language }) {
       id: Date.now().toString(),
       type: 'user',
       content: inputMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsTyping(true);
 
@@ -129,104 +135,129 @@ export default function AIchat({ isOpen, onClose, language }) {
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: getAIResponse(userMessage.content), // Use userMessage.content here
-        timestamp: new Date()
+        content: getAIResponse(userMessage.content),
+        timestamp: new Date(),
       };
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMessage]);
       setIsTyping(false);
     }, 1500);
-  };
+  }, [inputMessage, getAIResponse]); // Depend on inputMessage and getAIResponse
 
   /**
    * Handles a quick question click.
    * @param {string} question
    */
-  const handleQuickQuestion = (question) => {
+  const handleQuickQuestion = useCallback((question) => {
     setInputMessage(question);
     // Use a small delay to allow inputMessage to update before sending
     setTimeout(() => handleSendMessage(), 100);
-  };
+  }, [handleSendMessage]); // Depend on handleSendMessage
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md h-[600px] flex flex-col">
-        <DialogHeader>
+      <DialogContent
+        className="
+           flex-col
+          h-[min(90vh,700px)] max-h-[90vh]
+          w-[95vw] sm:w-[90vw] md:w-[70vw] lg:w-[600px]
+          max-w-screen-lg
+          p-4
+          overflow-hidden // Ensure content inside respects flex layout
+        "
+      >
+        <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center space-x-2">
             <Bot className="w-5 h-5 text-primary" />
-            <span>NainiExplore AI Assistant</span>
+            <span>Buddy In Hills AI Assistant</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col space-y-4">
-          {/* Messages */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
-            <div className="space-y-4">
+        {/* Main content area within the dialog */}
+        <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
+          {/* Messages Scroll Area */}
+          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-2">
+            <div className="space-y-4 pb-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${
+                    message.type === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
                 >
-                  <div className={`flex items-start space-x-2 max-w-[80%] ${
-                    message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                  }`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.type === 'user' ? 'bg-primary' : 'bg-secondary'
-                    }`}>
+                  <div
+                    className={`flex items-start space-x-2 max-w-[80%] sm:max-w-[70%] lg:max-w-[60%] ${
+                      message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                    }`}
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        message.type === 'user' ? 'bg-primary' : 'bg-secondary'
+                      }`}
+                    >
                       {message.type === 'user' ? (
                         <User className="w-4 h-4 text-white" />
                       ) : (
                         <Bot className="w-4 h-4 text-white" />
                       )}
                     </div>
-                    <div className={`rounded-lg p-3 ${
-                      message.type === 'user'
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
-                      <p className="text-sm whitespace-pre-line">{message.content}</p>
+                    <div
+                      className={`rounded-lg p-3 text-sm ${
+                        message.type === 'user'
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-50'
+                      }`}
+                    >
+                      <p className="whitespace-pre-line">{message.content}</p>
                       <p className="text-xs opacity-70 mt-1">
                         {message.timestamp.toLocaleTimeString([], {
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
                   </div>
                 </div>
               ))}
-              
+
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="flex items-start space-x-2">
                     <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="bg-gray-100 rounded-lg p-3">
+                    <div className="bg-gray-100 rounded-lg p-3 dark:bg-gray-700">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.1s' }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: '0.2s' }}
+                        ></div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} /> {/* Element to scroll into view */}
             </div>
           </ScrollArea>
 
-          {/* Quick Questions */}
-          {messages.length === 1 && ( // Only show quick questions when only the initial AI message is present
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+          {/* Quick Questions - show only if there's only the initial AI message */}
+          {messages.length === 1 && (
+            <div className="space-y-2 p-2 rounded-lg bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+              <p className="text-sm text-muted-foreground dark:text-gray-400">
                 {language === 'hi' ? 'त्वरित प्रश्न:' : 'Quick questions:'}
               </p>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {quickQuestions.map((question, index) => (
                   <Button
                     key={index}
                     variant="outline"
                     size="sm"
-                    className="text-left justify-start h-auto p-2 text-xs"
+                    className="text-left justify-start h-auto p-2 text-xs truncate"
                     onClick={() => handleQuickQuestion(question)}
                   >
                     {question}
@@ -237,21 +268,28 @@ export default function AIchat({ isOpen, onClose, language }) {
           )}
 
           {/* Input */}
-          <div className="flex space-x-2">
-            <Input
-              placeholder={language === 'hi' ? 'यहाँ अपना प्रश्न लिखें...' : 'Type your question here...'}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isTyping}
-              className="bg-primary"
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+          <div className="pt-2"> {/* Added pt-2 to provide spacing */}
+            <div className="flex items-center space-x-2">
+              <Input
+                placeholder={
+                  language === 'hi'
+                    ? 'यहाँ अपना प्रश्न लिखें...'
+                    : 'Type your question here...'
+                }
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="flex-1 rounded-md"
+                disabled={isTyping} // Disable input while AI is typing
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isTyping}
+                className="bg-primary hover:bg-primary/90 text-white rounded-md transition-transform active:scale-95"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
 import { Button } from "./button";
 import { Input } from "./Input";
 import { Label } from "./label";
