@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "./button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Badge } from "./badge";
 import { ChevronLeft, ChevronRight, X, MapPin, Star } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
