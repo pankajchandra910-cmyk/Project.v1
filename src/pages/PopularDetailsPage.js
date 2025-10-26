@@ -5,7 +5,7 @@ import { hotelDetailsData } from "../assets/dummy";
 
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
-import { Input } from "../component/input"; // Import Input for date selection
+import { Input } from "../component/Input"; // Import Input for date selection
 import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { FAQSection } from "../component/FAQSection";

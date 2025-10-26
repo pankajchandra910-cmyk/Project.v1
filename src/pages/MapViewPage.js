@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
 import { Button } from "../component/button";
-import { Input } from "../component/input";
+import { Input } from "../component/Input";
 import { Card, CardContent } from "../component/Card";
 import { Badge } from "../component/badge";
 import { GlobalContext } from "../component/GlobalContext";

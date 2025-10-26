@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
 import { Button } from "../component/button";
-import { Input } from "../component/input";
+import { Input } from "../component/Input";
 import { Label } from "../component/label";
 import { Textarea } from "../component/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";

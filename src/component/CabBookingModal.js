@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Calendar } from "./calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Badge } from "./badge";
-import { Input } from "./input";
+import { Input } from "./Input";
 import { Label } from "./label";
 import { Car, Phone, Calendar as CalendarIcon, CheckCircle } from "lucide-react";
 

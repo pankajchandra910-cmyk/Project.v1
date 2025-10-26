@@ -5,7 +5,7 @@ import { hotelDetailsData } from "../assets/dummy";
 
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
-import { Input } from "../component/input";
+import { Input } from "../component/Input";
 import { Label } from "../component/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";
 import { Checkbox } from "../component/checkbox";

@@ -1,6 +1,6 @@
 import { Search, User, Menu, X, LogOut } from "lucide-react";
 import { Button } from "./button";
-import { Input } from "./input";
+import { Input } from "./Input";
 import React, { useContext } from "react";
 import { GlobalContext } from "./GlobalContext";
 import { Link } from "react-router-dom"; // <--- ADD THIS LINE
