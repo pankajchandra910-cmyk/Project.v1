@@ -32,10 +32,10 @@ export function FAQSection({ title = "Quick Answers", faqs, className = "" }) {
               className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
               <span className="font-medium text-sm pr-2">{faq.question}</span>
-              {openItems.includes(index) ? (
-                <ChevronUp className="w-4 h-4 text-primary flex-shrink-0" />
+                {openItems.includes(index) ? (
+                <ChevronUp className="w-4 h-4 text-primary shrink-0" />
               ) : (
-                <ChevronDown className="w-4 h-4 text-primary flex-shrink-0" />
+                <ChevronDown className="w-4 h-4 text-primary shrink-0" />
               )}
             </button>
             {openItems.includes(index) && (

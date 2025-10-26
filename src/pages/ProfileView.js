@@ -159,7 +159,7 @@ export default function ProfileView() {
                           type="text"
                           value={newName}
                           onChange={(e) => setNewName(e.target.value)}
-                          className="flex-grow bg-transparent outline-none text-gray-900"
+                          className="grow bg-transparent outline-none text-gray-900"
                         />
                       ) : (
                         <span className="text-gray-900">{userName}</span>
@@ -184,7 +184,7 @@ export default function ProfileView() {
                           type="tel"
                           value={newPhone}
                           onChange={(e) => setNewPhone(e.target.value)}
-                          className="flex-grow bg-transparent outline-none text-gray-900"
+                          className="grow bg-transparent outline-none text-gray-900"
                         />
                       ) : (
                         <span className="text-gray-900">{userPhone}</span>
@@ -209,7 +209,7 @@ export default function ProfileView() {
                           type="email"
                           value={newEmail}
                           onChange={(e) => setNewEmail(e.target.value)}
-                          className="flex-grow bg-transparent outline-none text-gray-900"
+                          className="grow bg-transparent outline-none text-gray-900"
                         />
                       ) : (
                         <span className="text-gray-900">{userEmail}</span>

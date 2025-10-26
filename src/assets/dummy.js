@@ -1595,8 +1595,806 @@ export const locationsData = {
 
   }
 };
+
+
+
+export const listingDetailsData = { // Unified data object
+// --- HOTEL EXAMPLE ---
+"hotel-paradise": {
+id: "hotel-paradise",
+type: "hotel", // <--- IMPORTANT: Add type
+name: "Hotel Paradise Inn",
+location: "Nainital, Uttarakhand, India",
+rating: 4.5,
+reviewCount: 500,
+images: ["https://images.unsplash.com/photo-1549294413-40a232236a87?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80", "https://images.unsplash.com/photo-1521747116042-5a810fda9664", "https://images.unsplash.com/photo-1571860719811-9e73ef5949d2"],
+description: "A cozy retreat near Naini Lake, offering excellent service and breathtaking views. Perfect for families and couples.",
+amenties: ["Free Wi-Fi", "Restaurant", "Parking", "Room Service", "Laundry", "Heater"],
+roomTypes: [
+{ name: "Standard Room", price: "₹3,500", capacity: 2, available: true, description: "Comfortable room with garden view." },
+{ name: "Deluxe Lake View", price: "₹5,000", capacity: 3, available: true, description: "Spacious room with stunning lake views." },
+{ name: "Family Suite", price: "₹7,000", capacity: 4, available: false, description: "Two interconnected rooms, ideal for families." },
+],
+faqs: [
+{ question: "Do you have parking?", answer: "Yes, complimentary parking is available for guests." },
+{ question: "Is breakfast included?", answer: "Yes, a complimentary breakfast is included with all room bookings." }
+]
+},
+"the-grand-hotel": {
+id: "the-grand-hotel",
+type: "hotel", // <--- IMPORTANT: Add type
+name: "The Grand Nainital",
+location: "Mall Road, Nainital, Uttarakhand, India",
+rating: 4.8,
+reviewCount: 900,
+images: ["https://images.unsplash.com/photo-1571003123894-ca87ef898634?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80", "https://images.unsplash.com/photo-1551882547-ff40c63c1257", "https://images.unsplash.com/photo-1522771739845-ff243586aa49"],
+description: "Experience luxury and heritage at this iconic hotel, located right on Mall Road with direct lake access.",
+amenties: ["Luxury Spa", "Fine Dining", "Concierge", "Swimming Pool", "Kids Club", "Banquet Hall"],
+roomTypes: [
+{ name: "Luxury Room", price: "₹8,000", capacity: 2, available: true, description: "Elegant room with modern amenities." },
+{ name: "Executive Suite", price: "₹12,000", capacity: 3, available: true, description: "Spacious suite with a living area and lake views." },
+{ name: "Presidential Suite", price: "₹25,000", capacity: 4, available: true, description: "Opulent suite with personalized services." },
+],
+faqs: [
+{ question: "Do you have a swimming pool?", answer: "Yes, we have an indoor heated swimming pool." },
+{ question: "Is your hotel 반려동물 friendly (pet-friendly)?", answer: "Unfortunately, we do not allow pets." }
+]
+},
+// --- TREK EXAMPLES ---
+"china-peak": {
+id: "china-peak",
+type: "trek", // <--- IMPORTANT: Add type
+name: "China Peak (Naina Peak)",
+location: "Near Nainital, Uttarakhand, India",
+rating: 4.9,
+reviewCount: 10000,
+price: "₹1,500", // Will be per person
+priceNote: "Guide & permits included",
+duration: "4-6 hours",
+distance: "6 km (one-way)",
+difficulty: "Moderate",
+altitude: "2,611 meters (8,568 ft)",
+bestTime: "March-June, Sept-Nov",
+images: [
+"https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+"https://images.unsplash.com/photo-1587502573223-b6c8d37a28e9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+"https://images.unsplash.com/photo-150674868722-e60d367462ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+],
+description: "China Peak (Naina Peak) is the highest peak in Nainital, offering breathtaking panoramic views of the entire Nainital town, the Naini Lake, and the majestic Himalayan ranges. It's a popular spot for trekking and experiencing stunning sunrises. The moderately challenging trek takes you through dense oak and deodar forests, providing a serene escape and ample opportunities for nature photography.",
+// A simplified 'roomTypes' equivalent for treks, or just use availableDates directly
+trekPackages: [ // Renamed from roomTypes, better for treks
+{ name: "Standard Trek", price: "₹1,500", capacity: 1, available: true, description: "Per person, includes guide and basic essentials." },
+{ name: "Private Trek", price: "₹5,000", capacity: 5, available: true, description: "Private guide for up to 5 people." }, // Example for a private group
+],
+availableDates: [ // This is also crucial for treks
+{ date: "2024-06-10", price: "₹1,500", available: true },
+{ date: "2024-06-17", price: "₹1,500", available: true },
+{ date: "2024-06-24", price: "₹1,500", available: false },
+{ date: "2024-07-01", price: "₹1,400", available: true },
+],
+// ... (rest of your trek-specific data like highlights, included, itinerary, whatToBring, etc.)
+guide: {
+name: "Ramesh Sharma",
+experience: "10+ years in Kumaon region",
+rating: 4.8,
+languages: ["Hindi", "English", "Kumaoni"],
+specialization: "High-altitude treks, local flora/fauna",
+contact: "+919876543210",
+email: "ramesh.guide@example.com"
+},
+whatToBring: [
+{
+category: "Personal Gear",
+items: ["Small backpack", "Water bottle (reusable)", "Sunscreen and hat", "Sunglasses", "Power bank"]
+},
+],
+safetyGuidelines: [
+"Stay on marked trails; do not venture alone.",
+"Inform your guide about any medical conditions.",
+],
+faqs: [
+{ question: "Is China Peak suitable for beginners?", answer: "It's a moderately challenging trek. Beginners with good physical fitness can attempt it, but it's advisable to be prepared for uphill climbs. A local guide is recommended." },
+]
+},
+"tiffin-top": {
+id: "tiffin-top",
+type: "trek", // <--- IMPORTANT: Add type
+name: "Tiffin Top (Dorothy's Seat)",
+location: "Near Nainital, Uttarakhand, India",
+rating: 4.7,
+reviewCount: 234,
+price: "₹800",
+priceNote: "Basic guide service",
+duration: "2-3 hours (round trip)",
+distance: "4 km (one-way)",
+difficulty: "Easy to Moderate",
+altitude: "2,290 meters (7,513 ft)",
+bestTime: "Year-round (avoid heavy monsoon)",
+images: [
+"https://images.unsplash.com/photo-1547372332-6a4058d867c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+"https://images.unsplash.com/photo-1620808381272-91f1ad6513d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+],
+description: "Tiffin Top (also known as Dorothy's Seat) is one of the most popular viewpoints in Nainital, offering breathtaking panoramic views of the snow-capped Himalayas.",
+trekPackages: [
+{ name: "Guided Walk", price: "₹800", capacity: 1, available: true, description: "Per person, accompanied by a local guide." },
+{ name: "Horse Riding Option", price: "₹1,200", capacity: 1, available: true, description: "Includes horse ride to Tiffin Top." },
+],
+availableDates: [
+{ date: "2024-05-28", price: "₹800", available: true },
+{ date: "2024-06-05", price: "₹800", available: true },
+{ date: "2024-06-12", price: "₹800", available: true },
+],
+// ... (rest of trek data)
+},
+"naini-track": {
+id: "naini-track",
+type: "trek", // <--- IMPORTANT: Add type
+name: "Naini Track (Various Viewpoints Trek)",
+location: "Nainital & Surrounding Hills, Uttarakhand, India",
+rating: 4.6,
+reviewCount: 12000,
+price: "₹1,200",
+priceNote: "Covers multiple viewpoints",
+duration: "Entire day (6-8 hours)",
+distance: "8-10 km (total)",
+difficulty: "Moderate",
+altitude: "Varies (up to 2,611 meters)",
+bestTime: "March-June, Sept-Nov",
+images: [
+"https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+"https://images.unsplash.com/photo-1621379965545-a77b311756b1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+"https://images.unsplash.com/photo-1596792440733-dc18d84422e8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+],
+description: "The 'Naini Track' represents a series of interconnected popular trekking routes around Nainital, leading to iconic viewpoints such as Tiffin Top (Dorothy's Seat), Land's End, and possibly even up towards China Peak for the ambitious.",
+trekPackages: [
+{ name: "Daily Group Trek", price: "₹1,200", capacity: 1, available: true, description: "Per person, fixed departure group." },
+{ name: "Flexible Small Group", price: "₹4,800", capacity: 4, available: true, description: "For up to 4 people, flexible timings." },
+],
+availableDates: [
+{ date: "2024-06-03", price: "₹1,200", available: true },
+{ date: "2024-06-10", price: "₹1,200", available: true },
+{ date: "2024-06-17", price: "₹1,200", available: true },
+{ date: "2024-06-24", price: "₹1,200", available: false },
+],
+// ... (rest of trek data)
+},
+"bhimtal-lake": { // Ensure this ID matches the format used in routes and context
+type: "hotel", // Add type
+id: "bhimtal-lake",
+name: "Mountain View Resort Bhimtal",
+location: "2km from Bhimtal Lake, Uttarakhand",
+rating: 4.5,
+reviewCount: 128,
+price: "4500", // Base price, individual room types have their own prices
+priceNote: "per night",
+checkInTime: "2:00 PM",
+checkOutTime: "11:00 AM",
+images: [
+"https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1566073771259-6a8506099945?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3RlbCUyMHJvb20lMjBsdXh1cnl8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHhob3RlbCUyMHBvb2wlMjByZXNvcnR8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxyZXN0YXVyYW50JTIwaW50ZXJpb3J8ZW58MXx8fHwxNzM3MDM4NDAwfDB&ixlib=rb-4.1.0&q=80&w=1080"
+],
+description: "Luxury resort with spectacular lake views, modern amenities, and spa facilities. Perfect for families and couples seeking a peaceful mountain retreat with easy access to Bhimtal's attractions.",
+amenities: [
+{ icon: "Wifi", name: "Free WiFi" },
+{ icon: "Car", name: "Free Parking" },
+{ icon: "Waves", name: "Swimming Pool" },
+{ icon: "Coffee", name: "Spa & Wellness" },
+{ icon: "Utensils", name: "Multi-cuisine Restaurant" },
+{ icon: "Shield", name: "24/7 Security" }
+],
+roomTypes: [
+{
+name: "Standard Room",
+price: "2500", // Updated to number-like string for easier parsing
+features: ["Lake View", "AC", "TV", "WiFi"],
+available: true
+},
+{
+name: "Deluxe Room",
+price: "3500",
+features: ["Lake View", "Balcony", "AC", "TV", "WiFi", "Mini Bar"],
+available: true
+},
+{
+name: "Suite",
+price: "5500",
+features: ["Panoramic View", "Separate Living Area", "Jacuzzi", "All Premium Amenities"],
+available: false
+}
+],
+nearbyAttractions: [
+{ id: "bhimtal-lake", name: "Bhimtal Lake", distance: "2km", type: "lake", rating: 4.6 },
+{ id: "naukuchiatal", name: "Naukuchiatal", distance: "8km", type: "lake", rating: 4.5 },
+{ id: "tiffin-top-trek", name: "Tiffin Top Trek", distance: "12km", type: "viewpoint", rating: 4.7 },
+{ id: "naina-peak-trek", name: "Naina Peak Trek", distance: "15km", type: "trek", rating: 4.8 }
+],
+contact: {
+phone: "+91 9876543210",
+email: "info@mountainviewresort.com"
+},
+policies: [
+"Check-in: 2:00 PM | Check-out: 11:00 AM",
+"Cancellation: Free cancellation up to 24 hours before arrival",
+"Children: Children under 12 stay free with existing bedding",
+"Pets: Pet-friendly rooms available on request"
+],
+reviews: [
+{
+author: "Rajesh Kumar",
+rating: 5,
+date: "2 days ago",
+comment: "Amazing stay with beautiful lake views! The staff was very helpful and the food was excellent. Perfect location for exploring Bhimtal and nearby attractions."
+},
+{
+author: "Priya Sharma",
+rating: 4,
+date: "1 week ago",
+comment: "Great mountain resort experience. Room was clean and comfortable. The spa facilities were relaxing after a day of trekking."
+}
+],
+faqs: [
+{
+question: "Is there a swimming pool?",
+answer: "Yes, the resort has a spacious outdoor swimming pool accessible to all guests."
+},
+{
+question: "Do rooms have lake views?",
+answer: "Many of our rooms offer spectacular lake views. Please specify your preference when booking."
+},
+{
+question: "Is parking available?",
+answer: "Yes, we provide ample free parking for all our guests."
+},
+{
+question: "Are pets allowed?",
+answer: "We have designated pet-friendly rooms available upon request. Additional charges may apply."
+}
+]
+},
+"naina-devi-temple": { // Ensure this ID matches the format used in routes and context
+type: "hotel", // Add type
+id: "naina-devi-temple",
+name: "The Naini Retreat",
+location: "Ayarpata, Nainital, Uttarakhand",
+rating: 4.7,
+reviewCount: 250,
+price: "6800", // Base price
+priceNote: "per night",
+checkInTime: "3:00 PM",
+checkOutTime: "12:00 PM",
+images: [
+"https://images.unsplash.com/photo-1582719424888-8255018e6e58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwbHV4dXJ5fGVuMXx8fHwxNzU3NjE2OTkwfDB&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1549294413-26f195200c8b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHhob3RlbCUyMHJlc3RhdXJhbnQlMjBudXhlcnl8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1563299797-0bfe122a6d80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluaXRhbCUyMGhvdGVsJTIwcG9vbHxlbnwxfHx8MTczNzAzODQwMHww&ixlib=rb-4.1.0&q=80&w=1080",
+],
+description: "An erstwhile residence of the Maharaja of Pilibhit, The Naini Retreat is a luxury heritage hotel offering majestic views of the Naini Lake and surrounding mountains. Experience colonial charm with modern comforts.",
+amenities: [
+{ icon: "Wifi", name: "Free WiFi" },
+{ icon: "Car", name: "Valet Parking" },
+{ icon: "Waves", name: "Heated Swimming Pool" },
+{ icon: "Coffee", name: "Spa & Massage" },
+{ icon: "Utensils", name: "Fine Dining Restaurant" },
+{ icon: "Users", name: "Conference Facilities" }
+],
+roomTypes: [
+{
+name: "Heritage Room",
+price: "6800",
+features: ["Lake View", "Antique Decor", "Heater", "TV", "WiFi"],
+available: true
+},
+{
+name: "Superior Room",
+price: "8500",
+features: ["Garden View", "Balcony", "Modern Amenities", "Mini Bar"],
+available: true
+},
+{
+name: "Maharaja Suite",
+price: "15000",
+features: ["Panoramic Lake View", "Separate Living Area", "Fireplace", "Personal Butler"],
+available: true
+}
+],
+nearbyAttractions: [
+{ id: "naini-lake", name: "Naini Lake", distance: "1km", type: "lake", rating: 4.7 },
+{ id: "mall-road", name: "Mall Road", distance: "1.5km", type: "market", rating: 4.5 },
+{ id: "naina-devi-temple", name: "Naina Devi Temple", distance: "2km", type: "temple", rating: 4.7 }
+],
+contact: {
+phone: "+91 7654321098",
+email: "reservations@nainiretreat.com"
+},
+policies: [
+"Check-in: 3:00 PM | Check-out: 12:00 PM",
+"Cancellation: 48-hour free cancellation policy",
+"Children: Kids Club available",
+"Pets: Not allowed"
+],
+reviews: [
+{
+author: "Ananya Singh",
+rating: 5,
+date: "3 days ago",
+comment: "Absolutely stunning property with breathtaking views of Naini Lake. The service was impeccable, and the heritage feel added so much charm to our stay."
+},
+{
+author: "Vikram Mehta",
+rating: 4,
+date: "2 weeks ago",
+comment: "A wonderful experience! The food was delicious, and the staff went above and beyond to make us comfortable. Highly recommended for a luxurious getaway."
+}
+],
+faqs: [
+{
+question: "Is breakfast included?",
+answer: "Yes, a complimentary buffet breakfast is included with all room bookings."
+},
+{
+question: "Do you have a shuttle service?",
+answer: "We offer shuttle services to Mall Road and other local attractions. Please inquire at the reception."
+},
+{
+question: "Are there vegetarian food options?",
+answer: "Our multi-cuisine restaurant offers a wide array of vegetarian and vegan dishes."
+}
+]
+},
+// Note: This 'china-peak' below is a HOTEL, not the trek, despite having the same ID.
+// This highlights the importance of the 'type' field and unique IDs if these were distinct entities.
+// For a unified system, if "china-peak" refers to both a trek and a hotel near it,
+// their IDs should ideally be distinct (e.g., "china-peak-trek" and "china-peak-resort").
+// However, as per your request, I'm integrating them as provided.
+"china-peak": { // Renamed ID to avoid conflict and clarify type
+type: "hotel", // Add type
+id: "china-peak",
+name: "Himalayan Heights Resort",
+location: "Near China Peak, Nainital, Uttarakhand",
+rating: 4.8,
+reviewCount: 180,
+price: "5200",
+priceNote: "per night",
+checkInTime: "2:00 PM",
+checkOutTime: "11:00 AM",
+images: [
+"https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMGhvdGVsJTIwaGltYWxheWF8ZW58MXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1596436889218-e362c3e1b714?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxhbHBpbmUlMjBob3RlbCUyMHJvb20lMjBhbWVuZGl0aWVzfGVufDF8fHx8MTczNzAzODQwMnww&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1625243171358-1c4b901e1a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtb3VudGFpbiUyMGhvdyUyMGdhcmRlbnxlbnwxfHx8fDE3MzcwMzg0MDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+],
+description: "Perched high with panoramic views of the Himalayas, Himalayan Heights Resort offers an exhilarating stay for adventure seekers and nature lovers. Enjoy trekking, paragliding, and cozy accommodations.",
+amenities: [
+{ icon: "Wifi", name: "Free WiFi" },
+{ icon: "Car", name: "Parking Available" },
+{ icon: "Hiking", name: "Trekking Guides" },
+{ icon: "Coffee", name: "Cafe & Lounge" },
+{ icon: "Utensils", name: "Local Cuisine Restaurant" },
+{ icon: "Fire", name: "Bonfire Area" }
+],
+roomTypes: [
+{
+name: "Mountain View Room",
+price: "4000",
+features: ["Himalayan View", "Heater", "TV", "WiFi"],
+available: true
+},
+{
+name: "Deluxe Cottage",
+price: "6000",
+features: ["Private Balcony", "Fireplace", "Luxurious Bedding", "Mini Bar"],
+available: true
+},
+{
+name: "Family Suite",
+price: "8500",
+features: ["Two Bedrooms", "Living Area", "Kitchenette", "Panoramic Views"],
+available: false
+}
+],
+nearbyAttractions: [
+{ id: "china-peak-viewpoint", name: "China Peak Viewpoint", distance: "1km", type: "viewpoint", rating: 4.8 },
+{ id: "snow-view-point", name: "Snow View Point", distance: "5km", type: "viewpoint", rating: 4.6 },
+{ id: "naini-lake", name: "Naini Lake", distance: "7km", type: "lake", rating: 4.7 }
+],
+contact: {
+phone: "+91 8765432109",
+email: "info@himalayanheights.com"
+},
+policies: [
+"Check-in: 2:00 PM | Check-out: 11:00 AM",
+"Cancellation: 48-hour free cancellation",
+"Children: Kids friendly activities",
+"Pets: Not allowed"
+],
+reviews: [
+{
+author: "Arjun Singh",
+rating: 5,
+date: "1 day ago",
+comment: "The views from this resort are absolutely mesmerizing! Perfect base for exploring China Peak and nearby treks. The staff was incredibly helpful."
+},
+{
+author: "Neha Reddy",
+rating: 4,
+date: "1 month ago",
+comment: "A great experience for adventure lovers. The food was good, and the rooms were comfortable. A bit chilly, but heaters were provided."
+}
+],
+faqs: [
+{
+question: "Is trekking available from the resort?",
+answer: "Yes, we can arrange guided treks to China Peak and other scenic trails directly from the resort."
+},
+{
+question: "Do you have heating in the rooms?",
+answer: "All rooms are equipped with heaters to ensure a comfortable stay during colder months."
+},
+{
+question: "Is there a restaurant?",
+answer: "Yes, our restaurant serves delicious local and international cuisine."
+}
+]
+},
+"tiffin-top": { // Renamed ID to avoid conflict and clarify type
+type: "hotel", // Add type
+id: "tiffin-top",
+name: "Tiffin Top Retreat",
+location: "Near Tiffin Top, Nainital, Uttarakhand",
+rating: 4.5,
+reviewCount: 110,
+price: "3200",
+priceNote: "per night",
+checkInTime: "1:00 PM",
+checkOutTime: "10:00 AM",
+images: [
+"https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDB&ixlib=rb-4.1.0&q=80&w=1080", // Using a similar image for a hill resort feel
+"https://images.unsplash.com/photo-1544474705-592f763a8a0e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxjYWJpbiUyMHJvb20lMjBub29ub3NzfGVufDF8fHx8MTczNzAzODQwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+"https://images.unsplash.com/photo-1582210815598-f2b7b3d3f9b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXR1cmUlMjB3YWxrJTIwc2NlbmljfGVuMXx8fHwxNzM3MDM4NDAzfDB&ixlib=rb-4.1.0&q=80&w=1080",
+],
+description: "Experience tranquility at Tiffin Top Retreat, a charming eco-friendly resort ideal for nature lovers and those seeking peaceful walks and stunning sunrise views. Close to the popular Tiffin Top.",
+amenities: [
+{ icon: "Wifi", name: "Free WiFi (Lobby)" },
+{ icon: "Car", name: "Limited Parking" },
+{ icon: "Footprints", name: "Nature Trails" },
+{ icon: "Tree", name: "Garden Area" },
+{ icon: "Utensils", name: "Cafe & Snacks" },
+{ icon: "Sun", name: "Sunrise Views" }
+],
+roomTypes: [
+{
+name: "Standard Double Room",
+price: "2800",
+features: ["Garden View", "Basic Amenities"],
+available: true
+},
+{
+name: "Deluxe Forest Cottage",
+price: "3800",
+features: ["Forest View", "Balcony", "Peaceful Setting"],
+available: true
+},
+{
+name: "Premium Hill View",
+price: "4500",
+features: ["Panoramic Hill View", "Spacious Room", "Cozy Decor"],
+available: false
+}
+],
+nearbyAttractions: [
+{ id: "tiffin-top-viewpoint", name: "Tiffin Top", distance: "0.5km", type: "viewpoint", rating: 4.5 },
+{ id: "dorothy-seat", name: "Dorothy's Seat", distance: "0.6km", type: "viewpoint", rating: 4.5 },
+{ id: "naini-lake", name: "Naini Lake", distance: "4km", type: "lake", rating: 4.7 }
+],
+contact: {
+phone: "+91 9988776655",
+email: "contact@tiffintopretreat.com"
+},
+policies: [
+"Check-in: 1:00 PM | Check-out: 10:00 AM",
+"Cancellation: 24-hour free cancellation",
+"Children: Welcome, special arrangements on request",
+"Pets: Small pets allowed on request (extra charge)"
+],
+reviews: [
+{
+author: "Sameer Joshi",
+rating: 4,
+date: "4 days ago",
+comment: "A lovely quiet place, very close to Tiffin Top. Great for morning walks and enjoying the serene environment. The staff was courteous."
+},
+{
+author: "Disha Varma",
+rating: 4,
+date: "2 weeks ago",
+comment: "Enjoyed the peaceful atmosphere. The rooms were clean, and the basic amenities were good. Food was simple but tasty."
+}
+],
+faqs: [
+{
+question: "How far is Tiffin Top from the resort?",
+answer: "Tiffin Top is just a short 10-15 minute walk from the resort, making it easily accessible for sunrise views."
+},
+{
+question: "Do rooms have WiFi?",
+answer: "WiFi is available in the common areas and lobby. Some rooms might have limited connectivity due to the hilly terrain."
+},
+{
+question: "Is food service available all day?",
+answer: "Our cafe offers breakfast, lunch, and dinner, along with snacks and beverages throughout the day."
+}
+]
+}
+};
+
+export const trekDetailsData = {
+  "naina-peak": { // Changed from "naina-peak" to "china-peak" to match `listingDetailsData` ID
+    id: "china-peak",
+    name: "China Peak (Naina Peak)",
+    location: "Near Nainital, Uttarakhand, India",
+    rating: 4.9,
+    reviewCount: 10000,
+    price: "₹1,500/person",
+    priceNote: "Guide & permits included",
+    duration: "4-6 hours",
+    distance: "6 km (one-way)",
+    difficulty: "Moderate",
+    altitude: "2,611 meters (8,568 ft)",
+    bestTime: "March-June, Sept-Nov",
+    images: [
+      "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+      "https://images.unsplash.com/photo-1587502573223-b6c8d37a28e9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-150674868722-e60d367462ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+    ],
+    description: "China Peak (Naina Peak) is the highest peak in Nainital, offering breathtaking panoramic views of the entire Nainital town, the Naini Lake, and the majestic Himalayan ranges. It's a popular spot for trekking and experiencing stunning sunrises. The moderately challenging trek takes you through dense oak and deodar forests, providing a serene escape and ample opportunities for nature photography.",
+    highlights: [
+      "Highest point in Nainital",
+      "360-degree panoramic views of Nainital and Himalayas",
+      "Spectacular sunrise and sunset views",
+      "Challenging but rewarding trek through dense forests",
+      "Ideal for photography and nature lovers"
+    ],
+    included: [
+      "Experienced local trekking guide",
+      "First aid kit and safety equipment",
+      "Basic packed lunch and water",
+      "Forest entry permits"
+    ],
+    notIncluded: [
+      "Personal expenses (snacks, extra drinks)",
+      "Transportation to starting point (can be arranged separately)",
+      "Porter services",
+      "Medical insurance"
+    ],
+    guide: {
+      name: "Ramesh Sharma",
+      experience: "10+ years in Kumaon region",
+      rating: 4.8,
+      languages: ["Hindi", "English", "Kumaoni"],
+      specialization: "High-altitude treks, local flora/fauna",
+      contact: "+919876543210",
+      email: "ramesh.guide@example.com"
+    },
+    itinerary: [
+      { time: "05:00 AM", activity: "Meet at starting point", description: "Assemble at specified meeting point in Nainital (Mallital or Ayarpatta).", icon: "Clock" },
+      { time: "05:30 AM", activity: "Begin trek to China Peak", description: "Start the uphill climb through lush forests, enjoying the fresh morning air.", icon: "Walk" },
+      { time: "07:30 AM", activity: "Reach China Peak Summit", description: "Enjoy panoramic views, capture photos, and have a light breakfast.", icon: "Mountain" },
+      { time: "08:30 AM", activity: "Descend Back", description: "Start the descent back towards Nainital.", icon: "Walk" },
+      { time: "10:30 AM", activity: "Trek concludes", description: "Arrive back at the starting point.", icon: "Clock" }
+    ],
+    whatToBring: [
+      {
+        category: "Personal Gear",
+        items: ["Small backpack", "Water bottle (reusable)", "Sunscreen and hat", "Sunglasses", "Power bank"]
+      },
+      {
+        category: "Clothing",
+        items: ["Comfortable trekking shoes with good grip", "Layered clothing (t-shirt, fleece, light jacket)", "Rain jacket/poncho (seasonal)", "Extra pair of socks"]
+      },
+      {
+        category: "Food & Hydration",
+        items: ["Personal snacks (energy bars, dry fruits)", "Water (at least 2 liters)"]
+      },
+      {
+        category: "Miscellaneous",
+        items: ["Camera and extra batteries", "Binoculars (optional for bird watching)", "Small first-aid kit with personal medicines", "Headlamp/flashlight (if starting very early)"]
+      }
+    ],
+    safetyGuidelines: [
+      "Stay on marked trails; do not venture alone.",
+      "Inform your guide about any medical conditions.",
+      "Dispose of waste responsibly; carry back all non-biodegradable items.",
+      "Beware of slippery paths, especially during or after rain.",
+      "Listen to your guide's instructions for a safe trek."
+    ],
+    availableDates: [
+      { date: "June 10, 2024", price: "₹1,500", available: true },
+      { date: "June 17, 2024", price: "₹1,500", available: true },
+      { date: "June 24, 2024", price: "₹1,500", available: false },
+      { date: "July 01, 2024", price: "₹1,400", available: true },
+    ],
+    faqs: [
+      { question: "Is China Peak suitable for beginners?", answer: "It's a moderately challenging trek. Beginners with good physical fitness can attempt it, but it's advisable to be prepared for uphill climbs. A local guide is recommended." },
+      { question: "What can I see from China Peak?", answer: "You can enjoy breathtaking 360-degree panoramic views of the entire Nainital town, the shimmering Naini Lake, and a vast expanse of the majestic Himalayan ranges, including prominent peaks like Nanda Devi on a clear day." },
+      { question: "What is the best time to do this trek?", answer: "The best time is usually from March to June and September to November, when the weather is pleasant and the skies are clear, offering the best views. Winters can be very cold, and monsoons bring muddy, slippery trails." }
+    ]
+  },
+
+  "tiffin-top": {
+    id: "tiffin-top",
+    name: "Tiffin Top (Dorothy's Seat)",
+    location: "Near Nainital, Uttarakhand, India",
+    rating: 4.7,
+    reviewCount: 234,
+    price: "₹800/person",
+    priceNote: "Basic guide service",
+    duration: "2-3 hours (round trip)",
+    distance: "4 km (one-way)",
+    difficulty: "Easy to Moderate",
+    altitude: "2,290 meters (7,513 ft)",
+    bestTime: "Year-round (avoid heavy monsoon)",
+    images: ["https://images.unsplash.com/photo-1547372332-6a4058d867c0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+      "https://images.unsplash.com/photo-1620808381272-91f1ad6513d3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+    ],
+    description: "Tiffin Top (also known as Dorothy's Seat) is one of the most popular viewpoints in Nainital, offering breathtaking panoramic views of the snow-capped Himalayas, the lush Kumaon hills, and the bustling Nainital town. It's accessible via a scenic 4km trek through beautiful pine and oak forests, making it perfect for nature photography, picnics, and peaceful contemplation.",
+    highlights: [
+      "Panoramic Himalayan views and Naini Lake",
+      "Spectacular sunrise and sunset viewpoints",
+      "Scenic 4km trek through pine and oak forests",
+      "Photography opportunities for nature and landscapes",
+      "Horse riding option available for those who prefer not to walk"
+    ],
+    included: [
+      "Basic guidance for the trek route",
+      "First aid support on standby (if opting for guide package)"
+    ],
+    notIncluded: [
+      "Horse riding charges",
+      "Food and drinks",
+      "Personal expenses"
+    ],
+    guide: {
+      name: "Pawan Singh",
+      experience: "5+ years, Tiffin Top specialist",
+      rating: 4.5,
+      languages: ["Hindi", "English"],
+      specialization: "Short treks, photography tours",
+      contact: "+919988776655",
+      email: "pawan.guide@example.com"
+    },
+    itinerary: [
+      { time: "Optional start", activity: "Horse ride to Tiffin Top", description: "Hire a horse from Bara Pathar for a comfortable ride to the viewpoint.", icon: "Horse" },
+      { time: "07:00 AM", activity: "Begin trek from Ayarpatta", description: "Start the scenic walk through the forest trail.", icon: "Walk" },
+      { time: "08:30 AM", activity: "Arrive at Tiffin Top", description: "Enjoy the views and take photographs.", icon: "Camera" },
+      { time: "09:30 AM", activity: "Descend back to Nainital", description: "Walk back, enjoying the return journey.", icon: "Walk" }
+    ],
+    whatToBring: [
+      {
+        category: "Essentials",
+        items: ["Comfortable walking shoes", "Water bottle", "Light snacks", "Camera", "Sun hat/cap"]
+      },
+      {
+        category: "Optional",
+        items: ["Binoculars", "Light jacket (depending on season)", "Umbrella/rain jacket (monsoon)"]
+      }
+    ],
+    safetyGuidelines: [
+      "Wear appropriate footwear, as some paths can be uneven.",
+      "Stay hydrated, especially during warmer months.",
+      "Be mindful of horses if you are walking the trail.",
+      "Avoid visiting during heavy rains due to slippery conditions."
+    ],
+    availableDates: [
+      { date: "May 28, 2024", price: "₹800", available: true },
+      { date: "June 05, 2024", price: "₹800", available: true },
+      { date: "June 12, 2024", price: "₹800", available: true },
+    ],
+    faqs: [
+      { question: "How to reach Tiffin Top from Nainital?", answer: "You can trek approximately 4km from Ayarpatta Hills (near Snow View Point) which takes about 1.5-2 hours one-way. Alternatively, horse riding services are available from Bara Pathar." },
+      { question: "Is Tiffin Top suitable for children?", answer: "Yes, the trek is generally easy to moderate and suitable for families with children. Horse riding is also a fun option for kids." },
+      { question: "What are the best views from Tiffin Top?", answer: "From Tiffin Top, you get a clear, unobstructed view of the majestic Nanda Devi peak, other Himalayan ranges, the Naini Lake, and the entire Nainital town sprawled below." }
+    ]
+  },
+
+  "naini-track": {
+    id: "naini-track",
+    name: "Naini Track (Various Viewpoints Trek)",
+    location: "Nainital & Surrounding Hills, Uttarakhand, India",
+    rating: 4.6,
+    reviewCount: 12000,
+    price: "₹1,200/person",
+    priceNote: "Covers multiple viewpoints",
+    duration: "Entire day (6-8 hours)",
+    distance: "8-10 km (total)",
+    difficulty: "Moderate",
+    altitude: "Varies (up to 2,611 meters)",
+    bestTime: "March-June, Sept-Nov",
+    images: [
+      "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080&h=720",
+      "https://images.unsplash.com/photo-1621379965545-a77b311756b1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1596792440733-dc18d84422e8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+    ],
+    description: "The 'Naini Track' represents a series of interconnected popular trekking routes around Nainital, leading to iconic viewpoints such as Tiffin Top (Dorothy's Seat), Land's End, and possibly even up towards China Peak for the ambitious. These tracks wind through lush pine, deodar, and oak forests, offering diverse terrain from gentle slopes to challenging ascents. It's an adventurer's delight, providing breathtaking panoramic views of the entire region and the majestic Himalayas.",
+    highlights: [
+      "Explore multiple scenic viewpoints in one day",
+      "Diverse trekking terrain through dense forests",
+      "Panoramic views of Nainital, Naini Lake, and surrounding valleys",
+      "Opportunities for bird watching and nature photography",
+      "Connects to other major attractions like Tiffin Top and Land's End"
+    ],
+    included: [
+      "Experienced local guide for the entire trek",
+      "Packed lunch and refreshments",
+      "First aid and safety briefing"
+    ],
+    notIncluded: [
+      "Any specific entrance fees beyond forest permits",
+      "Personal shopping and souvenirs",
+      "Extended individual services"
+    ],
+    guide: {
+      name: "Deepak Rawat",
+      experience: "8+ years, extensive knowledge of local trails",
+      rating: 4.7,
+      languages: ["Hindi", "English"],
+      specialization: "Long day treks, historical routes",
+      contact: "+919765432109",
+      email: "deepak.guide@example.com"
+    },
+    itinerary: [
+      { time: "08:00 AM", activity: "Meet & Briefing", description: "Gather at a designated point in Nainital for briefing and introduction.", icon: "Users" },
+      { time: "08:30 AM", activity: "Trek to Tiffin Top", description: "Begin the trek towards Tiffin Top (Dorothy's Seat), enjoying forest trails.", icon: "Walk" },
+      { time: "10:30 AM", activity: "Proceed to Land's End", description: "Continue the trek to Land's End for cliff-edge views.", icon: "Route" },
+      { time: "12:30 PM", activity: "Lunch Break", description: "Enjoy packed lunch amidst nature at a scenic spot.", icon: "Backpack" },
+      { time: "01:30 PM", activity: "Exploration & Photography", description: "Time for more views and capturing memories.", icon: "Camera" },
+      { time: "03:00 PM", activity: "Return Trek", description: "Begin the descent back towards Nainital, exploring different paths.", icon: "Walk" },
+      { time: "05:00 PM", activity: "Trek Concludes", description: "Arrive back in Nainital.", icon: "Clock" }
+    ],
+    whatToBring: [
+      {
+        category: "Trekking Essentials",
+        items: ["Sturdy trekking boots", "Layered clothing", "Backpack (20-30L)", "Water bottles (2L capacity)", "Sunscreen & sunglasses"]
+      },
+      {
+        category: "Hydration & Nutrition",
+        items: ["High-energy snacks (nuts, chocolates, energy bars)", "Electrolyte powder sachet (optional)"]
+      },
+      {
+        category: "Safety & Navigation",
+        items: ["Basic first-aid kit", "Whistle", "Headlamp/torch", "Power bank for phone"]
+      },
+      {
+        category: "Miscellaneous",
+        items: ["Camera with extra battery", "Binoculars", "Personal medications"]
+      }
+    ],
+    safetyGuidelines: [
+      "Always stay with the group and guide.",
+      "Inform the guide immediately if you face any discomfort or injury.",
+      "Carry sufficient water and stay hydrated throughout the trek.",
+      "Be aware of wildlife and maintain a safe distance.",
+      "Wear appropriate gear for varying weather conditions."
+    ],
+    availableDates: [
+      { date: "June 03, 2024", price: "₹1,200", available: true },
+      { date: "June 10, 2024", price: "₹1,200", available: true },
+      { date: "June 17, 2024", price: "₹1,200", available: true },
+      { date: "June 24, 2024", price: "₹1,200", available: false },
+    ],
+    faqs: [
+      { question: "What is the Naini Track?", answer: "The Naini Track refers to the network of popular walking and trekking trails around Nainital that connect various viewpoints and scenic spots like Tiffin Top, Land's End, and higher up towards China Peak." },
+      { question: "How long does the Naini Track take?", answer: "A full circuit covering multiple viewpoints can take anywhere from 6 to 8 hours, depending on your pace and the specific route chosen for the day. Shorter sections are also possible." },
+      { question: "Is it suitable for families?", answer: "While some parts are easy, the full Naini Track can be moderately challenging due to longer distances and some uphill sections. It's more suitable for families with older children who are accustomed to walking." }
+    ]
+  }
+};
+
 // --- Global helper to generate unique IDs and slugs ---
 const generateSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+
 
 export const placeDetailsData = {
   "naina-devi-temple": {

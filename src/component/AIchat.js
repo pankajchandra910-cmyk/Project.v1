@@ -160,7 +160,7 @@ export default function AIchat({ isOpen, onClose, language }) {
            flex-col
           h-[min(90vh,700px)] max-h-[90vh]
           w-[95vw] sm:w-[90vw] md:w-[70vw] lg:w-[600px]
-          max-w-screen-lg
+          max-w-5xl
           p-4
           overflow-hidden // Ensure content inside respects flex layout
         "

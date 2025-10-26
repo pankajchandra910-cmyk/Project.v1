@@ -58,7 +58,7 @@ export default function Contact() {
         />
       )}
 
-      <main className="flex-grow container mx-auto px-4 py-8">
+  <main className="grow container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-8">Contact Us</h1>
         <p className="text-lg text-center max-w-2xl mx-auto mb-6">
           Have questions or need assistance? Reach out to us!

@@ -417,7 +417,7 @@ export default function MapViewPage() {
           {/* Header content: Back button, Title, Search and Map controls */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex items-center space-x-4 mb-4 md:mb-0"> {/* Added mb-4 for spacing on small screens */}
-              <Button variant="ghost" onClick={handleBack} className="flex-shrink-0">
+              <Button variant="ghost" onClick={handleBack} className="shrink-0">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
@@ -557,7 +557,7 @@ export default function MapViewPage() {
                   {filteredPins.length > 0 ? (
                     filteredPins.map((pin) => (
                       <div
-                        key={pin.id}
+                        key={pin.id ?? `${pin.lat}-${pin.lng}-${(pin.name||'').replace(/\s/g,'-')}`}
                         className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
                         onClick={() => setSelectedPin(pin)}
                       >

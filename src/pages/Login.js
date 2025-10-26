@@ -31,7 +31,7 @@ export default function Login(){
     };
 
     return(
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+        <div className="min-h-screen bg-linear-to-br from-blue-50 to-green-50">
             <div className="relative min-h-screen flex items-center justify-center">
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"

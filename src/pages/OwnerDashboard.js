@@ -889,14 +889,14 @@ export default function OwnerDashboard() {
                   <Card key={listing.id}>
                     <CardContent className="p-6">
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div className="flex-shrink-0 w-full md:w-32 h-24 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
+                        <div className="shrink-0 w-full md:w-32 h-24 bg-gray-200 dark:bg-gray-700 rounded-md overflow-hidden">
                           {listing.photos && listing.photos.length > 0 ? (
                             <img src={listing.photos[0]} alt={listing.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="flex items-center justify-center w-full h-full text-gray-400 dark:text-gray-500 text-xs">No Image</div>
                           )}
                         </div>
-                        <div className="flex-grow">
+                        <div className="grow">
                           <h3 className="text-lg font-semibold">{listing.name}</h3>
                           <p className="text-muted-foreground">{listing.location}</p>
                           <div className="mt-2 flex items-center space-x-4 text-sm flex-wrap gap-y-2">
@@ -912,7 +912,7 @@ export default function OwnerDashboard() {
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">Profession: {listing.profession.replace('-', ' ')}</p>
                         </div>
-                        <div className="flex space-x-2 flex-shrink-0 mt-4 md:mt-0">
+                        <div className="flex space-x-2 shrink-0 mt-4 md:mt-0">
                           <Button variant="outline" size="sm" onClick={() => navigate(`/listings/${listing.id}`)} type="button">
                             <Eye className="w-4 h-4" />
                             <span className="sr-only">View</span>

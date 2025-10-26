@@ -232,7 +232,7 @@ export default function FilterSidebar({
           </Button>
         </SheetTrigger>
         <SheetContent side="bottom" className="h-[80vh] max-h-[80vh] overflow-y-auto flex flex-col">
-          <SheetHeader className="flex-shrink-0"> {/* Ensure header doesn't scroll */}
+          <SheetHeader className="shrink-0"> {/* Ensure header doesn't scroll */}
             <div className="flex items-center justify-between">
               <SheetTitle>Filters</SheetTitle>
               <Button variant="ghost" size="sm" onClick={handleClearAndCloseSheet}>
@@ -243,10 +243,10 @@ export default function FilterSidebar({
               Customize your search results
             </SheetDescription>
           </SheetHeader>
-          <div className="py-6 flex-grow overflow-y-auto"> {/* Main content area is scrollable */}
+          <div className="py-6 grow overflow-y-auto"> {/* Main content area is scrollable */}
             <FilterContent />
           </div>
-          <div className="mt-auto pt-4 border-t flex-shrink-0"> {/* Footer area */}
+          <div className="mt-auto pt-4 border-t shrink-0"> {/* Footer area */}
             <Button
               className="w-full bg-primary hover:bg-primary/90"
               onClick={() => setIsSheetOpen(false)}

@@ -58,7 +58,7 @@ export default function TermsOfService() {
         />
       )}
 
-      <main className="flex-grow container mx-auto px-4 py-8">
+  <main className="grow container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-8">Terms of Service</h1>
         <div className="max-w-3xl mx-auto prose lg:prose-lg bg-white p-8 rounded-lg shadow-md">
           <p>

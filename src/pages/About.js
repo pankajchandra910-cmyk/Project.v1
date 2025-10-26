@@ -58,7 +58,7 @@ export default function About() {
         />
       )}
 
-      <main className="flex-grow container mx-auto px-4 py-8">
+  <main className="grow container mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-8">About Us</h1>
         <p className="text-lg text-center max-w-2xl mx-auto">
           Welcome to Buddy In Hills, your dedicated companion for exploring the majestic beauty of Uttarakhand.

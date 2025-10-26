@@ -49,7 +49,7 @@ export default function LocationCarousel({ onLocationClick = () => {} }) {
           {locations.map((location) => (
             <div
               key={location.id}
-              className="flex-shrink-0 w-36 h-32 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 shadow-md hover:shadow-lg snap-start"
+              className="shrink-0 w-36 h-32 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300 shadow-md hover:shadow-lg snap-start"
               onClick={() => handleLocationClick(location)}
             >
               <div className="relative h-full">

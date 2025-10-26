@@ -14,6 +14,7 @@ import PlaceDetailsPage from "./pages/PlaceDetailsPage";
 import MapViewPage from "./pages/MapViewPage";
 import PopularDetailsPage from './pages/PopularDetailsPage';
 import BookingPage from './pages/BookingPage';
+import TrekDetailsPage from './pages/TrekDetailsPage';
 import About from "./pages/About"; // Assuming you put them in the pages folder
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -39,6 +40,7 @@ function App(){
                     <Route path="/location-details/:locationId" element={<LocationDetailsPage />} />
                     {/* <Route path="/listings/:id/edit" element={<ListingEdit />} /> */}
                     <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
+                    <Route path="/trek-details/:trekId" element={<TrekDetailsPage />} />
                     <Route path="/map-view/:focusId" element={<MapViewPage/>} /> 
                     <Route path="/popular-details/:popularId" element={<PopularDetailsPage/>} /> 
                     <Route path="/book-item/:itemId" element={<BookingPage />} />
