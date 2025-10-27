@@ -1,93 +1,35 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "../hooks/use-mobile";
-import { Bed, MapPin, Mountain, Car, Users, HomeIcon, Bike } from 'lucide-react';
+import { Bed, MapPin, Mountain, Car, Users, Home as HomeIcon, Bike } from 'lucide-react';
 import { locationsData, featuredPlaces } from "../assets/dummy"; // Ensure locationsData is imported
+
+// --- Firebase Imports ---
+import { auth, db } from "../firebase"; // Assuming firebase.js is in src/
+import { onAuthStateChanged, signOut, signInAnonymously } from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export const GlobalContext = createContext();
 
 // Mock User Data (Dynamic part) - This will be the initial state
+// Now, most of these will be managed by Firebase and Firestore
 const mockUserData = {
   // Common user info
-  userName: "Priya Sharma",
-  userEmail: "priya.sharma@example.com",
-  userPhone: "+91 xxxxxxxxxx",
-  loginPlatform: "Gmail",
-  userType: "", // Default user type for testing - changed from " " to "user" or "owner"
-  profession: "resort-hotel", // Default profession for owner dashboard testing
-  isLoggedIn: false, // Default to logged in for testing, change to false for production
-  userRole: "", // Default role for testing, can be 'user', 'owner', or null/undefined
-  // ... rest of your mock user data
+  userName: "", // Will be fetched from Firebase Auth or Firestore
+  userEmail: "", // Will be fetched from Firebase Auth
+  userPhone: "", // Will be fetched from Firebase Auth or Firestore
+  loginPlatform: "",
+  userType: "",
+  isLoggedIn: false,
+  userRole: "",
 
-  // Owner-specific profile data (if you want to manage globally)
-  businessAddress: "123 Mountain View, Nainital, Uttarakhand",
-  licenseNumber: "UTH987654321",
-  visitedPlaces: [
-    { id: 'vp1', name: 'Nainital Lake', status: 'visited' },
-    { id: 'vp2', name: 'Tiffin Top', status: 'visited' },
-    { id: 'vp3', name: 'Snow View Point', status: 'visited' },
-    { id: 'vp4', name: 'Bhimtal Lake', status: 'unvisited' },
-    { id: 'vp5', name: 'Naina Peak', status: 'unvisited' },
-  ],
-  recentBookings: [
-    { id: 'b1', title: 'Mountain View Resort', dates: 'Dec 25-27, 2024', status: 'Confirmed' },
-    { id: 'b2', title: 'Naina Peak Trek', dates: 'Jan 15, 2025', status: 'Upcoming' },
-    { id: 'b3', title: 'Cab to Bhimtal', dates: 'Jan 10, 2025', status: 'Upcoming' },
-  ],
-  savedPlaces: [
-    {
-      id: 's1',
-      title: 'Eco Cave Gardens',
-      location: 'Nainital',
-      rating: 4.2,
-      type: 'place',
-      image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg"
-    },
-    {
-      id: 's2',
-      title: 'Jim Corbett National Park',
-      location: 'Ramnagar',
-      rating: 4.7,
-      type: 'place',
-      image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-    },
-    {
-      id: 's3',
-      title: 'The Naini Retreat',
-      location: 'Nainital',
-      rating: 4.5,
-      type: 'hotel',
-      image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVuMXx8fHwxNzU3NjE2OTg5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-    },
-  ],
-  userViewpoints: [
-    { id: 'uvp1', name: 'Camel’s Back Road', description: 'Scenic road with lake views', distance: '2 km', rating: 4.5 },
-    { id: 'uvp2', name: 'Lover’s Point', description: 'Romantic spot with panoramic views', distance: '4 km', rating: 4.1 },
-    { id: "uvp3", name: "Tiffin Top (Dorothy's Seat)", description: "Panoramic views, 4km trek from Nainital", distance: "4km", rating: 4.7 },
-    { id: "uvp4", name: "Snow View Point", description: "Cable car access, Himalayan vistas", distance: "2.5km", rating: 4.6 },
-    { id: "uvp5", name: "Naina Peak (China Peak)", description: "Highest point, trekking spot", distance: "6km", rating: 4.9 },
-    { id: "uvp6", name: "Himalaya Darshan Point", description: "Snow-capped peaks view", distance: "3km", rating: 4.5 },
-    { id: "uvp7", name: "Land's End", description: "Cliff-edge views", distance: "5km", rating: 4.4 },
-    { id: "uvp8", name: "Mukteshwar", description: "Temple and orchards", distance: "50km", rating: 4.8 },
-    { id: "uvp9", name: "Sariyatal", distance: "10km", rating: 4.2, description: "Lake viewpoint" },
-    { id: "uvp10", name: "Khurpatal", distance: "12km", rating: 4.1, description: "Hidden lake spot" },
-    { id: "uvp11", name: "Kilbury", distance: "15km", rating: 4.6, description: "Bird watching views" }
-   
-  ],
-  userRoutes: [
-    { id: 'ur1', name: 'Trekking to Tiffin Top', difficulty: 'Easy', distance: '3 km', rating: 4.4 },
-    { id: 'ur2', name: 'Boating in Naini Lake', difficulty: 'Easy', distance: '2 km', rating: 4.8 },
-    { id: "ur3", name: "Naina Peak Trek", difficulty: "Moderate", distance: "6km loop", rating: 4.8 },
-    { id: "ur4", name: "Tiffin Top Hike", difficulty: "Easy", distance: "4km to viewpoint", rating: 4.7 },
-    { id: "ur5", name: "Snow View Trek", difficulty: "Easy", distance: "2km uphill", rating: 4.5 },
-    { id: "ur6", name: "Guano Hills Trail", difficulty: "Moderate", distance: "10km birding adventure", rating: 4.4 },
-    { id: "ur7", name: "Pangot Trek", difficulty: "Easy", distance: "15km nature walk", rating: 4.3 },
-    { id: "ur8", name: "Kunjkharak Trek", difficulty: "Hard", distance: "20km wildlife path", rating: 4.6 },
-    { id: "ur9", name: "Hartola Shiv Mandir Hike", difficulty: "Easy", distance: "8km spiritual trail", rating: 4.2 },
-    { id: "ur10", name: "Sattal Waterfall Trail", difficulty: "Moderate", distance: "25km waterfall route", rating: 4.5 },
-    { id: "ur11", name: "Lands End Trail", difficulty: "Easy", distance: "5km scenic end-point", rating: 4.1 },
-    { id: "ur12", name: "Kilbury Trek", difficulty: "Moderate", distance: "15km forest adventure", rating: 4.4 }
-  
-  ],
+  // Owner-specific profile data
+  businessAddress: "",
+  licenseNumber: "",
+  visitedPlaces: [],
+  recentBookings: [],
+  savedPlaces: [],
+  userViewpoints: [],
+  userRoutes: [],
 };
 
 const categoriesData = [
@@ -104,25 +46,25 @@ const STORAGE_OWNER_PREFIX = "owner_listings_v2:";
 
 const GlobalProvider = ({ children }) => {
   // View and auth
-  const [isLoggedIn, setIsLoggedIn] = useState(mockUserData.isLoggedIn); // Initialized from mockUserData
-  const [userRole, setUserRole] = useState(mockUserData.userRole);     // New state for user role
-  const [userType, setUserType] = useState(mockUserData.userType);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Managed by Firebase auth state
+  const [userRole, setUserRole] = useState("");
+  const [userType, setUserType] = useState(""); // Stored in Firestore
+  const [loadingUser, setLoadingUser] = useState(true); // New loading state for auth
 
-  // User info - Now initialized from mockUserData
-  const [profession, setProfession] = useState(mockUserData.profession);
+  // User info
+  const [profession, setProfession] = useState(""); // Stored in Firestore
   const [language, setLanguage] = useState("en");
-  const [userName, setUserName] = useState(mockUserData.userName);
-  const [userEmail, setUserEmail] = useState(mockUserData.userEmail);
-  const [userPhone, setUserPhone] = useState(mockUserData.userPhone);
-  const [loginPlatform, setLoginPlatform] = useState(mockUserData.loginPlatform);
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState("");
+  const [loginPlatform, setLoginPlatform] = useState("");
 
   // Owner-specific extended profile details (if managed globally)
-  const [businessAddress, setBusinessAddress] = useState(mockUserData.businessAddress);
-  const [licenseNumber, setLicenseNumber] = useState(mockUserData.licenseNumber);
+  const [businessAddress, setBusinessAddress] = useState("");
+  const [licenseNumber, setLicenseNumber] = useState("");
 
   // Owner-specific id
   const [ownerId, setOwnerId] = useState(null);
-  // Optional "back" callback
   const [onBack, setOnBack] = useState(null);
 
   // Dynamic user data
@@ -135,7 +77,7 @@ const GlobalProvider = ({ children }) => {
 
   // New state for currently selected location ID for details page
   const [selectedLocationId, setSelectedLocationId] = useState(null);
-   const [locationDetails, setLocationDetails] = useState(null);
+  const [locationDetails, setLocationDetails] = useState(null);
 
   // Search and selection
   const [searchQuery, setSearchQuery] = useState("");
@@ -148,6 +90,8 @@ const GlobalProvider = ({ children }) => {
   const [showAIChat, setShowAIChat] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const isMobile = useIsMobile();
+  // Last auth error for dev debugging
+  const [lastAuthError, setLastAuthError] = useState(null);
 
   // Helper: derive owner storage key
   const getOwnerKey = (id) => {
@@ -176,46 +120,165 @@ const GlobalProvider = ({ children }) => {
     }
   };
 
-  // Effect to infer and set ownerId when userType changes or user info is available
-  useEffect(() => {
-    if (userType === "owner" && !ownerId) {
-      const inferred = userEmail
-        ? `owner_${userEmail.replace(/[^a-z0-9]/gi, "_")}`
-        : userName
-          ? `owner_${userName.replace(/\s+/g, "_")}`
-          : `owner_default_${Date.now()}`;
-      setOwnerId(inferred.toLowerCase());
-    } else if (userType !== "owner" && ownerId) {
-      setOwnerId(null);
+  // Firestore-backed owner listings helpers (async)
+  const readOwnerListingsRemote = async (id) => {
+    try {
+      if (!id) return [];
+      const ownerRef = doc(db, "owners", id);
+      const snap = await getDoc(ownerRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        return data.listings || [];
+      }
+      return [];
+    } catch (e) {
+      // Log as a warning because remote Firestore may be unavailable or blocked by rules
+      // and this is an expected fallback case; avoid surfacing as a dev-overlay error.
+      console.warn("Failed to read owner listings from Firestore:", e);
+      return [];
     }
-  }, [userType, ownerId, userEmail, userName]);
+  };
 
-  const logout1 = useCallback(() => { // Renamed from logout1 to logout for consistency
-    // Clear authentication state
-    setIsLoggedIn(false);
-    setUserRole(null);
-    setUserType('');
-    // Clear user/owner profile information
-    setUserName('');
-    setUserEmail('');
-    setUserPhone('');
-    setLoginPlatform('');
-    setLanguage("en"); // Reset to default language
-    setProfession('');
+  const writeOwnerListingsRemote = async (listings, id) => {
+    try {
+      if (!id) throw new Error("ownerId is required to write listings remotely");
+      const ownerRef = doc(db, "owners", id);
+      await setDoc(ownerRef, { listings, updatedAt: serverTimestamp() }, { merge: true });
+      // also cache locally
+      writeOwnerListings(listings, id);
+      return true;
+    } catch (e) {
+      // Log as a warning for the same reason as read: avoid triggering dev-overlay for expected failures
+      console.warn("Failed to write owner listings to Firestore:", e);
+      return false;
+    }
+  };
 
-    // Clear owner-specific profile data
-    setBusinessAddress('');
-    setLicenseNumber('');
-    setOwnerId(null); // Clear ownerId
+  // Convenience: sign in anonymously (guest) and ensure a users doc exists
+  const signInAnonymouslyAsGuest = async () => {
+    try {
+      const result = await signInAnonymously(auth);
+      // onAuthStateChanged will create user doc if missing
+      return { success: true, result };
+    } catch (e) {
+      // Use warn to avoid dev-overlay for expected auth config problems (e.g., anonymous disabled)
+      console.warn("Anonymous sign-in failed:", e);
+      // Return a safe failure result instead of throwing so callers can handle gracefully
+      return { success: false, error: e };
+    }
+  };
 
-    // Clear dynamic user data
-    setUserVisitedPlaces([]);
-    setUserRecentBookings([]);
-    setUserSavedPlaces([]);
-    setUserViewpoints([]);
-    setUserRoutes([]);
+  // Update the current user's Firestore profile with provided fields and keep context in sync
+  const updateUserProfileInFirestore = async (updates = {}) => {
+    try {
+      const current = auth.currentUser;
+      if (!current) throw new Error("No authenticated user");
+      const userRef = doc(db, "users", current.uid);
+      const payload = { ...updates, updatedAt: serverTimestamp() };
+      await setDoc(userRef, payload, { merge: true });
 
-    // Clear search and UI state
+      // Update local context state for common fields
+      if (updates.displayName || updates.userName) setUserName(updates.displayName || updates.userName);
+      if (updates.email) setUserEmail(updates.email);
+      if (updates.phoneNumber || updates.userPhone) setUserPhone(updates.phoneNumber || updates.userPhone);
+      if (updates.userType) setUserType(updates.userType);
+      if (updates.profession) setProfession(updates.profession);
+      if (updates.businessAddress) setBusinessAddress(updates.businessAddress);
+      if (updates.licenseNumber) setLicenseNumber(updates.licenseNumber);
+
+      return true;
+    } catch (e) {
+      console.error("Failed to update user profile in Firestore:", e);
+      return false;
+    }
+  };
+
+  // --- Firebase Auth State Listener & Firestore User Data Fetching ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is signed in.
+        setIsLoggedIn(true);
+  setUserName(user.displayName || (user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Guest' : '')));
+  setUserEmail(user.email || "");
+  setUserPhone(user.phoneNumber || "");
+  setLoginPlatform(user.isAnonymous ? 'Guest' : (user.providerData[0]?.providerId === 'google.com' ? 'Gmail' : 'Email/Phone'));
+
+        // Fetch additional user data from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setUserType(userData.userType || "user");
+          setProfession(userData.profession || "");
+          setUserRole(userData.userType === "owner" ? "owner" : "user"); // Simple role mapping
+
+          // Set owner-specific data if applicable
+          if (userData.userType === "owner") {
+            setBusinessAddress(userData.businessAddress || "");
+            setLicenseNumber(userData.licenseNumber || "");
+            setOwnerId(user.uid); // Use Firebase UID as ownerId
+          } else {
+            setOwnerId(null);
+          }
+
+          // You can also load more specific user profile data here from Firestore
+          setUserVisitedPlaces(userData.visitedPlaces || []);
+          setUserRecentBookings(userData.recentBookings || []);
+          setUserSavedPlaces(userData.savedPlaces || []);
+          setUserViewpoints(userData.userViewpoints || []);
+          setUserRoutes(userData.userRoutes || []);
+
+        } else {
+          // New user or existing user without Firestore profile.
+          // Set defaults or prompt for details.
+          setUserType("user");
+          setProfession("");
+          setUserRole("user");
+          setOwnerId(null);
+          // Set a default Firestore document for the user if it doesn't exist
+          await setDoc(userDocRef, {
+            email: user.email || null,
+            userType: "user", // Default
+            profession: "",    // Default
+            createdAt: serverTimestamp(),
+          }, { merge: true });
+        }
+      } else {
+        // User is signed out.
+        setIsLoggedIn(false);
+        setUserName("");
+        setUserEmail("");
+        setUserPhone("");
+        setLoginPlatform("");
+        setUserType("");
+        setProfession("");
+        setUserRole("");
+        setBusinessAddress("");
+        setLicenseNumber("");
+        setOwnerId(null);
+        setUserVisitedPlaces([]);
+        setUserRecentBookings([]);
+        setUserSavedPlaces([]);
+        setUserViewpoints([]);
+        setUserRoutes([]);
+      }
+      setLoadingUser(false); // Auth state and user data loaded
+    });
+
+    return () => unsubscribe();
+  }, []); // Run only once on component mount
+
+  const logout1 = useCallback(async () => {
+    try {
+      await signOut(auth);
+      // All states will be cleared by the onAuthStateChanged listener
+      console.log("User logged out successfully!");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+    // Clear other non-auth related local states if necessary
     setSearchQuery('');
     setSelectedCategory('');
     setFocusArea('');
@@ -223,25 +286,32 @@ const GlobalProvider = ({ children }) => {
     setSelectedDetailType('');
     setShowAIChat(false);
     setShowMobileMenu(false);
-    setSelectedLocationId(null); // Clear selected location ID on logout
-    setLocationDetails(null)
-    
-    // Remove authentication tokens or other sensitive data from localStorage
-    localStorage.removeItem('authToken'); // Example
-    localStorage.removeItem('userPreferences'); // Example
-
-    console.log("User logged out successfully!");
+    setSelectedLocationId(null);
+    setLocationDetails(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userPreferences');
   }, []);
+
+  // Effect to infer and set ownerId when userType changes or user info is available
+  useEffect(() => {
+    if (userType === "owner" && !ownerId && isLoggedIn && auth.currentUser) {
+        setOwnerId(auth.currentUser.uid); // Use Firebase UID as ownerId
+    } else if (userType !== "owner" && ownerId) {
+        setOwnerId(null);
+    }
+  }, [userType, ownerId, isLoggedIn, auth.currentUser]);
+
 
   // Bundle all state into context
   const contextValue = {
     // auth & user
     isLoggedIn, setIsLoggedIn,
     userType, setUserType,
-    userRole, setUserRole, // Added userRole to context
+    userRole, setUserRole,
     profession, setProfession,
     language, setLanguage,
-    logout1, // Added logout function to context
+    logout1, 
+    loadingUser, // New: indicates if auth state is still being loaded
 
     // Owner-specific extended profile details
     businessAddress, setBusinessAddress,
@@ -257,8 +327,17 @@ const GlobalProvider = ({ children }) => {
     ownerId, setOwnerId,
     onBack, setOnBack,
     getOwnerKey,
-    readOwnerListings,
-    writeOwnerListings,
+  readOwnerListings,
+  writeOwnerListings,
+  // Remote Firestore-backed helpers
+  readOwnerListingsRemote,
+  writeOwnerListingsRemote,
+
+  // Guest sign-in helper
+  signInAnonymouslyAsGuest,
+
+  // Profile updater
+  updateUserProfileInFirestore,
 
     // dynamic profile data
     userVisitedPlaces, setUserVisitedPlaces,
@@ -282,6 +361,9 @@ const GlobalProvider = ({ children }) => {
     showMobileMenu, setShowMobileMenu,
     isMobile,
     locationDetails, setLocationDetails
+    ,
+    // dev/debug
+    lastAuthError, setLastAuthError
   };
 
   return (

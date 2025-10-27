@@ -10,6 +10,11 @@ import MobileMenu from "../component/MobileMenu";
 import AIchat from '../component/AIchat';
 import  CabBookingModal  from '../component/CabBookingModal';
 import { GlobalContext } from '../component/GlobalContext'; 
+import { toast } from 'sonner';
+import { auth } from '../firebase';
+import { reauthenticateWithCredential, EmailAuthProvider, updateEmail, updateProfile, signInWithPhoneNumber, RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader, DialogClose } from '../component/dialog';
+import { Input } from '../component/Input';
 
 export default function ProfileView() {
   const navigate = useNavigate(); 
@@ -32,6 +37,7 @@ export default function ProfileView() {
     userSavedPlaces,
     userViewpoints,
     userRoutes,
+    updateUserProfileInFirestore,
   } = useContext(GlobalContext);
 
   // Local state for editing profile fields
@@ -42,21 +48,176 @@ export default function ProfileView() {
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState(userEmail); // Initialize with current global userEmail
 
+  // Reauth modal state
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState("");
+  const [reauthNewEmail, setReauthNewEmail] = useState("");
+
+  // Phone verification modal state
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneToVerify, setPhoneToVerify] = useState(newPhone || "");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(false);
+  const recaptchaProfileRef = React.useRef(null);
+
   // Local state for cab booking modal (if not managed globally)
   const [showCabBooking, setShowCabBooking] = useState(false);
 
   // Handlers for editing profile details
   const handleSaveName = () => {
     setUserName(newName); // Update global state
+    // Update Firebase Auth displayName if possible
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      updateProfile(auth.currentUser, { displayName: newName }).catch((e) => {
+        console.warn('Failed to update auth displayName:', e);
+      });
+    }
+    if (updateUserProfileInFirestore) updateUserProfileInFirestore({ displayName: newName });
+    toast.success('Name updated');
     setIsEditingName(false);
   };
   const handleSavePhone = () => {
-    setUserPhone(newPhone); // Update global state
-    setIsEditingPhone(false);
+    // Open phone verification modal where user can send OTP and link credential
+    setPhoneToVerify(newPhone.startsWith('+') ? newPhone : `+91${newPhone}`);
+    setShowPhoneModal(true);
+  };
+
+  const initRecaptchaForProfile = () => {
+    try {
+      // Ensure the container exists in the DOM. Use the container id string so Firebase can manage loading the
+      // grecaptcha script reliably. Using the id avoids timing issues with portal-mounted DOM nodes.
+      const containerId = 'recaptcha-profile-container';
+      // Create only once
+      if (!window.recaptchaVerifierProfile) {
+        window.recaptchaVerifierProfile = new RecaptchaVerifier(containerId, { size: 'invisible' }, auth);
+      }
+      // Ensure the widget is rendered
+      if (window.recaptchaVerifierProfile && typeof window.recaptchaVerifierProfile.render === 'function') {
+        // render returns a promise that resolves to widgetId
+        window.recaptchaVerifierProfile.render().catch((e) => console.warn('reCAPTCHA render warning:', e));
+      }
+      return window.recaptchaVerifierProfile;
+    } catch (e) {
+      console.warn('Failed to init recaptcha for profile phone verification:', e);
+      return null;
+    }
+  };
+
+  const handleSendPhoneOTP = async () => {
+    if (!phoneToVerify || phoneToVerify.length < 7) {
+      toast.error('Please enter a valid phone number with country code.');
+      return;
+    }
+    setPhoneLoading(true);
+    try {
+      const appVerifier = initRecaptchaForProfile();
+      if (!appVerifier) throw new Error('reCAPTCHA unavailable');
+      const res = await signInWithPhoneNumber(auth, phoneToVerify, appVerifier);
+      setPhoneConfirmationResult(res);
+      setPhoneOtpSent(true);
+      toast.success('OTP sent to ' + phoneToVerify);
+    } catch (e) {
+      console.warn('Phone OTP send failed:', e);
+      toast.error('Failed to send OTP: ' + (e.message || e.code));
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleConfirmPhoneOTP = async () => {
+    if (!phoneConfirmationResult || !phoneOtp) {
+      toast.error('Please enter the OTP.');
+      return;
+    }
+    setPhoneLoading(true);
+    try {
+      const verificationId = phoneConfirmationResult.verificationId || phoneConfirmationResult;
+      const phoneCred = PhoneAuthProvider.credential(verificationId, phoneOtp);
+      // Link credential to current user
+      await linkWithCredential(auth.currentUser, phoneCred);
+      // Update Firestore and UI
+      await updateUserProfileInFirestore({ phoneNumber: phoneToVerify });
+      setUserPhone(phoneToVerify);
+      toast.success('Phone number verified and linked to account.');
+      setShowPhoneModal(false);
+      setIsEditingPhone(false);
+      setPhoneOtp("");
+      setPhoneConfirmationResult(null);
+      setPhoneOtpSent(false);
+    } catch (e) {
+      console.error('Phone OTP confirm failed:', e);
+      toast.error('Failed to verify phone: ' + (e.message || e.code));
+    } finally {
+      setPhoneLoading(false);
+    }
   };
   const handleSaveEmail = () => {
-    setUserEmail(newEmail); // Update global state
-    setIsEditingEmail(false);
+    // Ask the user if they also want to change the authentication email (this requires re-auth)
+    const doAuthChange = window.confirm('Also change authentication email (requires entering your password)? Click OK to proceed, Cancel to update profile only.');
+    if (doAuthChange) {
+      // Delegate to the reauth flow which will update auth and Firestore
+      handleChangeAuthEmail(newEmail)
+        .then(() => {
+          setIsEditingEmail(false);
+        })
+        .catch((e) => {
+          // handleChangeAuthEmail already toasts; leave UI editable
+          console.warn('Auth email change cancelled or failed:', e);
+        });
+    } else {
+      setUserEmail(newEmail); // Update global state
+      if (updateUserProfileInFirestore) updateUserProfileInFirestore({ email: newEmail });
+      toast.success('Email updated (profile only). Use Change Auth Email to update authentication email.');
+      setIsEditingEmail(false);
+    }
+  };
+
+  // If newEmailParam is passed, open a reauthentication modal to securely change auth email
+  const handleChangeAuthEmail = async (newEmailParam) => {
+    if (!auth.currentUser) {
+      toast.error('No authenticated user.');
+      return;
+    }
+    const currentEmail = auth.currentUser.email;
+    const newEmail = newEmailParam || currentEmail || '';
+    // Open reauth modal with the new email prefilled
+    setReauthNewEmail(newEmail);
+    setReauthPassword('');
+    setShowReauthModal(true);
+  };
+
+  // Perform reauthentication using password and update the auth email + Firestore
+  const performReauthAndChangeEmail = async () => {
+    if (!auth.currentUser) {
+      toast.error('No authenticated user.');
+      return;
+    }
+    if (!reauthPassword) {
+      toast.error('Please enter your current password to reauthenticate.');
+      return;
+    }
+    setShowReauthModal(false);
+    try {
+      const currentEmail = auth.currentUser.email;
+      const cred = EmailAuthProvider.credential(currentEmail, reauthPassword);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      if (reauthNewEmail && reauthNewEmail !== currentEmail) {
+        await updateEmail(auth.currentUser, reauthNewEmail);
+        if (updateUserProfileInFirestore) await updateUserProfileInFirestore({ email: reauthNewEmail });
+        setUserEmail(reauthNewEmail);
+        toast.success('Authentication email updated successfully.');
+        setIsEditingEmail(false);
+      } else {
+        toast.success('Reauthentication successful. No email change requested.');
+      }
+    } catch (e) {
+      console.error('Reauth/email change failed:', e);
+      toast.error('Failed to reauthenticate or change email: ' + (e.message || e.code));
+    } finally {
+      setReauthPassword('');
+    }
   };
 
   // Update local state when global userName changes (e.g., after login or initial load)
@@ -222,6 +383,12 @@ export default function ProfileView() {
                       >
                         {isEditingEmail ? 'Save' : <Edit className="w-4 h-4" />}
                       </Button>
+                      {/* Only show change-auth-email for non-anonymous authenticated users */}
+                      {!isEditingEmail && (
+                        <Button variant="outline" size="sm" className="ml-2" onClick={handleChangeAuthEmail}>
+                          Change Auth Email
+                        </Button>
+                      )}
                     </div>
                   </div>
                   {/* Login Method */}
@@ -428,6 +595,57 @@ export default function ProfileView() {
         language={language}
       />
 
+      {/* Phone Verification Modal */}
+      <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify Phone Number</DialogTitle>
+            <DialogDescription>We'll send an OTP to verify and link your phone number to your account.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <label className="block text-sm text-gray-700">Phone to verify</label>
+            <Input value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" />
+            <div id="recaptcha-profile-container" ref={recaptchaProfileRef} />
+            {!phoneOtpSent ? (
+              <Button onClick={handleSendPhoneOTP} disabled={phoneLoading} className="mt-2">{phoneLoading ? 'Sending...' : 'Send OTP'}</Button>
+            ) : (
+              <>
+                <label className="block text-sm text-gray-700">Enter OTP</label>
+                <Input value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="123456" />
+                <div className="flex gap-2 mt-2">
+                  <Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading}>{phoneLoading ? 'Verifying...' : 'Verify & Link'}</Button>
+                  <Button variant="ghost" onClick={() => { setPhoneOtp(''); setPhoneConfirmationResult(null); setPhoneOtpSent(false); }}>Cancel</Button>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <DialogClose />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reauthentication Modal for Email Change */}
+      <Dialog open={showReauthModal} onOpenChange={setShowReauthModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Identity</DialogTitle>
+            <DialogDescription>Enter your current password to confirm changing your authentication email.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <label className="block text-sm text-gray-700">New Email</label>
+            <Input value={reauthNewEmail} onChange={(e) => setReauthNewEmail(e.target.value)} placeholder="you@example.com" />
+            <label className="block text-sm text-gray-700">Current Password</label>
+            <Input type="password" value={reauthPassword} onChange={(e) => setReauthPassword(e.target.value)} placeholder="Your current password" />
+          </div>
+          <DialogFooter>
+            <div className="flex gap-2">
+              <Button onClick={performReauthAndChangeEmail}>Confirm</Button>
+              <Button variant="ghost" onClick={() => setShowReauthModal(false)}>Cancel</Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Cab Booking Modal */}
       <CabBookingModal 
         isOpen={showCabBooking} 

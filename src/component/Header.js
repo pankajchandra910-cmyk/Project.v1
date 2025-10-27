@@ -3,7 +3,7 @@ import { Button } from "./button";
 import { Input } from "./Input";
 import React, { useContext } from "react";
 import { GlobalContext } from "./GlobalContext";
-import { Link } from "react-router-dom"; // <--- ADD THIS LINE
+import { Link } from "react-router-dom";
 import LogoSvg from '../assets/buddy-in-hills-logo.svg';
 
 export default function Header({ onSearch, onProfileClick, onLogoClick, onMenuToggle }) {
@@ -14,7 +14,7 @@ export default function Header({ onSearch, onProfileClick, onLogoClick, onMenuTo
     setSearchQuery,
     showMobileMenu,
     setShowMobileMenu,
-    userType,
+    userType, // Keep userType if you still need it elsewhere, but not strictly for logout visibility
     logout1,
   } = useContext(GlobalContext);
 
@@ -92,7 +92,8 @@ export default function Header({ onSearch, onProfileClick, onLogoClick, onMenuTo
               </Button>
 
               {/* Logout Button (Desktop View Only) */}
-              {isLoggedIn && (userType === 'owner' || userType === 'user') && (
+              {/* Changed condition to simply check isLoggedIn */}
+              {isLoggedIn && (
                 <Button
                   variant="ghost"
                   size="sm"

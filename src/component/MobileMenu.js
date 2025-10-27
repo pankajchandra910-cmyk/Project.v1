@@ -68,10 +68,12 @@ export default function MobileMenu({ onClose, userType, profession }) {
   const handleDashboardNavigation = () => {
     if (userType === "owner") {
       handleNavigation(`/owner-dashboard/${profession}`);
-    } else if (userType === "user") {
+    } 
+    // else if (userType === "user") {
+    //   handleNavigation("/profile");
+    // }
+     else {
       handleNavigation("/profile");
-    } else {
-      handleNavigation("/");
     }
   };
 

@@ -22,6 +22,9 @@ export default function OwnerDashboard() {
     userPhone, setUserPhone,
     readOwnerListings,
     writeOwnerListings,
+    readOwnerListingsRemote,
+    writeOwnerListingsRemote,
+  updateUserProfileInFirestore,
     ownerId,
     businessAddress, setBusinessAddress,
     licenseNumber, setLicenseNumber,
@@ -31,6 +34,7 @@ export default function OwnerDashboard() {
 
   const [activeTab, setActiveTab] = useState("add-listing");
   const navigate = useNavigate();
+  const [syncStatus, setSyncStatus] = useState('idle'); // idle | syncing | synced | error
 
   const currentProfession = globalProfession;
 
@@ -61,10 +65,59 @@ export default function OwnerDashboard() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (ownerId) {
-      setOwnerListings(readOwnerListings(ownerId));
-    }
+    let mounted = true;
+    const loadListings = async () => {
+      if (!ownerId) return;
+      try {
+        // Try remote first
+        if (typeof readOwnerListingsRemote === 'function') {
+          const remote = await readOwnerListingsRemote(ownerId);
+          if (mounted) {
+            if (remote && remote.length > 0) {
+              setOwnerListings(remote);
+            } else {
+              // Fallback to local cache
+              setOwnerListings(readOwnerListings(ownerId));
+            }
+          }
+        } else {
+          // No remote helper available, use local
+          if (mounted) setOwnerListings(readOwnerListings(ownerId));
+        }
+      } catch (e) {
+        console.error('Failed to load owner listings remote, falling back to local:', e);
+        if (mounted) setOwnerListings(readOwnerListings(ownerId));
+      }
+    };
+
+    loadListings();
+
+    return () => { mounted = false; };
   }, [ownerId, readOwnerListings]);
+
+  // Auto-sync owner listings periodically (every 5 minutes) when ownerId is present
+  useEffect(() => {
+    let intervalId;
+    const doSync = async () => {
+      if (!ownerId) return;
+      if (typeof writeOwnerListingsRemote !== 'function') return;
+      try {
+        setSyncStatus('syncing');
+        const ok = await writeOwnerListingsRemote(ownerListings, ownerId);
+        setSyncStatus(ok ? 'synced' : 'error');
+      } catch (e) {
+        console.error('Auto-sync failed:', e);
+        setSyncStatus('error');
+      }
+    };
+
+    // Start interval
+    intervalId = setInterval(doSync, 5 * 60 * 1000); // 5 minutes
+    // Also run one immediate sync on mount
+    doSync();
+
+    return () => clearInterval(intervalId);
+  }, [ownerId, ownerListings, writeOwnerListingsRemote]);
 
   useEffect(() => {
     if (!editingListingId) {
@@ -288,16 +341,24 @@ export default function OwnerDashboard() {
       updatedListings = [...ownerListings, newListing];
     }
 
-    if (writeOwnerListings(updatedListings, ownerId)) {
-      setOwnerListings(updatedListings);
-      alert(editingListingId ? "Listing Updated Successfully!" : "Listing Published Successfully!");
-      setFormData(initialFormData);
-      setEditingListingId(null);
-      setActiveTab("my-listings");
-      setNewGuideFeatureText(""); // Reset this too
-    } else {
-      alert("Failed to save listing. Please try again.");
-    }
+    const writeSuccess = writeOwnerListingsRemote ? writeOwnerListingsRemote(updatedListings, ownerId) : Promise.resolve(writeOwnerListings(updatedListings, ownerId));
+
+    Promise.resolve(writeSuccess).then((ok) => {
+      if (ok) {
+        setOwnerListings(updatedListings);
+        alert(editingListingId ? "Listing Updated Successfully!" : "Listing Published Successfully!");
+        setFormData(initialFormData);
+        setEditingListingId(null);
+        setActiveTab("my-listings");
+        setNewGuideFeatureText(""); // Reset this too
+      } else {
+        alert("Failed to save listing. Please try again.");
+      }
+    }).catch((e) => {
+      console.error('Error writing listings:', e);
+      alert('Failed to save listing. Please try again.');
+    });
+    
   };
 
   const handleBackToSite = () => {
@@ -334,22 +395,40 @@ export default function OwnerDashboard() {
   const handleDeleteListing = (listingId) => {
     if (window.confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
       const updatedListings = ownerListings.filter((listing) => listing.id !== listingId);
-      if (writeOwnerListings(updatedListings, ownerId)) {
-        setOwnerListings(updatedListings);
-        alert("Listing deleted successfully!");
-      } else {
-        alert("Failed to delete listing.");
-      }
+      const writeSuccess = writeOwnerListingsRemote ? writeOwnerListingsRemote(updatedListings, ownerId) : Promise.resolve(writeOwnerListings(updatedListings, ownerId));
+
+      Promise.resolve(writeSuccess).then((ok) => {
+        if (ok) {
+          setOwnerListings(updatedListings);
+          alert("Listing deleted successfully!");
+        } else {
+          alert("Failed to delete listing.");
+        }
+      }).catch((e) => {
+        console.error('Error deleting listing:', e);
+        alert('Failed to delete listing.');
+      });
     }
   };
 
   const handleUpdateProfile = () => {
-    setUserName(userName);
-    setUserEmail(userEmail);
-    setUserPhone(userPhone);
-    setGlobalProfession(globalProfession);
-
-    alert("Profile updated successfully!");
+    // Persist profile changes to Firestore via context helper if available
+    if (typeof updateUserProfileInFirestore === 'function') {
+      updateUserProfileInFirestore({ userName, displayName: userName, email: userEmail, phoneNumber: userPhone, userType: 'owner', profession: globalProfession, businessAddress, licenseNumber })
+        .then((ok) => {
+          if (ok) alert('Profile updated successfully!');
+          else alert('Failed to update profile.');
+        }).catch((e) => {
+          console.error('Profile update error:', e);
+          alert('Failed to update profile.');
+        });
+    } else {
+      setUserName(userName);
+      setUserEmail(userEmail);
+      setUserPhone(userPhone);
+      setGlobalProfession(globalProfession);
+      alert("Profile updated locally (Firestore helper missing).");
+    }
   };
 
   const renderProfessionForm = () => {
@@ -730,9 +809,32 @@ export default function OwnerDashboard() {
             <h1 className="text-3xl font-bold">Owner Dashboard</h1>
             <p className="text-muted-foreground">Manage your {currentProfession.replace('-', ' ')} listings</p>
           </div>
-          <Button variant="outline" onClick={handleBackToSite}>
-            Back to Site
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">Sync:</span>
+              <span className={`text-sm font-medium ${syncStatus === 'synced' ? 'text-green-600' : syncStatus === 'syncing' ? 'text-blue-600' : syncStatus === 'error' ? 'text-red-600' : 'text-gray-600'}`}>
+                {syncStatus}
+              </span>
+            </div>
+            <Button variant="outline" onClick={async () => {
+              if (!ownerId) return alert('Owner ID not available');
+              try {
+                setSyncStatus('syncing');
+                const ok = writeOwnerListingsRemote ? await writeOwnerListingsRemote(ownerListings, ownerId) : writeOwnerListings(ownerListings, ownerId);
+                setSyncStatus(ok ? 'synced' : 'error');
+                if (ok) alert('Sync completed'); else alert('Sync failed');
+              } catch (e) {
+                console.error('Manual sync error:', e);
+                setSyncStatus('error');
+                alert('Sync failed');
+              }
+            }}>
+              Sync Now
+            </Button>
+            <Button variant="outline" onClick={handleBackToSite}>
+              Back to Site
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
