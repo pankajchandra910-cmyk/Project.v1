@@ -57,7 +57,9 @@ const GlobalProvider = ({ children }) => {
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
+  const [userPhoneVerified, setUserPhoneVerified] = useState(false); // NEW STATE for phone verification status
   const [loginPlatform, setLoginPlatform] = useState("");
+  const [signupMethod, setSignupMethod] = useState(""); // NEW STATE to track original signup method
 
   // Owner-specific extended profile details (if managed globally)
   const [businessAddress, setBusinessAddress] = useState("");
@@ -180,11 +182,13 @@ const GlobalProvider = ({ children }) => {
       // Update local context state for common fields
       if (updates.displayName || updates.userName) setUserName(updates.displayName || updates.userName);
       if (updates.email) setUserEmail(updates.email);
-      if (updates.phoneNumber || updates.userPhone) setUserPhone(updates.phoneNumber || updates.userPhone);
+      if (updates.phoneNumber) setUserPhone(updates.phoneNumber);
+      if (typeof updates.phoneVerified !== 'undefined') setUserPhoneVerified(!!updates.phoneVerified); // Update new phone verified state
       if (updates.userType) setUserType(updates.userType);
       if (updates.profession) setProfession(updates.profession);
       if (updates.businessAddress) setBusinessAddress(updates.businessAddress);
       if (updates.licenseNumber) setLicenseNumber(updates.licenseNumber);
+      if (updates.signupMethod) setSignupMethod(updates.signupMethod); // Update new signup method state
 
       return true;
     } catch (e) {
@@ -199,10 +203,10 @@ const GlobalProvider = ({ children }) => {
       if (user) {
         // User is signed in.
         setIsLoggedIn(true);
-  setUserName(user.displayName || (user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Guest' : '')));
-  setUserEmail(user.email || "");
-  setUserPhone(user.phoneNumber || "");
-  setLoginPlatform(user.isAnonymous ? 'Guest' : (user.providerData[0]?.providerId === 'google.com' ? 'Gmail' : 'Email/Phone'));
+        setUserName(user.displayName || (user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Guest' : '')));
+        setUserEmail(user.email || "");
+        setUserPhone(user.phoneNumber || "");
+        setLoginPlatform(user.isAnonymous ? 'Guest' : (user.providerData[0]?.providerId === 'google.com' ? 'Gmail' : 'Email/Phone'));
 
         // Fetch additional user data from Firestore
         const userDocRef = doc(db, "users", user.uid);
@@ -212,6 +216,8 @@ const GlobalProvider = ({ children }) => {
           const userData = userDocSnap.data();
           setUserType(userData.userType || "user");
           setProfession(userData.profession || "");
+          setSignupMethod(userData.signupMethod || "");
+          setUserPhoneVerified(!!userData.phoneVerified); // Set phone verified status from Firestore
           setUserRole(userData.userType === "owner" ? "owner" : "user"); // Simple role mapping
 
           // Set owner-specific data if applicable
@@ -237,11 +243,14 @@ const GlobalProvider = ({ children }) => {
           setProfession("");
           setUserRole("user");
           setOwnerId(null);
+          setUserPhoneVerified(false); // Default to false for new users
           // Set a default Firestore document for the user if it doesn't exist
           await setDoc(userDocRef, {
             email: user.email || null,
             userType: "user", // Default
             profession: "",    // Default
+            signupMethod: user.isAnonymous ? 'guest' : (user.providerData?.[0]?.providerId === 'google.com' ? 'google' : (user.phoneNumber ? 'phone' : 'email')), // Infer signup method
+            phoneVerified: user.phoneNumber && user.phoneNumber.length > 0 ? false : false, // Phone is present but needs explicit verification
             createdAt: serverTimestamp(),
           }, { merge: true });
         }
@@ -251,7 +260,9 @@ const GlobalProvider = ({ children }) => {
         setUserName("");
         setUserEmail("");
         setUserPhone("");
+        setUserPhoneVerified(false); // Clear on logout
         setLoginPlatform("");
+        setSignupMethod(""); // Clear on logout
         setUserType("");
         setProfession("");
         setUserRole("");
@@ -321,23 +332,25 @@ const GlobalProvider = ({ children }) => {
     userName, setUserName,
     userEmail, setUserEmail,
     userPhone, setUserPhone,
+    userPhoneVerified, setUserPhoneVerified, // Expose phone verification status
     loginPlatform, setLoginPlatform,
+    signupMethod, setSignupMethod, // Expose signup method
 
     // owner support
     ownerId, setOwnerId,
     onBack, setOnBack,
     getOwnerKey,
-  readOwnerListings,
-  writeOwnerListings,
-  // Remote Firestore-backed helpers
-  readOwnerListingsRemote,
-  writeOwnerListingsRemote,
+    readOwnerListings,
+    writeOwnerListings,
+    // Remote Firestore-backed helpers
+    readOwnerListingsRemote,
+    writeOwnerListingsRemote,
 
-  // Guest sign-in helper
-  signInAnonymouslyAsGuest,
+    // Guest sign-in helper
+    signInAnonymouslyAsGuest,
 
-  // Profile updater
-  updateUserProfileInFirestore,
+    // Profile updater
+    updateUserProfileInFirestore,
 
     // dynamic profile data
     userVisitedPlaces, setUserVisitedPlaces,
@@ -360,8 +373,7 @@ const GlobalProvider = ({ children }) => {
     showAIChat, setShowAIChat,
     showMobileMenu, setShowMobileMenu,
     isMobile,
-    locationDetails, setLocationDetails
-    ,
+    locationDetails, setLocationDetails,
     // dev/debug
     lastAuthError, setLastAuthError
   };

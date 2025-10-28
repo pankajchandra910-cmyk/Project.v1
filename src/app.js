@@ -29,7 +29,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     if (loadingUser) {
         // Optionally render a loading spinner or skeleton
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-green-50">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
         );

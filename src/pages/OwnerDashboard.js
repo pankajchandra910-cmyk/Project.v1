@@ -30,6 +30,7 @@ export default function OwnerDashboard() {
     licenseNumber, setLicenseNumber,
     loginPlatform, setLoginPlatform,
     language, setLanguage,
+    userPhoneVerified,
   } = useContext(GlobalContext);
 
   const [activeTab, setActiveTab] = useState("add-listing");
@@ -1054,12 +1055,22 @@ export default function OwnerDashboard() {
                   </div>
                   <div>
                     <Label htmlFor="profile-contact-number">Contact Number</Label>
-                    <Input
-                      id="profile-contact-number"
-                      placeholder="+91 xxxxxxxxxx"
-                      value={userPhone}
-                      onChange={(e) => setUserPhone(e.target.value)}
-                    />
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="profile-contact-number"
+                        placeholder="+91 xxxxxxxxxx"
+                        value={userPhone}
+                        onChange={(e) => setUserPhone(e.target.value)}
+                      />
+                      {userPhoneVerified ? (
+                        <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">Verified</span>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">Unverified</span>
+                          <Button variant="outline" size="sm" onClick={() => navigate('/profile?verifyPhone=1')}>Verify now</Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="profile-email">Email</Label>

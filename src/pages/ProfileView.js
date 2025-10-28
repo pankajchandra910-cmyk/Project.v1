@@ -1,4 +1,5 @@
-import React, { useContext, useCallback, useState } from 'react';
+import React, { useContext, useCallback, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Edit, Star, Navigation } from 'lucide-react';
 import { Button } from '../component/button'; 
@@ -38,6 +39,7 @@ export default function ProfileView() {
     userViewpoints,
     userRoutes,
     updateUserProfileInFirestore,
+  userPhoneVerified,
   } = useContext(GlobalContext);
 
   // Local state for editing profile fields
@@ -61,6 +63,125 @@ export default function ProfileView() {
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
   const recaptchaProfileRef = React.useRef(null);
+  const [recaptchaStatus, setRecaptchaStatus] = useState('idle'); // 'idle' | 'loading' | 'ready' | 'failed'
+
+  const location = useLocation();
+
+  // Robust reCAPTCHA loader (same approach used in Login.js)
+  const ensureRecaptchaReady = async () => {
+    const containerId = 'recaptcha-profile-container';
+    // Emulator/testing bypass: if app verification is disabled, use a dummy verifier
+    try {
+      if (auth && auth.settings && auth.settings.appVerificationDisabledForTesting) {
+        console.log('Auth emulator mode detected: appVerificationDisabledForTesting=true — using dummy verifier');
+        // Provide a minimal dummy verifier that matches the internal API surface used by the Firebase SDK.
+        // The SDK may call internal methods like _reset, render, verify, clear — provide no-op or resolved promises.
+        const dummy = {
+          type: 'recaptcha',
+          render: () => Promise.resolve(0),
+          verify: () => Promise.resolve('test-verification-token'),
+          _reset: () => {},
+          clear: () => {},
+        };
+        window.recaptchaVerifierProfile = dummy;
+        return dummy;
+      }
+    } catch (e) {
+      // defensive: auth.settings may not exist in some SDK builds; ignore
+      console.warn('Could not read auth.settings.appVerificationDisabledForTesting:', e);
+    }
+
+    if (window.recaptchaVerifierProfile) return window.recaptchaVerifierProfile;
+
+    const createVerifier = async () => {
+      try {
+        window.recaptchaVerifierProfile = new RecaptchaVerifier(containerId, {
+          size: 'invisible',
+          callback: (response) => { console.log('reCAPTCHA solved (profile):', response); },
+          'expired-callback': () => {
+            toast.error('reCAPTCHA expired, please try again.');
+            console.warn('reCAPTCHA expired (profile). Resetting.');
+            if (window.grecaptcha && window.recaptchaVerifierProfile && typeof window.recaptchaVerifierProfile.render === 'function') {
+              window.recaptchaVerifierProfile.render().then(widgetId => window.grecaptcha.reset(widgetId));
+            }
+          }
+        }, auth);
+
+        if (window.grecaptcha && typeof window.recaptchaVerifierProfile.render === 'function') {
+          await window.recaptchaVerifierProfile.render();
+        }
+        return window.recaptchaVerifierProfile;
+      } catch (e) {
+        console.warn('createVerifier (profile) error', e);
+        throw e;
+      }
+    };
+
+    if (window.grecaptcha) {
+      return createVerifier();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const scriptId = 'g-recaptcha-script';
+        if (document.getElementById(scriptId)) {
+          const start = Date.now();
+          const poll = () => {
+            if (window.grecaptcha) {
+              createVerifier().then(resolve).catch(reject);
+            } else if (Date.now() - start > 30000) {
+              reject(new Error('grecaptcha not available after timeout'));
+            } else {
+              setTimeout(poll, 300);
+            }
+          };
+          poll();
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          setTimeout(() => {
+            createVerifier().then(resolve).catch(reject);
+          }, 50);
+        };
+        script.onerror = () => reject(new Error('Failed to load grecaptcha script'));
+        document.head.appendChild(script);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  // Load recaptcha and update visible status; callable from UI (retry)
+  const loadRecaptchaWithStatus = async () => {
+    setRecaptchaStatus('loading');
+    try {
+      await ensureRecaptchaReady();
+      setRecaptchaStatus('ready');
+    } catch (e) {
+      console.warn('Recaptcha load failed (profile):', e);
+      setRecaptchaStatus('failed');
+      throw e;
+    }
+  };
+
+  // Preload recaptcha on mount so the modal is ready when the user opens it
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        await loadRecaptchaWithStatus();
+      } catch (e) {
+        if (mounted) setRecaptchaStatus('failed');
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // Local state for cab booking modal (if not managed globally)
   const [showCabBooking, setShowCabBooking] = useState(false);
@@ -85,20 +206,9 @@ export default function ProfileView() {
   };
 
   const initRecaptchaForProfile = () => {
+    // Backwards-compatible wrapper: delegate to ensureRecaptchaReady and store on window.recaptchaVerifierProfile
     try {
-      // Ensure the container exists in the DOM. Use the container id string so Firebase can manage loading the
-      // grecaptcha script reliably. Using the id avoids timing issues with portal-mounted DOM nodes.
-      const containerId = 'recaptcha-profile-container';
-      // Create only once
-      if (!window.recaptchaVerifierProfile) {
-        window.recaptchaVerifierProfile = new RecaptchaVerifier(containerId, { size: 'invisible' }, auth);
-      }
-      // Ensure the widget is rendered
-      if (window.recaptchaVerifierProfile && typeof window.recaptchaVerifierProfile.render === 'function') {
-        // render returns a promise that resolves to widgetId
-        window.recaptchaVerifierProfile.render().catch((e) => console.warn('reCAPTCHA render warning:', e));
-      }
-      return window.recaptchaVerifierProfile;
+      return ensureRecaptchaReady();
     } catch (e) {
       console.warn('Failed to init recaptcha for profile phone verification:', e);
       return null;
@@ -112,15 +222,43 @@ export default function ProfileView() {
     }
     setPhoneLoading(true);
     try {
-      const appVerifier = initRecaptchaForProfile();
-      if (!appVerifier) throw new Error('reCAPTCHA unavailable');
+      let appVerifier;
+      try {
+        appVerifier = await ensureRecaptchaReady();
+      } catch (e) {
+        console.warn('Recaptcha not ready for profile phone send', e);
+        throw new Error('reCAPTCHA unavailable');
+      }
       const res = await signInWithPhoneNumber(auth, phoneToVerify, appVerifier);
       setPhoneConfirmationResult(res);
       setPhoneOtpSent(true);
       toast.success('OTP sent to ' + phoneToVerify);
     } catch (e) {
       console.warn('Phone OTP send failed:', e);
-      toast.error('Failed to send OTP: ' + (e.message || e.code));
+      const code = e?.code || '';
+      const msg = (e && e.message) || '';
+      // If failure is due to billing/reCAPTCHA/quota, fallback to saving phone as unverified for the current user
+      if (code.includes('billing') || msg.toLowerCase().includes('billing') || msg.toLowerCase().includes('recaptcha') || code === 'auth/quota-exceeded') {
+        try {
+          if (updateUserProfileInFirestore && auth.currentUser) {
+            await updateUserProfileInFirestore({ phoneNumber: phoneToVerify, phoneVerified: false, updatedAt: new Date() });
+            setUserPhone(phoneToVerify);
+            toast.success('Phone saved as unverified (billing/recaptcha not available). You can verify later.');
+            setShowPhoneModal(false);
+            setIsEditingPhone(false);
+            setPhoneOtp('');
+            setPhoneConfirmationResult(null);
+            setPhoneOtpSent(false);
+          } else {
+            toast.error('Cannot save phone locally: no authenticated user.');
+          }
+        } catch (saveErr) {
+          console.error('Fallback saving phone failed:', saveErr);
+          toast.error('Failed to save phone for fallback.');
+        }
+      } else {
+        toast.error('Failed to send OTP: ' + (msg || code));
+      }
     } finally {
       setPhoneLoading(false);
     }
@@ -231,6 +369,19 @@ export default function ProfileView() {
   React.useEffect(() => {
     setNewEmail(userEmail);
   }, [userEmail]);
+
+  // Auto-open phone verification modal when URL contains ?verifyPhone=1
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get('verifyPhone') === '1') {
+        setPhoneToVerify(userPhone || newPhone || '');
+        setShowPhoneModal(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [location.search, userPhone, newPhone]);
 
 
   const handleSearch = useCallback((query) => {
@@ -348,7 +499,22 @@ export default function ProfileView() {
                           className="grow bg-transparent outline-none text-gray-900"
                         />
                       ) : (
-                        <span className="text-gray-900">{userPhone}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-900">{userPhone}</span>
+                            {/* Verification badge */}
+                            <span>
+                              {userPhoneVerified ? (
+                                <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">Verified</span>
+                              ) : (
+                                <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">Unverified</span>
+                              )}
+                            </span>
+                            {!userPhoneVerified && (
+                              <Button variant="outline" size="sm" onClick={() => { setPhoneToVerify(userPhone); setShowPhoneModal(true); }}>
+                                Verify now
+                              </Button>
+                            )}
+                          </div>
                       )}
                       <Button 
                         variant="ghost" 
@@ -605,7 +771,23 @@ export default function ProfileView() {
           <div className="space-y-3 mt-2">
             <label className="block text-sm text-gray-700">Phone to verify</label>
             <Input value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" />
-            <div id="recaptcha-profile-container" ref={recaptchaProfileRef} />
+            <div className="flex items-center gap-3 mt-2">
+              <div id="recaptcha-profile-container" ref={recaptchaProfileRef} />
+              <div className="flex items-center gap-2">
+                {recaptchaStatus === 'loading' && (
+                  <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">reCAPTCHA: loading...</span>
+                )}
+                {recaptchaStatus === 'ready' && (
+                  <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">reCAPTCHA: ready</span>
+                )}
+                {recaptchaStatus === 'failed' && (
+                  <>
+                    <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-800">reCAPTCHA: failed</span>
+                    <Button variant="ghost" size="sm" onClick={loadRecaptchaWithStatus}>Retry</Button>
+                  </>
+                )}
+              </div>
+            </div>
             {!phoneOtpSent ? (
               <Button onClick={handleSendPhoneOTP} disabled={phoneLoading} className="mt-2">{phoneLoading ? 'Sending...' : 'Send OTP'}</Button>
             ) : (

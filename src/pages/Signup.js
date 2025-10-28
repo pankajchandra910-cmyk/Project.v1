@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { Button } from "../component/button";
@@ -8,26 +8,35 @@ import { Separator } from "../component/separator";
 import { RadioGroup, RadioGroupItem } from "../component/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";
 import { Eye, EyeOff, User, Building, Loader2 } from "lucide-react";
-import { toast } from "sonner"; // For notifications
+import { toast } from "sonner";
 
 // --- Firebase Imports ---
 import { auth, db, googleProvider } from "../firebase";
-import { createUserWithEmailAndPassword, updateProfile, EmailAuthProvider, linkWithCredential } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, EmailAuthProvider, linkWithCredential, RecaptchaVerifier, signInWithPhoneNumber, signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { language, setLanguage } = useContext(GlobalContext);
+  const { language, setLanguage, loadingUser, isLoggedIn } = useContext(GlobalContext);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userName, setUserName] = useState(""); // For user display name
+  const [userName, setUserName] = useState("");
   const [userType, setUserType] = useState("user");
-  const [profession, setProfession] = useState(""); // Initialized to empty string
+  const [profession, setProfession] = useState("");
   const [loading, setLoading] = useState(false);
+  const [method, setMethod] = useState('email'); // 'email' | 'phone' | 'google'
+
+  // Phone signup state
+  const [phone, setPhone] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false); // New state to track if OTP is verified
+  const recaptchaRef = useRef(null);
 
   const texts = {
     en: {
@@ -49,7 +58,23 @@ export default function Signup() {
       fillAllFields: "Please fill in all required fields.",
       signupSuccess: "Account created successfully! Redirecting to login...",
       signupFailed: "Sign up failed",
-      loading: "Creating account..."
+      loading: "Creating account...",
+      sendOtp: "Send OTP",
+      resendOtp: "Resend OTP",
+      enterPhone: "Please enter a phone number.",
+      otpSentTo: "OTP sent to ",
+      phoneVerified: "Phone verified successfully!",
+      invalidOtp: "Invalid OTP",
+      noOtpSession: "No OTP session found. Please send OTP first.",
+      failedToCreatePhoneAccount: "Failed to create phone account:",
+      phoneVerificationNotCompleted: "Please verify your phone number using OTP first.",
+      verificationEmailSent: "Verification email sent. Please check your inbox.",
+      failedToSendVerificationEmail: "Failed to send verification email:",
+      fallbackOtpSaveSuccess: "OTP service unavailable — saved phone as unverified. You can complete verification later.",
+      fallbackOtpSaveFailed: "Failed to send OTP and failed to save unverified phone.",
+      passwordTooShort: "Password should be at least 6 characters long.",
+      recaptchaNotReady: "reCAPTCHA is not ready. Please try again in a moment.",
+      verifyOtp: "Verify OTP",
     },
     hi: {
       createAccount: "अपना खाता बनाएँ",
@@ -70,69 +95,304 @@ export default function Signup() {
       fillAllFields: "कृपया सभी आवश्यक फ़ील्ड भरें।",
       signupSuccess: "खाता सफलतापूर्वक बनाया गया! लॉगिन पर रीडायरेक्ट हो रहा है...",
       signupFailed: "साइन अप विफल",
-      loading: "खाता बना रहा है..."
+      loading: "खाता बना रहा है...",
+      sendOtp: "OTP भेजें",
+      resendOtp: "OTP पुनः भेजें",
+      enterPhone: "कृपया एक फ़ोन नंबर दर्ज करें।",
+      otpSentTo: "OTP भेजा गया: ",
+      phoneVerified: "फ़ोन सफलतापूर्वक सत्यापित हुआ!",
+      invalidOtp: "अमान्य OTP",
+      noOtpSession: "कोई OTP सत्र नहीं मिला। कृपया पहले OTP भेजें।",
+      failedToCreatePhoneAccount: "फ़ोन खाता बनाने में विफल:",
+      phoneVerificationNotCompleted: "कृपया पहले OTP का उपयोग करके अपना फ़ोन नंबर सत्यापित करें।",
+      verificationEmailSent: "सत्यापन ईमेल भेजा गया। कृपया अपना इनबॉक्स जांचें।",
+      failedToSendVerificationEmail: "सत्यापन ईमेल भेजने में विफल:",
+      fallbackOtpSaveSuccess: "OTP सेवा अनुपलब्ध — फ़ोन को असत्यापित के रूप में सहेजा गया। आप बाद में सत्यापन पूरा कर सकते हैं।",
+      fallbackOtpSaveFailed: "OTP भेजने में विफल और असत्यापित फ़ोन सहेजने में विफल।",
+      passwordTooShort: "पासवर्ड कम से कम 6 वर्णों का होना चाहिए।",
+      recaptchaNotReady: "reCAPTCHA तैयार नहीं है। कृपया कुछ देर बाद पुनः प्रयास करें।",
+      verifyOtp: "OTP सत्यापित करें",
     }
   };
 
   const t = texts[language] || texts.en;
 
+  // Recaptcha initialization logic
+  const ensureRecaptchaReady = async () => {
+    const containerId = 'signup-recaptcha';
+    if (window.recaptchaVerifier) return window.recaptchaVerifier;
+
+    const createVerifier = async () => {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(containerId, {
+          size: 'invisible',
+          callback: (response) => { console.log('reCAPTCHA solved:', response); },
+          'expired-callback': () => {
+            toast.error(t.recaptchaExpired);
+            console.warn('reCAPTCHA expired. Resetting.');
+            if (window.grecaptcha && window.recaptchaVerifier && typeof window.recaptchaVerifier.render === 'function') {
+              window.recaptchaVerifier.render().then(widgetId => window.grecaptcha.reset(widgetId));
+            }
+          }
+        }, auth);
+
+        if (window.grecaptcha && typeof window.recaptchaVerifier.render === 'function') {
+          await window.recaptchaVerifier.render();
+        }
+        console.log('RecaptchaVerifier created and rendered');
+        return window.recaptchaVerifier;
+      } catch (e) {
+        console.warn('createVerifier error', e);
+        throw e;
+      }
+    };
+
+    if (window.grecaptcha) {
+      return createVerifier();
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const scriptId = 'g-recaptcha-script-signup';
+        if (document.getElementById(scriptId)) {
+          const start = Date.now();
+          const poll = () => {
+            if (window.grecaptcha) {
+              createVerifier().then(resolve).catch(reject);
+            } else if (Date.now() - start > 15000) {
+              reject(new Error('grecaptcha not available after timeout'));
+            } else {
+              setTimeout(poll, 300);
+            }
+          };
+          poll();
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+          setTimeout(() => {
+            createVerifier().then(resolve).catch(reject);
+          }, 50);
+        };
+        script.onerror = (e) => reject(new Error('Failed to load grecaptcha script'));
+        document.head.appendChild(script);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loadingUser && isLoggedIn) {
+      navigate("/");
+    }
+  }, [isLoggedIn, loadingUser, navigate]);
+
   const handleSignup = async () => {
     if (loading) return;
 
-    if (!userName || !email || !password || !confirmPassword) {
+    // Common validations for all methods
+    if (!userName || !userType) {
       toast.error(t.fillAllFields);
       return;
     }
-
-    if (password !== confirmPassword) {
-      toast.error(t.passwordMismatch);
+    if (userType === 'owner' && !profession) {
+      toast.error(t.fillAllFields);
       return;
     }
 
     setLoading(true);
     try {
-        // If current user is anonymous, link the anonymous account to email/password
-        let user;
-        if (auth.currentUser && auth.currentUser.isAnonymous) {
-          const cred = EmailAuthProvider.credential(email, password);
-          const linked = await linkWithCredential(auth.currentUser, cred);
-          user = linked.user;
-        } else {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          user = userCredential.user;
+      let user = null;
+      let actualSignupMethod = method; // To store in Firestore
+
+      if (method === 'google') {
+        const result = await signInWithPopup(auth, googleProvider);
+        user = result.user;
+        actualSignupMethod = 'google';
+      } else if (method === 'phone') {
+        if (!otpVerified) {
+          toast.error(t.phoneVerificationNotCompleted);
+          return;
         }
 
-        // Update user profile with display name
+        // If phone is verified, we need to sign in with that phone number.
+        // auth.currentUser will already be set from `confirmOtp` in the anonymous linking scenario.
+        // If not, it means the user just confirmed OTP and the system already signed them in.
+        user = auth.currentUser;
+
+        if (!user) {
+          // This case should ideally not happen if OTP was confirmed successfully,
+          // but as a fallback, we throw if no user is found.
+          throw new Error("Phone verification complete, but no active user session. Please try logging in.");
+        }
+        actualSignupMethod = 'phone'; // The phone number itself is the primary credential
+      } else { // Email method
+        if (!email || !password || !confirmPassword) {
+          toast.error(t.fillAllFields);
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          toast.error(t.passwordMismatch);
+          setLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          toast.error(t.passwordTooShort);
+          setLoading(false);
+          return;
+        }
+
+        // Create with email and password
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        user = userCredential.user;
+        actualSignupMethod = 'email';
+      }
+
+      // Update user profile with display name if user object is available
+      if (user && userName) {
         try {
           await updateProfile(user, { displayName: userName });
         } catch (e) {
-          // Non-fatal: profile update may fail if provider doesn't allow it immediately
           console.warn('updateProfile failed:', e);
         }
+      }
 
-        // Store additional user data in Firestore
+      // Store additional user data in Firestore for ALL methods
+      if (user) {
         const userDocRef = doc(db, "users", user.uid);
         await setDoc(userDocRef, {
-          email: user.email || email,
+          email: user.email || email || null,
           displayName: userName,
+          phoneNumber: user.phoneNumber || phone || null,
+          signupMethod: actualSignupMethod,
           userType: userType,
           profession: userType === "owner" ? profession : "",
           createdAt: serverTimestamp(),
+          phoneVerified: method === 'phone' ? otpVerified : (user.phoneNumber && user.phoneNumber.length > 0), // Explicitly set for phone method
         }, { merge: true });
 
-        toast.success(t.signupSuccess);
-        // If we linked an anonymous account, the user is already signed in — send them to home
-        navigate(user && user.isAnonymous ? "/" : "/");
+        // If email method and not verified, try sending verification
+        try {
+          if (method === 'email' && auth.currentUser && auth.currentUser.email && !auth.currentUser.emailVerified) {
+            await auth.currentUser.sendEmailVerification();
+            toast.success(t.verificationEmailSent);
+          }
+        } catch (e) {
+          console.warn(t.failedToSendVerificationEmail, e);
+        }
+      }
+
+      toast.success(t.signupSuccess);
+      navigate('/');
     } catch (error) {
-      console.error("Signup Error:", error.message);
-      toast.error(t.signupFailed + ": " + error.message);
+      console.error("Signup Error:", error);
+      toast.error(t.signupFailed + ": " + (error.message || String(error)));
     } finally {
       setLoading(false);
     }
   };
 
+  const sendOtp = async () => {
+    if (!phone) {
+      toast.error(t.enterPhone);
+      return;
+    }
+    setLoading(true);
+    try {
+      let appVerifier;
+      try {
+        appVerifier = await ensureRecaptchaReady();
+      } catch (e) {
+        console.warn('Recaptcha not ready for OTP send', e);
+        toast.error(t.recaptchaNotReady);
+        setLoading(false);
+        return;
+      }
+
+      const number = phone.startsWith('+') ? phone : `+91${phone}`; // Ensure country code
+
+      const result = await signInWithPhoneNumber(auth, number, appVerifier);
+      setConfirmationResult(result);
+      setOtpSent(true);
+      setOtpVerified(false); // Reset verification status
+      toast.success(t.otpSentTo + number);
+    } catch (e) {
+      console.error('sendOtp error', e);
+      const code = e?.code || '';
+      const msg = (e && e.message) || '';
+      if (code.includes('billing') || msg.toLowerCase().includes('billing') || msg.toLowerCase().includes('recaptcha') || code === 'auth/quota-exceeded') {
+        try {
+          const cleaned = phone.replace(/[^0-9]/g, '');
+          const docId = `phone_${cleaned}`;
+          await setDoc(doc(db, 'unverified_phone_signups', docId), {
+            phone: phone,
+            name: userName || null,
+            userType,
+            profession,
+            signupMethod: 'phone',
+            createdAt: serverTimestamp(),
+          }, { merge: true });
+          toast.success(t.fallbackOtpSaveSuccess);
+        } catch (saveErr) {
+          console.error('Fallback save unverified phone failed', saveErr);
+          toast.error(t.fallbackOtpSaveFailed);
+        }
+      } else {
+        toast.error('Failed to send OTP: ' + (e.message || String(e)));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmOtp = async () => {
+    if (!confirmationResult) {
+      toast.error(t.noOtpSession);
+      return;
+    }
+    if (!phoneOtp) {
+      toast.error("Please enter the OTP.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await confirmationResult.confirm(phoneOtp);
+      // At this point, the user is signed in with their phone number.
+      // Firebase automatically creates an auth user for this phone.
+      setOtpSent(false); // OTP verified, don't show "resend" anymore
+      setOtpVerified(true);
+      toast.success(t.phoneVerified);
+    } catch (e) {
+      console.error('confirmOtp error', e);
+      toast.error(t.invalidOtp);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-green-50">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If already logged in, the useEffect will handle redirection, so this component won't render
+  if (isLoggedIn) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-green-50 p-4">
       <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8 w-full max-w-sm sm:max-w-md space-y-6">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-primary">{t.createAccount}</h2>
@@ -140,16 +400,16 @@ export default function Signup() {
         </div>
 
         <div className="flex justify-center mb-4">
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">🇺🇸 English</SelectItem>
-                <SelectItem value="hi">🇮🇳 Hindi</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">🇺🇸 English</SelectItem>
+              <SelectItem value="hi">🇮🇳 Hindi</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -163,65 +423,121 @@ export default function Signup() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">{t.email}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
+          {/* Signup method selector */}
+          <div className="flex items-center justify-center space-x-2">
+            <button type="button" className={`px-3 py-1 rounded ${method === 'email' ? 'bg-primary text-white' : 'border'}`} onClick={() => setMethod('email')}>Email</button>
+            <button type="button" className={`px-3 py-1 rounded ${method === 'phone' ? 'bg-primary text-white' : 'border'}`} onClick={() => { setMethod('phone'); setOtpVerified(false); }}>Phone</button> {/* Reset OTP verification */}
+            <button type="button" className={`px-3 py-1 rounded ${method === 'google' ? 'bg-primary text-white' : 'border'}`} onClick={() => setMethod('google')}>Google</button>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">{t.password}</Label>
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={loading}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
+          {/* This is the div where reCAPTCHA will be rendered for phone verification. */}
+          <div id="signup-recaptcha" ref={recaptchaRef} />
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={loading}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                disabled={loading}
-              >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
+          {method === 'email' && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="email">{t.email}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">{t.password}</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t.confirmPassword}</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={loading}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    disabled={loading}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {method === 'phone' && (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0">
+                <Input
+                  id="phone"
+                  placeholder="+919876543210"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setOtpSent(false); // Reset OTP state if phone number changes
+                    setOtpVerified(false);
+                    setPhoneOtp("");
+                  }}
+                  disabled={loading || otpSent} // Disable input once OTP is sent
+                  className="w-full"
+                />
+                {!otpSent && !otpVerified && (
+                  <Button type="button" onClick={sendOtp} disabled={loading} className="w-full sm:w-auto">
+                    {t.sendOtp}
+                  </Button>
+                )}
+                {otpSent && !otpVerified && (
+                  <Button type="button" onClick={sendOtp} disabled={loading} className="w-full sm:w-auto">
+                    {t.resendOtp}
+                  </Button>
+                )}
+              </div>
+
+              {otpSent && !otpVerified && (
+                <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2 mt-2">
+                  <Input placeholder="Enter OTP" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} disabled={loading} className="w-full" />
+                  <Button type="button" onClick={confirmOtp} disabled={loading} className="w-full sm:w-auto">
+                    {t.verifyOtp}
+                  </Button>
+                </div>
+              )}
+              {otpVerified && (
+                <p className="text-sm text-green-600 mt-2">{t.phoneVerified}</p>
+              )}
             </div>
-          </div>
+          )}
 
           <Separator />
 
@@ -230,7 +546,7 @@ export default function Signup() {
             <RadioGroup
               value={userType}
               onValueChange={(value) => setUserType(value)}
-              className="flex justify-center space-x-6"
+              className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6"
               disabled={loading}
             >
               <div className="flex items-center space-x-2">
@@ -269,7 +585,7 @@ export default function Signup() {
             </div>
           )}
 
-          <Button onClick={handleSignup} className="w-full bg-primary" disabled={loading}>
+          <Button onClick={handleSignup} className="w-full bg-primary" disabled={loading || (method === 'phone' && !otpVerified)}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t.signup}
           </Button>
