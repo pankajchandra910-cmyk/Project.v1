@@ -19,6 +19,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import ComingSoonPage from './pages/ComingSoonPage'; 
 import { Toaster } from "sonner"; // For toasts
 import { Loader2 } from "lucide-react";
 
@@ -66,49 +67,56 @@ function App(){
 
                         {/* Protected Routes */}
                         <Route path="/profile" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <ProfileView/>
-                            
+                            </ProtectedRoute>
+                                   
                         } />
                         <Route path="/owner-dashboard/:profession" element={
-                            
+                            <ProtectedRoute allowedRoles={[ "owner"]}>
                                 <OwnerDashboard />
-                            
+                            </ProtectedRoute>
                         } />
                         <Route path="/listings/:id" element={
-                             
+                             <ProtectedRoute allowedRoles={[ "owner"]}>
                                 <ListingDetail />
+                             </ProtectedRoute>
                            
                         } />
                         <Route path="/location-details/:locationId" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <LocationDetailsPage />
+                            </ProtectedRoute>
                             
                         } />
                         <Route path="/place-details/:placeId" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <PlaceDetailsPage />
+                            </ProtectedRoute>
                             
                         } />
                         <Route path="/trek-details/:trekId" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <TrekDetailsPage />
+                            </ProtectedRoute>
                             
                         } />
                         <Route path="/map-view/:focusId" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <MapViewPage/>
+                            </ProtectedRoute>
                             
                         } />
                         <Route path="/popular-details/:popularId" element={
-                            
+                            <ProtectedRoute allowedRoles={["user", "owner"]}>
                                 <PopularDetailsPage/>
-                            
+                            </ProtectedRoute>
                         } />
                         <Route path="/book-item/:itemId" element={
                             <ProtectedRoute allowedRoles={["user", "owner"]}>
-                                <BookingPage />
+                                <ComingSoonPage />
                             </ProtectedRoute>
+                            
                         } />
 
                     </Routes>

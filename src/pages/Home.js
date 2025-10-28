@@ -1,13 +1,13 @@
 import React, { useState, useContext, useCallback } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Import Link
+import { useNavigate, Link } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import Header from "../component/Header";
 import MobileMenu from "../component/MobileMenu";
-import HeroCarousel from "../component/HeroCarousel";
+import HeroCarousel from "../component/HeroCarousel"; // Ensure this is the updated HeroCarousel
 import CategoryCard from "../component/CategoryCard";
 import FeaturedCard from "../component/FeaturedCard";
 import LocationCarousel from "../component/LocationCarousel";
-import Footer from "../component/Footer"; // Import the Footer component
+import Footer from "../component/Footer";
 
 import {
   Bed,
@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
-import { featuredPlaces } from "../assets/dummy";
+import { featuredPlaces } from "../assets/dummy"; // Ensure featuredPlaces is correctly imported
 
 export default function Home() {
   const navigate = useNavigate();
@@ -70,17 +70,11 @@ export default function Home() {
     setSelectedCategory("");
     navigate("/search");
   }, [navigate, setSearchQuery, setSelectedCategory]);
-
-  // This handleLogoClick is for the header logo, not for a general "profile" in mobile menu.
-  // It handles if the user is an owner, navigate to dashboard, otherwise to a generic profile.
-  // Note: For actual <Link> usage in Header, you might pass the target path directly
-  // or use a conditional Link inside Header, but for the callback, navigate is fine.
  
   const handleLogoClick = useCallback(() => {
-   
-      navigate(`/`);
-   
-  }, [navigate,]);
+    navigate(`/`);
+  }, [navigate]);
+
   const handleProfileClick = useCallback(() => {
     if (userType === "owner") {
       navigate(`/owner-dashboard/${profession}`);
@@ -89,19 +83,20 @@ export default function Home() {
     }
   }, [navigate, userType, profession]);
 
-  const handleBooking = useCallback(() => {
-    navigate("/search");
-  }, [navigate]);
+  // Removed handleBooking as it's now handled within HeroCarousel internally based on button actions.
+  // const handleBooking = useCallback(() => {
+  //   navigate("/search");
+  // }, [navigate]);
 
   const handleCategoryClick = useCallback((category) => {
     setSelectedCategory(category);
     setSearchQuery("");
-    navigate("/search");
+    navigate("/book-item/:itemId");//navigate to the commig soon page 
   }, [navigate, setSelectedCategory, setSearchQuery]);
 
   const handleExploreMore = useCallback((locationName) => {
     const locationId = locationName.toLowerCase().replace(/\s/g, '-');
-    setSelectedLocationId(locationId);
+    setSelectedLocationId(locationId); // This might be used by LocationDetailsPage, ensure consistency.
     navigate(`/location-details/${locationId}`);
   }, [navigate, setSelectedLocationId]);
 
@@ -134,8 +129,8 @@ export default function Home() {
         )}
 
         <main className="container mx-auto px-4 py-8 space-y-12">
-          {/* Hero Carousel */}
-          <HeroCarousel onBooking={handleBooking} />
+          {/* Hero Carousel - Removed onBooking prop */}
+          <HeroCarousel /> 
 
           {/* Location Carousel */}
           <LocationCarousel onLocationClick={handleExploreMore} />
@@ -163,10 +158,10 @@ export default function Home() {
                 <div
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaXRhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
+                    backgroundImage: `url('https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluaiBhbCUyMGxha2UlMjBzdW5zZXQlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
                   }}
                 />
-                <div className="absolute inset-0" />
+                <div className="absolute inset-0" /> {/* Added overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Nainital</h3>
@@ -188,7 +183,7 @@ export default function Home() {
                     backgroundImage: `url('https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
                   }}
                 />
-                <div className="absolute inset-0" />
+                <div className="absolute inset-0" /> {/* Added overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold mb-2">Explore Lakes</h3>
