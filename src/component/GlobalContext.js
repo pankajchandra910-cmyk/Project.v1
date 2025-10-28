@@ -10,19 +10,16 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export const GlobalContext = createContext();
 
-// Mock User Data (Dynamic part) - This will be the initial state
-// Now, most of these will be managed by Firebase and Firestore
+// Mock data (kept as provided, if specific changes are needed here, let me know)
 const mockUserData = {
-  // Common user info
-  userName: "", // Will be fetched from Firebase Auth or Firestore
-  userEmail: "", // Will be fetched from Firebase Auth
-  userPhone: "", // Will be fetched from Firebase Auth or Firestore
+  userName: "",
+  userEmail: "",
+  userPhone: "",
   loginPlatform: "",
   userType: "",
   isLoggedIn: false,
   userRole: "",
 
-  // Owner-specific profile data
   businessAddress: "",
   licenseNumber: "",
   visitedPlaces: [],
@@ -45,31 +42,26 @@ const categoriesData = [
 const STORAGE_OWNER_PREFIX = "owner_listings_v2:";
 
 const GlobalProvider = ({ children }) => {
-  // View and auth
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Managed by Firebase auth state
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
-  const [userType, setUserType] = useState(""); // Stored in Firestore
-  const [loadingUser, setLoadingUser] = useState(true); // New loading state for auth
+  const [userType, setUserType] = useState("");
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  // User info
-  const [profession, setProfession] = useState(""); // Stored in Firestore
+  const [profession, setProfession] = useState("");
   const [language, setLanguage] = useState("en");
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
-  const [userPhoneVerified, setUserPhoneVerified] = useState(false); // NEW STATE for phone verification status
+  const [userPhoneVerified, setUserPhoneVerified] = useState(false);
   const [loginPlatform, setLoginPlatform] = useState("");
-  const [signupMethod, setSignupMethod] = useState(""); // NEW STATE to track original signup method
+  const [signupMethod, setSignupMethod] = useState("");
 
-  // Owner-specific extended profile details (if managed globally)
   const [businessAddress, setBusinessAddress] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
 
-  // Owner-specific id
   const [ownerId, setOwnerId] = useState(null);
   const [onBack, setOnBack] = useState(null);
 
-  // Dynamic user data
   const [userVisitedPlaces, setUserVisitedPlaces] = useState(mockUserData.visitedPlaces);
   const [userRecentBookings, setUserRecentBookings] = useState(mockUserData.recentBookings);
   const [userSavedPlaces, setUserSavedPlaces] = useState(mockUserData.savedPlaces);
@@ -77,31 +69,25 @@ const GlobalProvider = ({ children }) => {
   const [userRoutes, setUserRoutes] = useState(mockUserData.userRoutes);
   const [categories, setCategories] = useState(categoriesData);
 
-  // New state for currently selected location ID for details page
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [locationDetails, setLocationDetails] = useState(null);
 
-  // Search and selection
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [focusArea, setFocusArea] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [selectedDetailType, setSelectedDetailType] = useState(" ");
 
-  // UI state
   const [showAIChat, setShowAIChat] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const isMobile = useIsMobile();
-  // Last auth error for dev debugging
   const [lastAuthError, setLastAuthError] = useState(null);
 
-  // Helper: derive owner storage key
   const getOwnerKey = (id) => {
     const keyId = id || ownerId || userEmail || userName || "unknown_owner";
     return `${STORAGE_OWNER_PREFIX}${String(keyId).replace(/[^a-z0-9]/gi, "_").toLowerCase()}`;
   };
 
-  // Helpers to read/write owner-scoped listings (frontend localStorage)
   const readOwnerListings = (id) => {
     try {
       const raw = localStorage.getItem(getOwnerKey(id));
@@ -122,7 +108,6 @@ const GlobalProvider = ({ children }) => {
     }
   };
 
-  // Firestore-backed owner listings helpers (async)
   const readOwnerListingsRemote = async (id) => {
     try {
       if (!id) return [];
@@ -134,8 +119,6 @@ const GlobalProvider = ({ children }) => {
       }
       return [];
     } catch (e) {
-      // Log as a warning because remote Firestore may be unavailable or blocked by rules
-      // and this is an expected fallback case; avoid surfacing as a dev-overlay error.
       console.warn("Failed to read owner listings from Firestore:", e);
       return [];
     }
@@ -146,31 +129,24 @@ const GlobalProvider = ({ children }) => {
       if (!id) throw new Error("ownerId is required to write listings remotely");
       const ownerRef = doc(db, "owners", id);
       await setDoc(ownerRef, { listings, updatedAt: serverTimestamp() }, { merge: true });
-      // also cache locally
       writeOwnerListings(listings, id);
       return true;
     } catch (e) {
-      // Log as a warning for the same reason as read: avoid triggering dev-overlay for expected failures
       console.warn("Failed to write owner listings to Firestore:", e);
       return false;
     }
   };
 
-  // Convenience: sign in anonymously (guest) and ensure a users doc exists
   const signInAnonymouslyAsGuest = async () => {
     try {
       const result = await signInAnonymously(auth);
-      // onAuthStateChanged will create user doc if missing
       return { success: true, result };
     } catch (e) {
-      // Use warn to avoid dev-overlay for expected auth config problems (e.g., anonymous disabled)
       console.warn("Anonymous sign-in failed:", e);
-      // Return a safe failure result instead of throwing so callers can handle gracefully
       return { success: false, error: e };
     }
   };
 
-  // Update the current user's Firestore profile with provided fields and keep context in sync
   const updateUserProfileInFirestore = async (updates = {}) => {
     try {
       const current = auth.currentUser;
@@ -179,16 +155,16 @@ const GlobalProvider = ({ children }) => {
       const payload = { ...updates, updatedAt: serverTimestamp() };
       await setDoc(userRef, payload, { merge: true });
 
-      // Update local context state for common fields
+      // Update local state to reflect changes immediately
       if (updates.displayName || updates.userName) setUserName(updates.displayName || updates.userName);
       if (updates.email) setUserEmail(updates.email);
       if (updates.phoneNumber) setUserPhone(updates.phoneNumber);
-      if (typeof updates.phoneVerified !== 'undefined') setUserPhoneVerified(!!updates.phoneVerified); // Update new phone verified state
+      if (typeof updates.phoneVerified !== 'undefined') setUserPhoneVerified(!!updates.phoneVerified);
       if (updates.userType) setUserType(updates.userType);
       if (updates.profession) setProfession(updates.profession);
       if (updates.businessAddress) setBusinessAddress(updates.businessAddress);
       if (updates.licenseNumber) setLicenseNumber(updates.licenseNumber);
-      if (updates.signupMethod) setSignupMethod(updates.signupMethod); // Update new signup method state
+      if (updates.signupMethod) setSignupMethod(updates.signupMethod);
 
       return true;
     } catch (e) {
@@ -197,18 +173,25 @@ const GlobalProvider = ({ children }) => {
     }
   };
 
-  // --- Firebase Auth State Listener & Firestore User Data Fetching ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // User is signed in.
         setIsLoggedIn(true);
         setUserName(user.displayName || (user.email ? user.email.split('@')[0] : (user.isAnonymous ? 'Guest' : '')));
         setUserEmail(user.email || "");
         setUserPhone(user.phoneNumber || "");
-        setLoginPlatform(user.isAnonymous ? 'Guest' : (user.providerData[0]?.providerId === 'google.com' ? 'Gmail' : 'Email/Phone'));
+        
+        // Determine login platform more robustly
+        let platform = 'Email/Phone';
+        if (user.isAnonymous) {
+          platform = 'Guest';
+        } else if (user.providerData.some(p => p.providerId === 'google.com')) {
+          platform = 'Gmail';
+        } else if (user.providerData.some(p => p.providerId === 'phone')) {
+          platform = 'Phone';
+        }
+        setLoginPlatform(platform);
 
-        // Fetch additional user data from Firestore
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
@@ -216,20 +199,19 @@ const GlobalProvider = ({ children }) => {
           const userData = userDocSnap.data();
           setUserType(userData.userType || "user");
           setProfession(userData.profession || "");
-          setSignupMethod(userData.signupMethod || "");
-          setUserPhoneVerified(!!userData.phoneVerified); // Set phone verified status from Firestore
-          setUserRole(userData.userType === "owner" ? "owner" : "user"); // Simple role mapping
+          setSignupMethod(userData.signupMethod || platform.toLowerCase()); // Use platform as fallback for signup method
+          setUserPhoneVerified(!!userData.phoneVerified); // Use explicit value from Firestore
 
-          // Set owner-specific data if applicable
+          setUserRole(userData.userType === "owner" ? "owner" : "user");
+
           if (userData.userType === "owner") {
             setBusinessAddress(userData.businessAddress || "");
             setLicenseNumber(userData.licenseNumber || "");
-            setOwnerId(user.uid); // Use Firebase UID as ownerId
+            setOwnerId(user.uid);
           } else {
             setOwnerId(null);
           }
 
-          // You can also load more specific user profile data here from Firestore
           setUserVisitedPlaces(userData.visitedPlaces || []);
           setUserRecentBookings(userData.recentBookings || []);
           setUserSavedPlaces(userData.savedPlaces || []);
@@ -237,32 +219,46 @@ const GlobalProvider = ({ children }) => {
           setUserRoutes(userData.userRoutes || []);
 
         } else {
-          // New user or existing user without Firestore profile.
-          // Set defaults or prompt for details.
+          // New user (or old user without a user doc) - create a basic one
           setUserType("user");
           setProfession("");
           setUserRole("user");
           setOwnerId(null);
-          setUserPhoneVerified(false); // Default to false for new users
-          // Set a default Firestore document for the user if it doesn't exist
+          setUserPhoneVerified(false);
+          
+          // Determine initial signup method for new user doc
+          let initialSignupMethod = 'unknown';
+          if (user.isAnonymous) {
+            initialSignupMethod = 'guest';
+          } else if (user.providerData?.[0]?.providerId === 'google.com') {
+            initialSignupMethod = 'google';
+          } else if (user.phoneNumber) {
+            initialSignupMethod = 'phone';
+          } else if (user.email) {
+            initialSignupMethod = 'email';
+          }
+          setSignupMethod(initialSignupMethod);
+
           await setDoc(userDocRef, {
             email: user.email || null,
-            userType: "user", // Default
-            profession: "",    // Default
-            signupMethod: user.isAnonymous ? 'guest' : (user.providerData?.[0]?.providerId === 'google.com' ? 'google' : (user.phoneNumber ? 'phone' : 'email')), // Infer signup method
-            phoneVerified: user.phoneNumber && user.phoneNumber.length > 0 ? false : false, // Phone is present but needs explicit verification
+            phoneNumber: user.phoneNumber || null,
+            userType: "user",
+            profession: "",
+            signupMethod: initialSignupMethod,
+            phoneVerified: user.phoneNumber && user.phoneNumber.length > 0 ? true : false, // If phone exists at auth level, assume verified for new doc. Adjust if specific verification logic is needed.
             createdAt: serverTimestamp(),
+            displayName: user.displayName || null,
           }, { merge: true });
         }
       } else {
-        // User is signed out.
+        // No user logged in
         setIsLoggedIn(false);
         setUserName("");
         setUserEmail("");
         setUserPhone("");
-        setUserPhoneVerified(false); // Clear on logout
+        setUserPhoneVerified(false);
         setLoginPlatform("");
-        setSignupMethod(""); // Clear on logout
+        setSignupMethod("");
         setUserType("");
         setProfession("");
         setUserRole("");
@@ -275,21 +271,20 @@ const GlobalProvider = ({ children }) => {
         setUserViewpoints([]);
         setUserRoutes([]);
       }
-      setLoadingUser(false); // Auth state and user data loaded
+      setLoadingUser(false);
     });
 
     return () => unsubscribe();
-  }, []); // Run only once on component mount
+  }, []);
 
   const logout1 = useCallback(async () => {
     try {
       await signOut(auth);
-      // All states will be cleared by the onAuthStateChanged listener
       console.log("User logged out successfully!");
     } catch (error) {
       console.error("Error signing out:", error);
     }
-    // Clear other non-auth related local states if necessary
+    // Reset all context states upon logout to ensure a clean slate
     setSearchQuery('');
     setSelectedCategory('');
     setFocusArea('');
@@ -299,60 +294,73 @@ const GlobalProvider = ({ children }) => {
     setShowMobileMenu(false);
     setSelectedLocationId(null);
     setLocationDetails(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userPreferences');
+    localStorage.removeItem('authToken'); // Assuming you might have custom tokens
+    localStorage.removeItem('userPreferences'); // Any other app-specific storage
+    // Ensure all user-specific states are reset
+    setIsLoggedIn(false);
+    setUserName("");
+    setUserEmail("");
+    setUserPhone("");
+    setUserPhoneVerified(false);
+    setLoginPlatform("");
+    setSignupMethod("");
+    setUserType("");
+    setProfession("");
+    setUserRole("");
+    setBusinessAddress("");
+    setLicenseNumber("");
+    setOwnerId(null);
+    setUserVisitedPlaces([]);
+    setUserRecentBookings([]);
+    setUserSavedPlaces([]);
+    setUserViewpoints([]);
+    setUserRoutes([]);
   }, []);
 
-  // Effect to infer and set ownerId when userType changes or user info is available
   useEffect(() => {
-    if (userType === "owner" && !ownerId && isLoggedIn && auth.currentUser) {
-        setOwnerId(auth.currentUser.uid); // Use Firebase UID as ownerId
-    } else if (userType !== "owner" && ownerId) {
-        setOwnerId(null);
+    // Ensure ownerId is correctly set/unset based on userType
+    if (isLoggedIn && auth.currentUser) {
+      if (userType === "owner" && !ownerId) {
+          setOwnerId(auth.currentUser.uid);
+      } else if (userType !== "owner" && ownerId) {
+          setOwnerId(null);
+      }
+    } else {
+      setOwnerId(null); // If not logged in, no ownerId
     }
   }, [userType, ownerId, isLoggedIn, auth.currentUser]);
 
-
-  // Bundle all state into context
   const contextValue = {
-    // auth & user
     isLoggedIn, setIsLoggedIn,
     userType, setUserType,
     userRole, setUserRole,
     profession, setProfession,
     language, setLanguage,
-    logout1, 
-    loadingUser, // New: indicates if auth state is still being loaded
+    logout1,
+    loadingUser,
 
-    // Owner-specific extended profile details
     businessAddress, setBusinessAddress,
     licenseNumber, setLicenseNumber,
 
-    // user info
     userName, setUserName,
     userEmail, setUserEmail,
     userPhone, setUserPhone,
-    userPhoneVerified, setUserPhoneVerified, // Expose phone verification status
+    userPhoneVerified, setUserPhoneVerified,
     loginPlatform, setLoginPlatform,
-    signupMethod, setSignupMethod, // Expose signup method
+    signupMethod, setSignupMethod,
 
-    // owner support
     ownerId, setOwnerId,
     onBack, setOnBack,
     getOwnerKey,
     readOwnerListings,
     writeOwnerListings,
-    // Remote Firestore-backed helpers
     readOwnerListingsRemote,
     writeOwnerListingsRemote,
 
-    // Guest sign-in helper
     signInAnonymouslyAsGuest,
 
-    // Profile updater
     updateUserProfileInFirestore,
 
-    // dynamic profile data
     userVisitedPlaces, setUserVisitedPlaces,
     userRecentBookings, setUserRecentBookings,
     userSavedPlaces, setUserSavedPlaces,
@@ -360,10 +368,8 @@ const GlobalProvider = ({ children }) => {
     userRoutes, setUserRoutes,
     categories, setCategories,
 
-    // New: Selected Location ID for dynamic details pages
     selectedLocationId, setSelectedLocationId,
 
-    // search & UI
     searchQuery, setSearchQuery,
     selectedCategory, setSelectedCategory,
     focusArea, setFocusArea,
@@ -374,7 +380,6 @@ const GlobalProvider = ({ children }) => {
     showMobileMenu, setShowMobileMenu,
     isMobile,
     locationDetails, setLocationDetails,
-    // dev/debug
     lastAuthError, setLastAuthError
   };
 

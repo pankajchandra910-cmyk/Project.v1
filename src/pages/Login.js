@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 
@@ -16,16 +16,14 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, Di
 // --- Firebase Imports ---
 import { auth, googleProvider, db } from "../firebase";
 import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  sendPasswordResetEmail,
-  fetchSignInMethodsForEmail,
-  EmailAuthProvider,
-  updatePassword,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signInWithPhoneNumber,
+    sendPasswordResetEmail,
+    fetchSignInMethodsForEmail,
+    PhoneAuthProvider, // Keep PhoneAuthProvider for credential linking if needed
 } from "firebase/auth";
-import { linkWithPopup, linkWithCredential, PhoneAuthProvider } from "firebase/auth";
+import { linkWithPopup, linkWithCredential } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 
@@ -55,16 +53,12 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const [showEmailPassword, setShowEmailPassword] = useState(false);
 
-    const recaptchaRef = useRef(null);
     const [userType, setUserType] = useState(globalUserType || "user");
     const [profession, setProfession] = useState(globalProfession || "");
     // Forgot-password / reset modals state
     const [emailResetOpen, setEmailResetOpen] = useState(false);
     const [emailResetAddress, setEmailResetAddress] = useState("");
     const [emailResetSending, setEmailResetSending] = useState(false);
-
-    // Phone reset is not handled in this version since we're removing phone+password login
-    // If a user's phone account has an email linked, they can use email reset.
 
     const texts = {
         en: {
@@ -90,7 +84,6 @@ export default function Login() {
             otpSentSuccess: "OTP sent successfully!",
             otpSendFailed: "Failed to send OTP",
             otpVerifyFailed: "Failed to verify OTP",
-            recaptchaExpired: "reCAPTCHA expired, please try again.",
             loginSuccess: "Logged in successfully!",
             loginFailed: "Login failed",
             emailPasswordRequired: "Email and password are required.",
@@ -105,7 +98,6 @@ export default function Login() {
             noEmailAssociated: "No email associated with this account. Contact support.",
             enterValidPhone: "Please enter a valid phone number with country code.",
             otpSent: "OTP sent.",
-            recaptchaNotReady: "reCAPTCHA is not ready. Please try again in a moment.",
             noAccountEmail: "No account found for this email. Please sign up first.",
             sendPasswordResetSuccess: "Password reset email sent. Check your inbox.",
             failedToSendResetEmail: "Failed to send reset email.",
@@ -136,7 +128,6 @@ export default function Login() {
             otpSentSuccess: "OTP सफलतापूर्वक भेजा गया!",
             otpSendFailed: "OTP भेजने में विफल",
             otpVerifyFailed: "OTP सत्यापित करने में विफल",
-            recaptchaExpired: "reCAPTCHA समाप्त हो गया, कृपया पुनः प्रयास करें।",
             loginSuccess: "सफलतापूर्वक लॉगिन किया गया!",
             loginFailed: "लॉगिन विफल",
             emailPasswordRequired: "ईमेल और पासवर्ड आवश्यक हैं।",
@@ -151,7 +142,6 @@ export default function Login() {
             noEmailAssociated: "इस खाते से कोई ईमेल संबद्ध नहीं है। सहायता से संपर्क करें।",
             enterValidPhone: "कृपया देश कोड के साथ एक वैध फ़ोन नंबर दर्ज करें।",
             otpSent: "OTP भेजा गया।",
-            recaptchaNotReady: "reCAPTCHA तैयार नहीं है। कृपया कुछ देर बाद पुनः प्रयास करें।",
             noAccountEmail: "इस ईमेल के लिए कोई खाता नहीं मिला। कृपया पहले साइन अप करें।",
             sendPasswordResetSuccess: "पासवर्ड रीसेट ईमेल भेजा गया। अपना इनबॉक्स जांचें।",
             failedToSendResetEmail: "रीसेट ईमेल भेजने में विफल।",
@@ -163,7 +153,6 @@ export default function Login() {
 
     const t = texts[language] || texts.en;
 
-    // Helper: map firebase auth errors to friendly suggestions
     const mapFirebaseAuthError = (error) => {
         if (!error) return t.loginFailed;
         const code = error.code || (error && error.message && error.message.code) || null;
@@ -199,95 +188,6 @@ export default function Login() {
         }
     };
 
-    // Robust reCAPTCHA loader: ensures grecaptcha script is loaded and a RecaptchaVerifier is created.
-    const ensureRecaptchaReady = async () => {
-        const containerId = 'recaptcha-container';
-        // If already created, return it
-        if (window.recaptchaVerifier) return window.recaptchaVerifier;
-
-        const createVerifier = async () => {
-            try {
-                window.recaptchaVerifier = new RecaptchaVerifier(containerId, {
-                    size: 'invisible',
-                    callback: (response) => { console.log('reCAPTCHA solved:', response); },
-                    'expired-callback': () => {
-                        toast.error(t.recaptchaExpired);
-                        console.warn('reCAPTCHA expired. Resetting.');
-                        if (window.grecaptcha && window.recaptchaVerifier && typeof window.recaptchaVerifier.render === 'function') {
-                            window.recaptchaVerifier.render().then(widgetId => window.grecaptcha.reset(widgetId));
-                        }
-                    }
-                }, auth);
-
-                // render may reject if grecaptcha not yet ready; ensure grecaptcha exists
-                if (window.grecaptcha && typeof window.recaptchaVerifier.render === 'function') {
-                    await window.recaptchaVerifier.render();
-                }
-                console.log('RecaptchaVerifier created and rendered');
-                return window.recaptchaVerifier;
-            } catch (e) {
-                console.warn('createVerifier error', e);
-                throw e;
-            }
-        };
-
-        // If grecaptcha already present, create immediately
-        if (window.grecaptcha) {
-            return createVerifier();
-        }
-
-        // Otherwise dynamically load the grecaptcha script and then create
-        return new Promise((resolve, reject) => {
-            try {
-                const scriptId = 'g-recaptcha-script';
-                if (document.getElementById(scriptId)) {
-                    // script exists but grecaptcha not ready yet: poll until available
-                    const start = Date.now();
-                    const poll = () => {
-                        if (window.grecaptcha) {
-                            createVerifier().then(resolve).catch(reject);
-                        } else if (Date.now() - start > 15000) {
-                            reject(new Error('grecaptcha not available after timeout'));
-                        } else {
-                            setTimeout(poll, 300);
-                        }
-                    };
-                    poll();
-                    return;
-                }
-
-                const script = document.createElement('script');
-                script.id = scriptId;
-                script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-                script.async = true;
-                script.defer = true;
-                script.onload = () => {
-                    // small delay to allow grecaptcha to attach
-                    setTimeout(() => {
-                        createVerifier().then(resolve).catch(reject);
-                    }, 50);
-                };
-                script.onerror = (e) => reject(new Error('Failed to load grecaptcha script'));
-                document.head.appendChild(script);
-            } catch (err) {
-                reject(err);
-            }
-        });
-    };
-
-    useEffect(() => {
-        let mounted = true;
-        // The recaptchaAvailable state is no longer strictly needed in `Login.jsx` since ensureRecaptchaReady
-        // now directly returns the verifier or throws.
-        // I've removed `setRecaptchaAvailable` calls and `recaptchaAvailable` state.
-        ensureRecaptchaReady().catch((e) => {
-            console.warn('Failed to initialize RecaptchaVerifier:', e);
-            if (setLastAuthError) setLastAuthError(e);
-            toast.error(t.recaptchaNotReady);
-        });
-        return () => { mounted = false; };
-    }, []);
-
     useEffect(() => {
         if (globalUserType) setUserType(globalUserType);
     }, [globalUserType]);
@@ -295,10 +195,7 @@ export default function Login() {
     useEffect(() => {
         if (globalProfession) setProfession(globalProfession);
     }, [globalProfession]);
-    // --- End of state and effects moved from LoginModal ---
 
-
-    // --- Login page redirection logic (original) ---
     useEffect(() => {
         if (!loadingUser && isLoggedIn) {
             console.log("Login page: Already logged in, redirecting. UserType:", globalUserType, "Profession:", globalProfession);
@@ -309,22 +206,14 @@ export default function Login() {
             }
         }
     }, [isLoggedIn, loadingUser, globalUserType, globalProfession, navigate]);
-    // --- End of Login page redirection logic ---
 
-    // --- Login Handlers (moved from LoginModal, adapted for direct use) ---
     const resetOtpFlow = () => {
         setOtp("");
         setConfirmationResult(null);
         setShowOtpInput(false);
         setOtpSent(false);
-        if (window.grecaptcha && window.recaptchaVerifier) {
-            window.recaptchaVerifier.render().then(widgetId => {
-                window.grecaptcha.reset(widgetId);
-            });
-        }
     };
 
-    // saveUserAdditionalData now uses updateUserProfileInFirestore from GlobalContext
     const saveUserAdditionalData = async (userUid, type, prof, phoneNumber = null, email = null, signupMethod = null, phoneVerified = false) => {
         const updates = {
             userType: type,
@@ -335,13 +224,11 @@ export default function Login() {
         if (email) updates.email = email;
         if (phoneNumber) updates.phoneNumber = phoneNumber;
         if (signupMethod) updates.signupMethod = signupMethod;
-        updates.phoneVerified = phoneVerified; // Ensure this is always set
-
+        updates.phoneVerified = phoneVerified;
         await updateUserProfileInFirestore(updates);
     };
 
 
-    // Query Firestore users by phone number (normalized) to check existence before sending OTP
     const findUserByPhone = async (phone) => {
         try {
             if (!phone) return null;
@@ -425,15 +312,7 @@ export default function Login() {
                 return;
             }
 
-            let appVerifier;
-            try {
-                appVerifier = await ensureRecaptchaReady();
-            } catch (e) {
-                console.warn('Recaptcha not ready for OTP send', e);
-                toast.error(t.recaptchaNotReady);
-                setLoading(false);
-                return;
-            }
+            // NO RECAPTCHA VERIFIER HERE - DANGEROUS FOR PRODUCTION
             const number = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
 
             // Check Firestore for this phone number and userType
@@ -446,7 +325,8 @@ export default function Login() {
 
             console.log("Sending OTP to:", number);
             try {
-                const result = await signInWithPhoneNumber(auth, number, appVerifier);
+                // Directly call signInWithPhoneNumber without appVerifier
+                const result = await signInWithPhoneNumber(auth, number);
                 setConfirmationResult(result);
                 setShowOtpInput(true);
                 setOtpSent(true);
@@ -761,7 +641,6 @@ export default function Login() {
                                 </Button>
                             </div>
                         )}
-                        <div id="recaptcha-container" ref={recaptchaRef} className="mt-2"></div>
                     </div>
 
                     <Separator />

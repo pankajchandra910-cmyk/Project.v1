@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef, useEffect } from "react";
+import React, { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { Button } from "../component/button";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 // --- Firebase Imports ---
 import { auth, db, googleProvider } from "../firebase";
-import { createUserWithEmailAndPassword, updateProfile, EmailAuthProvider, linkWithCredential, RecaptchaVerifier, signInWithPhoneNumber, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, signInWithPhoneNumber, signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 export default function Signup() {
@@ -35,8 +35,7 @@ export default function Signup() {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false); // New state to track if OTP is verified
-  const recaptchaRef = useRef(null);
+  const [otpVerified, setOtpVerified] = useState(false);
 
   const texts = {
     en: {
@@ -73,7 +72,6 @@ export default function Signup() {
       fallbackOtpSaveSuccess: "OTP service unavailable — saved phone as unverified. You can complete verification later.",
       fallbackOtpSaveFailed: "Failed to send OTP and failed to save unverified phone.",
       passwordTooShort: "Password should be at least 6 characters long.",
-      recaptchaNotReady: "reCAPTCHA is not ready. Please try again in a moment.",
       verifyOtp: "Verify OTP",
     },
     hi: {
@@ -110,84 +108,12 @@ export default function Signup() {
       fallbackOtpSaveSuccess: "OTP सेवा अनुपलब्ध — फ़ोन को असत्यापित के रूप में सहेजा गया। आप बाद में सत्यापन पूरा कर सकते हैं।",
       fallbackOtpSaveFailed: "OTP भेजने में विफल और असत्यापित फ़ोन सहेजने में विफल।",
       passwordTooShort: "पासवर्ड कम से कम 6 वर्णों का होना चाहिए।",
-      recaptchaNotReady: "reCAPTCHA तैयार नहीं है। कृपया कुछ देर बाद पुनः प्रयास करें।",
       verifyOtp: "OTP सत्यापित करें",
     }
   };
 
   const t = texts[language] || texts.en;
 
-  // Recaptcha initialization logic
-  const ensureRecaptchaReady = async () => {
-    const containerId = 'signup-recaptcha';
-    if (window.recaptchaVerifier) return window.recaptchaVerifier;
-
-    const createVerifier = async () => {
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(containerId, {
-          size: 'invisible',
-          callback: (response) => { console.log('reCAPTCHA solved:', response); },
-          'expired-callback': () => {
-            toast.error(t.recaptchaExpired);
-            console.warn('reCAPTCHA expired. Resetting.');
-            if (window.grecaptcha && window.recaptchaVerifier && typeof window.recaptchaVerifier.render === 'function') {
-              window.recaptchaVerifier.render().then(widgetId => window.grecaptcha.reset(widgetId));
-            }
-          }
-        }, auth);
-
-        if (window.grecaptcha && typeof window.recaptchaVerifier.render === 'function') {
-          await window.recaptchaVerifier.render();
-        }
-        console.log('RecaptchaVerifier created and rendered');
-        return window.recaptchaVerifier;
-      } catch (e) {
-        console.warn('createVerifier error', e);
-        throw e;
-      }
-    };
-
-    if (window.grecaptcha) {
-      return createVerifier();
-    }
-
-    return new Promise((resolve, reject) => {
-      try {
-        const scriptId = 'g-recaptcha-script-signup';
-        if (document.getElementById(scriptId)) {
-          const start = Date.now();
-          const poll = () => {
-            if (window.grecaptcha) {
-              createVerifier().then(resolve).catch(reject);
-            } else if (Date.now() - start > 15000) {
-              reject(new Error('grecaptcha not available after timeout'));
-            } else {
-              setTimeout(poll, 300);
-            }
-          };
-          poll();
-          return;
-        }
-
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          setTimeout(() => {
-            createVerifier().then(resolve).catch(reject);
-          }, 50);
-        };
-        script.onerror = (e) => reject(new Error('Failed to load grecaptcha script'));
-        document.head.appendChild(script);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
-
-  // Redirect if already logged in
   useEffect(() => {
     if (!loadingUser && isLoggedIn) {
       navigate("/");
@@ -197,7 +123,6 @@ export default function Signup() {
   const handleSignup = async () => {
     if (loading) return;
 
-    // Common validations for all methods
     if (!userName || !userType) {
       toast.error(t.fillAllFields);
       return;
@@ -210,7 +135,7 @@ export default function Signup() {
     setLoading(true);
     try {
       let user = null;
-      let actualSignupMethod = method; // To store in Firestore
+      let actualSignupMethod = method;
 
       if (method === 'google') {
         const result = await signInWithPopup(auth, googleProvider);
@@ -219,20 +144,17 @@ export default function Signup() {
       } else if (method === 'phone') {
         if (!otpVerified) {
           toast.error(t.phoneVerificationNotCompleted);
+          setLoading(false);
           return;
         }
 
-        // If phone is verified, we need to sign in with that phone number.
-        // auth.currentUser will already be set from `confirmOtp` in the anonymous linking scenario.
-        // If not, it means the user just confirmed OTP and the system already signed them in.
+        // If phone method, auth.currentUser should already be the verified user from confirmOtp
         user = auth.currentUser;
 
         if (!user) {
-          // This case should ideally not happen if OTP was confirmed successfully,
-          // but as a fallback, we throw if no user is found.
-          throw new Error("Phone verification complete, but no active user session. Please try logging in.");
+          throw new Error("Phone verification complete, but no active user session. Please ensure Firebase configuration is correct or try logging in.");
         }
-        actualSignupMethod = 'phone'; // The phone number itself is the primary credential
+        actualSignupMethod = 'phone';
       } else { // Email method
         if (!email || !password || !confirmPassword) {
           toast.error(t.fillAllFields);
@@ -250,13 +172,11 @@ export default function Signup() {
           return;
         }
 
-        // Create with email and password
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         user = userCredential.user;
         actualSignupMethod = 'email';
       }
 
-      // Update user profile with display name if user object is available
       if (user && userName) {
         try {
           await updateProfile(user, { displayName: userName });
@@ -265,21 +185,19 @@ export default function Signup() {
         }
       }
 
-      // Store additional user data in Firestore for ALL methods
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
         await setDoc(userDocRef, {
           email: user.email || email || null,
           displayName: userName,
-          phoneNumber: user.phoneNumber || phone || null,
+          phoneNumber: user.phoneNumber || phone || null, // Ensure phone number is saved
           signupMethod: actualSignupMethod,
           userType: userType,
           profession: userType === "owner" ? profession : "",
           createdAt: serverTimestamp(),
-          phoneVerified: method === 'phone' ? otpVerified : (user.phoneNumber && user.phoneNumber.length > 0), // Explicitly set for phone method
+          phoneVerified: method === 'phone' ? otpVerified : (user.phoneNumber && user.phoneNumber.length > 0),
         }, { merge: true });
 
-        // If email method and not verified, try sending verification
         try {
           if (method === 'email' && auth.currentUser && auth.currentUser.email && !auth.currentUser.emailVerified) {
             await auth.currentUser.sendEmailVerification();
@@ -300,32 +218,25 @@ export default function Signup() {
     }
   };
 
-  const sendOtp = async () => {
+  const sendOtp = useCallback(async () => {
     if (!phone) {
       toast.error(t.enterPhone);
       return;
     }
     setLoading(true);
     try {
-      let appVerifier;
-      try {
-        appVerifier = await ensureRecaptchaReady();
-      } catch (e) {
-        console.warn('Recaptcha not ready for OTP send', e);
-        toast.error(t.recaptchaNotReady);
-        setLoading(false);
-        return;
-      }
+      const number = phone.startsWith('+') ? phone : `+91${phone}`;
+      console.log("Sending OTP to normalized phone number:", number);
 
-      const number = phone.startsWith('+') ? phone : `+91${phone}`; // Ensure country code
-
-      const result = await signInWithPhoneNumber(auth, number, appVerifier);
+      // NO RECAPTCHA VERIFIER HERE - DANGEROUS FOR PRODUCTION
+      const result = await signInWithPhoneNumber(auth, number);
       setConfirmationResult(result);
       setOtpSent(true);
-      setOtpVerified(false); // Reset verification status
+      setOtpVerified(false);
       toast.success(t.otpSentTo + number);
     } catch (e) {
       console.error('sendOtp error', e);
+      // Fallback logic for quota exceeded etc. can be kept, but main issue is no appVerifier
       const code = e?.code || '';
       const msg = (e && e.message) || '';
       if (code.includes('billing') || msg.toLowerCase().includes('billing') || msg.toLowerCase().includes('recaptcha') || code === 'auth/quota-exceeded') {
@@ -351,9 +262,9 @@ export default function Signup() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [phone, userName, userType, profession, t, auth, setLoading, setConfirmationResult, setOtpSent, setOtpVerified, db]);
 
-  const confirmOtp = async () => {
+  const confirmOtp = useCallback(async () => {
     if (!confirmationResult) {
       toast.error(t.noOtpSession);
       return;
@@ -365,18 +276,17 @@ export default function Signup() {
     setLoading(true);
     try {
       await confirmationResult.confirm(phoneOtp);
-      // At this point, the user is signed in with their phone number.
-      // Firebase automatically creates an auth user for this phone.
-      setOtpSent(false); // OTP verified, don't show "resend" anymore
+      setOtpSent(false);
       setOtpVerified(true);
       toast.success(t.phoneVerified);
     } catch (e) {
       console.error('confirmOtp error', e);
-      toast.error(t.invalidOtp);
+      toast.error(t.invalidOtp + ": " + (e.message || ''));
     } finally {
       setLoading(false);
     }
-  };
+  }, [confirmationResult, phoneOtp, t, setLoading, setOtpSent, setOtpVerified]);
+
 
   if (loadingUser) {
     return (
@@ -386,7 +296,6 @@ export default function Signup() {
     );
   }
 
-  // If already logged in, the useEffect will handle redirection, so this component won't render
   if (isLoggedIn) {
     return null;
   }
@@ -426,12 +335,9 @@ export default function Signup() {
           {/* Signup method selector */}
           <div className="flex items-center justify-center space-x-2">
             <button type="button" className={`px-3 py-1 rounded ${method === 'email' ? 'bg-primary text-white' : 'border'}`} onClick={() => setMethod('email')}>Email</button>
-            <button type="button" className={`px-3 py-1 rounded ${method === 'phone' ? 'bg-primary text-white' : 'border'}`} onClick={() => { setMethod('phone'); setOtpVerified(false); }}>Phone</button> {/* Reset OTP verification */}
+            <button type="button" className={`px-3 py-1 rounded ${method === 'phone' ? 'bg-primary text-white' : 'border'}`} onClick={() => { setMethod('phone'); setOtpVerified(false); }}>Phone</button>
             <button type="button" className={`px-3 py-1 rounded ${method === 'google' ? 'bg-primary text-white' : 'border'}`} onClick={() => setMethod('google')}>Google</button>
           </div>
-
-          {/* This is the div where reCAPTCHA will be rendered for phone verification. */}
-          <div id="signup-recaptcha" ref={recaptchaRef} />
 
           {method === 'email' && (
             <>
@@ -506,11 +412,11 @@ export default function Signup() {
                   value={phone}
                   onChange={(e) => {
                     setPhone(e.target.value);
-                    setOtpSent(false); // Reset OTP state if phone number changes
+                    setOtpSent(false);
                     setOtpVerified(false);
                     setPhoneOtp("");
                   }}
-                  disabled={loading || otpSent} // Disable input once OTP is sent
+                  disabled={loading || otpSent}
                   className="w-full"
                 />
                 {!otpSent && !otpVerified && (
@@ -518,6 +424,7 @@ export default function Signup() {
                     {t.sendOtp}
                   </Button>
                 )}
+                {/* Always show resend if OTP was sent but not verified yet */}
                 {otpSent && !otpVerified && (
                   <Button type="button" onClick={sendOtp} disabled={loading} className="w-full sm:w-auto">
                     {t.resendOtp}
