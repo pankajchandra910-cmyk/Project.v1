@@ -433,8 +433,8 @@ export default function OwnerDashboard() {
               <Input type="number" placeholder="e.g., 800" name="price" value={formData.price} onChange={handleFormChange}/>
             </div>
             <div>
-              <Label>Features (comma-separated)</Label>
-              <Input placeholder="e.g., Hiking, Photography" value={formData.listingDetails.guideFeatures.join(", ")} onChange={e => setFormData(p => ({ ...p.listingDetails, guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean) }))}/>
+              <Label>Expertise/Specialization(comma-separated)</Label>
+              <Input placeholder="e.g., Hiking, Photography Cuisine " value={formData.listingDetails.guideFeatures.join(", ")} onChange={(e) => setFormData((p) => ({ ...p,listingDetails:{...p.listingDetails, guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean) },}))}/>
             </div>
             <p className="text-sm text-muted-foreground mt-1">For more specific options, please select a profession in your profile.</p>
           </div>
