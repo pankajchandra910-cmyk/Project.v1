@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { Badge } from "../component/badge";
 import { Separator } from "../component/separator";
-import { Plus, Upload, Eye, Edit, Trash2, X, Loader2 } from "lucide-react";
+import { Plus, Upload, Edit, Trash2, X, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from '../component/dialog';
+import { auth } from '../firebase';
+import { signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 
-// This initial state includes every possible array to prevent runtime errors.
 const initialFormData = {
   id: null,
   name: "",
@@ -57,7 +59,13 @@ export default function OwnerDashboard() {
   const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
   const fileInputRef = useRef(null);
 
-  // --- DATA FETCHING & SYNCING ---
+  // --- STATE FOR IN-PAGE PHONE VERIFICATION ---
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneToVerify, setPhoneToVerify] = useState(userPhone || "");
+  const [phoneOtp, setPhoneOtp] = useState("");
+  const [phoneConfirmationResult, setPhoneConfirmationResult] = useState(null);
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(false);
 
   useEffect(() => {
     if (ownerId) {
@@ -66,6 +74,10 @@ export default function OwnerDashboard() {
         .catch(() => toast.error("Failed to load listings."));
     }
   }, [ownerId, readOwnerListingsRemote]);
+
+  useEffect(() => {
+    setPhoneToVerify(userPhone || "");
+  }, [userPhone]);
 
   const syncListings = useCallback(async () => {
     if (!ownerId || isSyncing) return;
@@ -83,11 +95,8 @@ export default function OwnerDashboard() {
     }
   }, [ownerId, ownerListings, writeOwnerListingsRemote, isSyncing]);
 
-  // --- FORM & ARRAY HANDLERS ---
-
   const handleFormChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleSelectChange = (name, value) => setFormData(p => ({ ...p, [name]: value }));
-
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     if (formData.photos.length + files.length > 10) return toast.error("Max 10 photos allowed.");
@@ -97,37 +106,28 @@ export default function OwnerDashboard() {
       reader.readAsDataURL(file);
     });
   };
-
   const removePhoto = (index) => setFormData(p => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
-
   const updateNestedArray = (arr, id, field, val) => setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, [arr]: p.listingDetails[arr].map(i => i.id === id ? { ...i, [field]: val } : i) } }));
   const addToArray = (arr, item) => setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, [arr]: [...p.listingDetails[arr], item] } }));
   const deleteFromArray = (arr, id) => setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, [arr]: p.listingDetails[arr].filter(i => i.id !== id) } }));
   const toggleInArray = (arr, id, field, val) => setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, [arr]: p.listingDetails[arr].map(i => i.id === id ? { ...i, [field]: i[field].includes(val) ? i[field].filter(f => f !== val) : [...i[field], val] } : i) } }));
-
   const addGuideFeature = useCallback(() => {
     if (newGuideFeatureText.trim() && !formData.listingDetails.guideFeatures.includes(newGuideFeatureText.trim())) {
       setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, guideFeatures: [...p.listingDetails.guideFeatures, newGuideFeatureText.trim()] } }));
       setNewGuideFeatureText("");
     }
   }, [newGuideFeatureText, formData.listingDetails.guideFeatures]);
-
   const removeGuideFeature = (feature) => setFormData(p => ({ ...p, listingDetails: { ...p.listingDetails, guideFeatures: p.listingDetails.guideFeatures.filter(f => f !== feature) } }));
-
-  // --- CORE LOGIC ---
 
   const handlePublishListing = async () => {
     if (!formData.name || !formData.location) return toast.error("Name and Location are required.");
-    
     const listingData = { ...formData, profession: globalProfession };
     let updatedListings;
-
     if (editingListingId) {
       updatedListings = ownerListings.map(l => l.id === editingListingId ? { ...listingData, id: editingListingId } : l);
     } else {
       updatedListings = [...ownerListings, { ...listingData, id: Date.now().toString(), ownerId, status: "Active", bookings: 0, revenue: "₹0" }];
     }
-    
     const success = await writeOwnerListingsRemote(updatedListings, ownerId);
     if (success) {
       setOwnerListings(updatedListings);
@@ -143,7 +143,7 @@ export default function OwnerDashboard() {
   const handleEditListing = (listingId) => {
     const listing = ownerListings.find(l => l.id === listingId);
     if (listing) {
-      setFormData({ ...initialFormData, ...listing }); // Ensure all keys exist
+      setFormData({ ...initialFormData, ...listing });
       setGlobalProfession(listing.profession);
       setEditingListingId(listingId);
       setActiveTab("add-listing");
@@ -167,10 +167,47 @@ export default function OwnerDashboard() {
     toast[success ? 'success' : 'error'](success ? 'Profile updated!' : 'Update failed.');
   };
 
-  // --- UI RENDER FUNCTIONS ---
+  // --- OTP SENDING & VERIFICATION LOGIC ---
+  const handleSendPhoneOTP = async () => {
+    if (!phoneToVerify || phoneToVerify.length < 10) {
+      return toast.error('Please enter a valid phone number with country code.');
+    }
+    setPhoneLoading(true);
+    try {
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneToVerify);
+      setPhoneConfirmationResult(confirmationResult);
+      setPhoneOtpSent(true);
+      toast.success('OTP sent to ' + phoneToVerify);
+    } catch (e) {
+      toast.error('Failed to send OTP: ' + e.code);
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
+
+  const handleConfirmPhoneOTP = async () => {
+    if (!phoneConfirmationResult || !phoneOtp) {
+      return toast.error('Please enter the OTP.');
+    }
+    setPhoneLoading(true);
+    try {
+      const phoneCred = PhoneAuthProvider.credential(phoneConfirmationResult.verificationId, phoneOtp);
+      await linkWithCredential(auth.currentUser, phoneCred);
+      await updateUserProfileInFirestore({ phoneNumber: phoneToVerify, phoneVerified: true });
+      setUserPhone(phoneToVerify);
+      toast.success('Phone number verified and linked!');
+      setShowPhoneModal(false);
+      setPhoneOtp("");
+      setPhoneConfirmationResult(null);
+      setPhoneOtpSent(false);
+    } catch (e) {
+      toast.error('Failed to verify OTP: ' + e.code);
+    } finally {
+      setPhoneLoading(false);
+    }
+  };
 
   const renderProfessionForm = () => {
-    // This function uses the exact structure and logic you provided.
     switch (globalProfession) {
       case "resort-hotel":
         return (
@@ -204,6 +241,8 @@ export default function OwnerDashboard() {
                           <SelectItem value="lake">Lake View</SelectItem>
                           <SelectItem value="mountain">Mountain View</SelectItem>
                           <SelectItem value="garden">Garden View</SelectItem>
+                          <SelectItem value="city">City View</SelectItem>
+                          <SelectItem value="forest">Forest View</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -211,7 +250,7 @@ export default function OwnerDashboard() {
                   <div>
                     <Label>Features</Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {["TV", "WiFi", "AC", "Room Service", "Balcony"].map(f => (
+                      {["TV", "WiFi", "AC", "Room Service","Pool Access", "Balcony","Mini Bar"].map(f => (
                         <Badge key={f} variant={room.features.includes(f) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleInArray('rooms', room.id, 'features', f)}>
                           {f}
                         </Badge>
@@ -255,6 +294,7 @@ export default function OwnerDashboard() {
                         <SelectContent>
                           <SelectItem value="scooter">Scooter</SelectItem>
                           <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                          <SelectItem value="electric">Electric Bike</SelectItem>
                           <SelectItem value="bicycle">Bicycle</SelectItem>
                         </SelectContent>
                       </Select>
@@ -302,7 +342,8 @@ export default function OwnerDashboard() {
                           <SelectItem value="sedan">Sedan</SelectItem>
                           <SelectItem value="suv">SUV</SelectItem>
                           <SelectItem value="hatchback">Hatchback</SelectItem>
-                          <SelectItem value="tempo">Tempo</SelectItem>
+                          <SelectItem value="tempo">Tempo Traveller</SelectItem>
+                          <SelectItem value="luxury">Luxury Car</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -332,10 +373,9 @@ export default function OwnerDashboard() {
             <div>
               <Label>Expertise/Specialization</Label>
               <div className="flex flex-wrap gap-2 mt-2">
-                {formData.listingDetails.guideFeatures.map(f => (
-                  <Badge key={f} className="flex items-center gap-1">
-                    {f}
-                    <X className="w-3 h-3 cursor-pointer" onClick={() => removeGuideFeature(f)}/>
+                {formData.listingDetails.guideFeatures.map((f) => (
+                  <Badge key={f} className="flex items-center gap-1" onClick={() => removeGuideFeature(f)}>
+                    {f}<X className="w-3 h-3 cursor-pointer" />
                   </Badge>
                 ))}
               </div>
@@ -356,7 +396,7 @@ export default function OwnerDashboard() {
             </div>
             <div>
               <Label>Amenities</Label>
-              <p className="text-muted-foreground text-sm">Add key amenities like 'Fireplace', 'Kitchen' in the main description section above.</p>
+              <p className="text-muted-foreground text-sm">Add key amenities like 'Fireplace','private balcony', 'Kitchen' in the main description section above.</p>
             </div>
           </div>
         );
@@ -403,7 +443,6 @@ export default function OwnerDashboard() {
   };
   
   const getPreviewPrice = () => {
-    // Logic to determine price for the preview card
     if (globalProfession === "resort-hotel" && formData.listingDetails.rooms[0]?.price) return `₹${formData.listingDetails.rooms[0].price}/night`;
     if (globalProfession === "rental-bikes" && formData.listingDetails.bikes[0]?.price) return `₹${formData.listingDetails.bikes[0].price}/day`;
     if (globalProfession === "cabs-taxis" && formData.listingDetails.vehicles[0]?.rate) return `${formData.listingDetails.vehicles[0].rate}`;
@@ -448,12 +487,13 @@ export default function OwnerDashboard() {
                   <div>
                     <Label>Location</Label>
                     <Select value={formData.location} onValueChange={v => handleSelectChange("location", v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location"/>
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select location"/></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="nainital">Nainital</SelectItem>
                         <SelectItem value="bhimtal">Bhimtal</SelectItem>
+                        <SelectItem value="sukhatal">Sukhatal</SelectItem>
+                        <SelectItem value="naukuchiatal">Naukuchiatal</SelectItem>
+                        <SelectItem value="brahmasthali">Brahmasthali</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -486,16 +526,14 @@ export default function OwnerDashboard() {
                 {renderProfessionForm()}
                 <Separator/>
                 <div className="flex justify-end space-x-4">
-                  <Button variant="outline" onClick={() => setFormData(initialFormData)}>Clear Form</Button>
+                  <Button variant="outline" onClick={() => { setFormData(initialFormData); setEditingListingId(null); }}>Clear Form</Button>
                   <Button onClick={handlePublishListing}>{editingListingId ? "Update Listing" : "Publish Listing"}</Button>
                 </div>
               </CardContent>
             </Card>
             <div className="lg:col-span-1">
               <Card>
-                <CardHeader>
-                  <CardTitle>Live Preview</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle>Live Preview</CardTitle></CardHeader>
                 <CardContent>
                   <div className="border rounded-lg p-4">
                     <div className="aspect-video bg-gray-200 rounded mb-4 flex items-center justify-center overflow-hidden">
@@ -531,12 +569,8 @@ export default function OwnerDashboard() {
                       </div>
                     </div>
                     <div className="flex space-x-2 shrink-0 self-start md:self-center">
-                      <Button variant="outline" size="icon" onClick={() => handleEditListing(l.id)}>
-                        <Edit className="w-4 h-4"/>
-                      </Button>
-                      <Button variant="destructive" size="icon" onClick={() => handleDeleteListing(l.id)}>
-                        <Trash2 className="w-4 h-4"/>
-                      </Button>
+                      <Button variant="outline" size="icon" onClick={() => handleEditListing(l.id)}><Edit className="w-4 h-4"/></Button>
+                      <Button variant="destructive" size="icon" onClick={() => handleDeleteListing(l.id)}><Trash2 className="w-4 h-4"/></Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -545,9 +579,7 @@ export default function OwnerDashboard() {
           </TabsContent>
           <TabsContent value="profile" className="mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Business Profile</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Business Profile</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -558,7 +590,7 @@ export default function OwnerDashboard() {
                     <Label>Contact Number</Label>
                     <div className="flex items-center gap-3">
                       <Input value={userPhone} onChange={e => setUserPhone(e.target.value)}/>
-                      {userPhoneVerified ? <Badge variant="secondary">Verified</Badge> : <Button size="sm" variant="outline" onClick={() => navigate('/profile?verifyPhone=1')}>Verify</Button>}
+                      {userPhoneVerified ? <Badge variant="secondary">Verified</Badge> : <Button size="sm" variant="outline" onClick={() => setShowPhoneModal(true)}>Verify</Button>}
                     </div>
                   </div>
                   <div>
@@ -568,9 +600,7 @@ export default function OwnerDashboard() {
                   <div>
                     <Label>Profession</Label>
                     <Select value={globalProfession} onValueChange={setGlobalProfession}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select..."/>
-                      </SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select..."/></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="resort-hotel">Resort & Hotel</SelectItem>
                         <SelectItem value="rental-bikes">Rental Bikes</SelectItem>
@@ -597,6 +627,36 @@ export default function OwnerDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify Phone Number</DialogTitle>
+            <DialogDescription>{phoneOtpSent ? "Enter the 6-digit code we sent." : "We will send an OTP to this number."}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+             {!phoneOtpSent ? (
+                <>
+                  <Label htmlFor="phone-verify">Phone Number</Label>
+                  <Input id="phone-verify" value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" />
+                </>
+             ) : (
+                <>
+                  <Label htmlFor="otp-verify">Enter OTP</Label>
+                  <Input id="otp-verify" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="123456" />
+                </>
+             )}
+          </div>
+          <DialogFooter>
+             <Button variant="outline" onClick={() => setShowPhoneModal(false)}>Cancel</Button>
+            {!phoneOtpSent ? (
+              <Button onClick={handleSendPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send OTP'}</Button>
+            ) : (
+              <Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Link'}</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

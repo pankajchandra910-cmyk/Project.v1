@@ -8,11 +8,11 @@ import { Badge } from '../component/badge';
 import Header from '../component/Header';
 import MobileMenu from "../component/MobileMenu";
 import AIchat from '../component/AIchat';
-import  CabBookingModal  from '../component/CabBookingModal';
+import CabBookingModal from '../component/CabBookingModal';
 import { GlobalContext } from '../component/GlobalContext';
 import { toast } from 'sonner';
 import { auth } from '../firebase';
-import { reauthenticateWithCredential, EmailAuthProvider, updateEmail, updateProfile, signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
+import { reauthenticateWithCredential, EmailAuthProvider, updateEmail, updateProfile, signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from '../component/dialog';
 import { Input } from '../component/Input';
 import { Label } from '../component/label';
@@ -32,11 +32,16 @@ export default function ProfileView() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState(userName);
 
-  // Re-authentication modal state
+  // Re-authentication modal state (for email/pass users)
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
   const [reauthNewEmail, setReauthNewEmail] = useState("");
   const [reauthLoading, setReauthLoading] = useState(false);
+
+  // Add email modal state (for phone users)
+  const [showAddEmailModal, setShowAddEmailModal] = useState(false);
+  const [emailToAdd, setEmailToAdd] = useState("");
+  const [addEmailLoading, setAddEmailLoading] = useState(false);
 
   // Phone verification modal state
   const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -50,7 +55,7 @@ export default function ProfileView() {
 
   // Sync local state with global context changes
   useEffect(() => { setNewName(userName); }, [userName]);
-  useEffect(() => { setPhoneToVerify(userPhone); }, [userPhone]);
+  useEffect(() => { setPhoneToVerify(userPhone || ""); }, [userPhone]);
 
   // Check for URL query params to trigger modals
   useEffect(() => {
@@ -60,7 +65,6 @@ export default function ProfileView() {
         setShowPhoneModal(true);
     }
   }, [location.search, userPhone, userPhoneVerified]);
-
 
   const handleSaveName = async () => {
     if (!newName) return toast.error("Name cannot be empty.");
@@ -74,7 +78,6 @@ export default function ProfileView() {
         setIsEditingName(false);
     } catch(error) {
         toast.error('Failed to update name');
-        // console.error("Name update error: ", error);
     }
   };
 
@@ -84,15 +87,12 @@ export default function ProfileView() {
     }
     setPhoneLoading(true);
     try {
-      // For production, enabling App Check is highly recommended.
-      // This setup uses an invisible reCAPTCHA managed by the Firebase SDK.
       const confirmationResult = await signInWithPhoneNumber(auth, phoneToVerify);
       setPhoneConfirmationResult(confirmationResult);
       setPhoneOtpSent(true);
       toast.success('OTP sent to ' + phoneToVerify);
     } catch (e) {
       toast.error('Failed to send OTP: ' + e.code);
-      // console.error('Phone OTP error:', e);
     } finally {
       setPhoneLoading(false);
     }
@@ -109,28 +109,26 @@ export default function ProfileView() {
       await updateUserProfileInFirestore({ phoneNumber: phoneToVerify, phoneVerified: true });
       setUserPhone(phoneToVerify);
       toast.success('Phone number verified and linked!');
-      // Reset and close modal
       setShowPhoneModal(false);
       setPhoneOtp("");
       setPhoneConfirmationResult(null);
       setPhoneOtpSent(false);
     } catch (e) {
-      // console.error('Phone OTP confirm failed:', e);
       toast.error('Failed to verify OTP: ' + e.code);
     } finally {
       setPhoneLoading(false);
     }
   };
 
-  const handleUpdateAuthEmail = (newEmail) => {
-    const user = auth.currentUser;
-    // Check if the user's sign-in method is email/password.
-    if (user && user.providerData.some(provider => provider.providerId === 'password')) {
-        setReauthNewEmail(newEmail);
-        setReauthPassword('');
-        setShowReauthModal(true);
+  // Determines which action to take for the email field
+  const handleEmailAction = () => {
+    if (loginPlatform === 'Email') {
+      setReauthNewEmail(userEmail);
+      setShowReauthModal(true);
+    } else if (loginPlatform === 'Phone' && !userEmail) {
+      setShowAddEmailModal(true);
     } else {
-        toast.info('You can only change the email for accounts created with an email and password.');
+      toast.info("Email is managed by your login provider (Google) and cannot be changed here.");
     }
   };
 
@@ -144,25 +142,38 @@ export default function ProfileView() {
     try {
       const cred = EmailAuthProvider.credential(user.email, reauthPassword);
       await reauthenticateWithCredential(user, cred);
-
       await updateEmail(user, reauthNewEmail);
       await updateUserProfileInFirestore({ email: reauthNewEmail });
-
-      setUserEmail(reauthNewEmail); // Update context state
+      setUserEmail(reauthNewEmail);
       toast.success('Authentication email updated successfully.');
-      setShowReauthModal(false); // Close modal
+      setShowReauthModal(false);
     } catch (e) {
       toast.error('Failed to update email: ' + e.code);
-      // console.error('Email update error:', e);
     } finally {
       setReauthLoading(false);
       setReauthPassword('');
     }
   };
 
+  const handleAddEmailForPhoneUser = async () => {
+    if (!emailToAdd) return toast.error("Please enter an email address.");
+    setAddEmailLoading(true);
+    try {
+      // This sends a verification link to the new email.
+      await verifyBeforeUpdateEmail(auth.currentUser, emailToAdd);
+      await updateUserProfileInFirestore({ email: emailToAdd }); // Save to DB preemptively
+      toast.success("Verification email sent!", "Check your inbox to confirm your new email address.");
+      setShowAddEmailModal(false);
+      setEmailToAdd("");
+    } catch (error) {
+      toast.error("Failed to send verification email: " + error.code);
+    } finally {
+      setAddEmailLoading(false);
+    }
+  };
+
   const handleSearch = useCallback((query) => navigate(`/search?q=${query}`), [navigate]);
   const handleLogoClick = useCallback(() => navigate(userType === "owner" ? "/owner-dashboard" : "/"), [navigate, userType]);
-
 
   if (!isLoggedIn) {
     return (
@@ -218,25 +229,28 @@ export default function ProfileView() {
                                   <span className="text-gray-900">{userPhone || 'Not provided'}</span>
                                   <Badge variant={userPhoneVerified ? "secondary" : "destructive"}>{userPhoneVerified ? "Verified" : "Unverified"}</Badge>
                                 </div>
-                                <Button variant="link" size="sm" onClick={() => setShowPhoneModal(true)}>
-                                  {userPhoneVerified ? 'Change' : 'Verify'}
-                                </Button>
+                                <Button variant="link" size="sm" onClick={() => setShowPhoneModal(true)}>{userPhoneVerified ? 'Change' : 'Verify'}</Button>
                             </div>
                         </div>
                         <div>
                             <Label htmlFor="profile-email">Email Address</Label>
                              <div className="flex items-center justify-between p-3 mt-1 bg-gray-50 rounded-lg border">
-                                <span className="text-gray-900">{userEmail}</span>
-                                <Button variant="link" size="sm" onClick={() => handleUpdateAuthEmail(userEmail)}>Change</Button>
+                                <span className="text-gray-900">{userEmail || 'Not Provided'}</span>
+                                <Button 
+                                    variant="link" 
+                                    size="sm" 
+                                    onClick={handleEmailAction}
+                                    disabled={loginPlatform === 'Google' || (loginPlatform === 'Phone' && !!userEmail)}
+                                >
+                                    {loginPlatform === 'Phone' && !userEmail ? 'Add Email' : 'Change'}
+                                </Button>
                              </div>
                         </div>
                          <div>
                             <Label>Login Method</Label>
                             <div className="flex items-center justify-between p-3 mt-1 bg-blue-50 rounded-lg border border-blue-200">
                                 <span className="text-blue-700 font-medium">Logged in via {loginPlatform}</span>
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 font-semibold px-3 py-1 text-xs">
-                                    {userType === 'user' ? 'User' : 'Owner'}
-                                </Badge>
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 font-semibold px-3 py-1 text-xs">{userType === 'user' ? 'User' : 'Owner'}</Badge>
                             </div>
                         </div>
                     </div>
@@ -244,24 +258,10 @@ export default function ProfileView() {
             </Card>
             
             <Card className="p-6 md:p-8 bg-white shadow-sm rounded-lg">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-semibold text-gray-800">Visited Places</CardTitle>
-              </CardHeader>
+              <CardHeader className="p-0 mb-6"><CardTitle className="text-2xl font-semibold text-gray-800">Visited Places</CardTitle></CardHeader>
               <CardContent className="p-0">
                 <div className="flex flex-wrap gap-3">
-                  {userVisitedPlaces && userVisitedPlaces.length > 0 ? (
-                    userVisitedPlaces.map((place) => (
-                      <Badge 
-                        key={place.id} 
-                        variant={place.status === 'visited' ? 'secondary' : 'outline'}
-                        className={`px-4 py-2 text-sm rounded-full ${place.status === 'visited' ? 'bg-green-100 text-green-800' : 'border-gray-300 text-gray-600'}`}
-                      >
-                        {place.name} {place.status === 'visited' && '✓'}
-                      </Badge>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground italic">No places visited yet.</p>
-                  )}
+                  {userVisitedPlaces && userVisitedPlaces.length > 0 ? ( userVisitedPlaces.map((place) => (<Badge key={place.id} variant={place.status === 'visited' ? 'secondary' : 'outline'} className={`px-4 py-2 text-sm rounded-full ${place.status === 'visited' ? 'bg-green-100 text-green-800' : 'border-gray-300 text-gray-600'}`}>{place.name} {place.status === 'visited' && '✓'}</Badge>)) ) : ( <p className="text-muted-foreground italic">No places visited yet.</p> )}
                 </div>
               </CardContent>
             </Card>
@@ -269,157 +269,23 @@ export default function ProfileView() {
 
           <TabsContent value="bookings" className="space-y-6">
             <Card className="p-6 md:p-8 bg-white shadow-sm rounded-lg">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-semibold text-gray-800">Recent Bookings</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="space-y-4">
-                  {userRecentBookings && userRecentBookings.length > 0 ? (
-                    userRecentBookings.map((booking) => (
-                      <div key={booking.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                        <div>
-                          <h4 className="font-medium text-lg text-gray-800">{booking.title}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">{booking.dates}</p>
-                        </div>
-                        <Badge 
-                          className={`mt-2 sm:mt-0 px-4 py-2 text-sm font-semibold rounded-full ${
-                            booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 
-                            booking.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' : 
-                            'bg-yellow-100 text-yellow-800'
-                          }`}
-                        >
-                          {booking.status}
-                        </Badge>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground italic">No recent bookings.</p>
-                  )}
-                </div>
-              </CardContent>
+                <CardHeader className="p-0 mb-6"><CardTitle className="text-2xl font-semibold text-gray-800">Recent Bookings</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                    <div className="space-y-4">
+                        {userRecentBookings && userRecentBookings.length > 0 ? ( userRecentBookings.map((booking) => ( <div key={booking.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"><div><h4 className="font-medium text-lg text-gray-800">{booking.title}</h4><p className="text-sm text-muted-foreground mt-1">{booking.dates}</p></div><Badge className={`mt-2 sm:mt-0 px-4 py-2 text-sm font-semibold rounded-full ${ booking.status === 'Confirmed' ? 'bg-green-100 text-green-800' : booking.status === 'Upcoming' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{booking.status}</Badge></div> )) ) : ( <p className="text-muted-foreground italic">No recent bookings.</p> )}
+                    </div>
+                </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="favorites" className="space-y-6">
             <Card className="p-6 md:p-8 bg-white shadow-sm rounded-lg">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-semibold text-gray-800">Saved Places</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {userSavedPlaces && userSavedPlaces.length > 0 ? (
-                    userSavedPlaces.map((place) => (
-                      <div key={place.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:shadow-md transition-shadow">
-                        <h4 className="font-medium text-lg text-gray-800">{place.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">{place.location}</p>
-                        <div className="flex items-center space-x-1 mt-3">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm text-gray-700">{place.rating}</span>
-                        </div>
-                        <Button 
-                           variant="outline" 
-                           size="sm" 
-                           className="mt-4 w-full"
-                           onClick={() => navigate(`/${place.type}-details/${place.id}`)}
-                        >
-                           View Details
-                        </Button>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="col-span-full text-muted-foreground italic">No saved places yet.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="viewpoints" className="space-y-6">
-            <Card className="p-6 md:p-8 bg-white shadow-sm rounded-lg">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-semibold text-gray-800">Viewpoints within 50km</CardTitle>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Discover amazing viewpoints around Nainital based on your interests
-                </p>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="grid gap-4">
-                  {userViewpoints && userViewpoints.length > 0 ? (
-                    userViewpoints.map((viewpoint) => (
-                      <div 
-                        key={viewpoint.id} 
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/viewpoints-details/${viewpoint.id}`)}
-                      >
-                        <div>
-                          <h4 className="font-medium text-lg text-gray-800">{viewpoint.name}</h4>
-                          <p className="text-sm text-muted-foreground mt-1">{viewpoint.description}</p>
-                          <p className="text-sm text-muted-foreground">{viewpoint.distance}</p>
-                        </div>
-                        <div className="flex items-center space-x-2 mt-3 sm:mt-0">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm text-gray-700">{viewpoint.rating}</span>
-                          <Button variant="outline" size="sm" className="ml-2">
-                            <Navigation className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground italic">No viewpoints found for you.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="routes" className="space-y-6">
-            <Card className="p-6 md:p-8 bg-white shadow-sm rounded-lg">
-              <CardHeader className="p-0 mb-6">
-                <CardTitle className="text-2xl font-semibold text-gray-800">Adventure Routes & Trails</CardTitle>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Explore trekking routes within 50km of Nainital
-                </p>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="grid gap-4">
-                  {userRoutes && userRoutes.length > 0 ? (
-                    userRoutes.map((route) => (
-                      <div 
-                        key={route.id} 
-                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                        onClick={() => navigate(`/routes-details/${route.id}`)}
-                      >
-                        <div>
-                          <h4 className="font-medium text-lg text-gray-800">{route.name}</h4>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <Badge 
-                              variant={route.difficulty === 'Easy' ? 'secondary' : route.difficulty === 'Moderate' ? 'outline' : 'destructive'}
-                              className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                                route.difficulty === 'Easy' ? 'bg-green-100 text-green-800' : 
-                                route.difficulty === 'Moderate' ? 'bg-yellow-100 text-yellow-800' : 
-                                'bg-red-100 text-red-800'
-                              }`}
-                            >
-                              {route.difficulty}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">{route.distance}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2 mt-3 sm:mt-0">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm text-gray-700">{route.rating}</span>
-                          <Button variant="outline" size="sm" className="ml-2">
-                            <Navigation className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground italic">No adventure routes found for you.</p>
-                  )}
-                </div>
-              </CardContent>
+                <CardHeader className="p-0 mb-6"><CardTitle className="text-2xl font-semibold text-gray-800">Saved Places</CardTitle></CardHeader>
+                <CardContent className="p-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {userSavedPlaces && userSavedPlaces.length > 0 ? ( userSavedPlaces.map((place) => ( <div key={place.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:shadow-md transition-shadow"><h4 className="font-medium text-lg text-gray-800">{place.title}</h4><p className="text-sm text-muted-foreground mt-1">{place.location}</p><div className="flex items-center space-x-1 mt-3"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /><span className="text-sm text-gray-700">{place.rating}</span></div><Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => navigate(`/${place.type}-details/${place.id}`)}>View Details</Button></div> )) ) : ( <p className="col-span-full text-muted-foreground italic">No saved places yet.</p> )}
+                    </div>
+                </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
@@ -431,55 +297,36 @@ export default function ProfileView() {
       {/* Phone Verification Modal */}
       <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Verify Phone Number</DialogTitle>
-            <DialogDescription>{phoneOtpSent ? "Enter the 6-digit code we sent." : "We will send an OTP to this number."}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-             {!phoneOtpSent ? (
-                <>
-                  <Label htmlFor="phone-verify">Phone Number</Label>
-                  <Input id="phone-verify" value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" />
-                </>
-             ) : (
-                <>
-                  <Label htmlFor="otp-verify">Enter OTP</Label>
-                  <Input id="otp-verify" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="123456" />
-                </>
-             )}
-          </div>
-          <DialogFooter>
-             <Button variant="outline" onClick={() => setShowPhoneModal(false)}>Cancel</Button>
-            {!phoneOtpSent ? (
-              <Button onClick={handleSendPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send OTP'}</Button>
-            ) : (
-              <Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Link'}</Button>
-            )}
-          </DialogFooter>
+          <DialogHeader><DialogTitle>Verify Phone Number</DialogTitle><DialogDescription>{phoneOtpSent ? "Enter the 6-digit code we sent." : "We will send an OTP to this number."}</DialogDescription></DialogHeader>
+          <div className="space-y-4 py-4">{!phoneOtpSent ? (<><Label htmlFor="phone-verify">Phone Number</Label><Input id="phone-verify" value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" /></>) : (<><Label htmlFor="otp-verify">Enter OTP</Label><Input id="otp-verify" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="123456" /></>)}</div>
+          <DialogFooter><Button variant="outline" onClick={() => setShowPhoneModal(false)}>Cancel</Button>{!phoneOtpSent ? (<Button onClick={handleSendPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send OTP'}</Button>) : (<Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Link'}</Button>)}</DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Reauthentication Modal for Email Change */}
+      {/* Reauthentication Modal for Email Change (for Email/Pass users) */}
       <Dialog open={showReauthModal} onOpenChange={setShowReauthModal}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Identity</DialogTitle>
-            <DialogDescription>For your security, please enter your current password to change your email.</DialogDescription>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Confirm Identity</DialogTitle><DialogDescription>For your security, please enter your current password to change your email.</DialogDescription></DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-                <Label htmlFor="new-email">New Email Address</Label>
-                <Input id="new-email" type="email" value={reauthNewEmail} onChange={(e) => setReauthNewEmail(e.target.value)} placeholder="new@example.com" />
-            </div>
-            <div>
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input id="current-password" type="password" value={reauthPassword} onChange={(e) => setReauthPassword(e.target.value)} placeholder="••••••••" />
-            </div>
+            <div><Label htmlFor="new-email">New Email Address</Label><Input id="new-email" type="email" value={reauthNewEmail} onChange={(e) => setReauthNewEmail(e.target.value)} placeholder="new@example.com" /></div>
+            <div><Label htmlFor="current-password">Current Password</Label><Input id="current-password" type="password" value={reauthPassword} onChange={(e) => setReauthPassword(e.target.value)} placeholder="••••••••" /></div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowReauthModal(false)}>Cancel</Button>
-            <Button onClick={performReauthAndChangeEmail} disabled={reauthLoading}>{reauthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Confirm & Update Email'}</Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setShowReauthModal(false)}>Cancel</Button><Button onClick={performReauthAndChangeEmail} disabled={reauthLoading}>{reauthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Confirm & Update Email'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Email Modal (for Phone users) */}
+      <Dialog open={showAddEmailModal} onOpenChange={setShowAddEmailModal}>
+        <DialogContent>
+            <DialogHeader><DialogTitle>Add Email Address</DialogTitle><DialogDescription>A verification link will be sent to confirm your email.</DialogDescription></DialogHeader>
+            <div className="py-4 space-y-2">
+                <Label htmlFor="email-to-add">Email Address</Label>
+                <Input id="email-to-add" type="email" value={emailToAdd} onChange={(e) => setEmailToAdd(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddEmailModal(false)}>Cancel</Button>
+                <Button onClick={handleAddEmailForPhoneUser} disabled={addEmailLoading}>{addEmailLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : 'Send Verification Link'}</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

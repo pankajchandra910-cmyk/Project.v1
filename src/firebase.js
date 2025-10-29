@@ -34,15 +34,12 @@ if (typeof window !== 'undefined' && !window._firebaseAppInstance) {
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
-// PhoneAuthProvider is still useful for creating phone credentials if needed for linking,
-// even if not directly used with RecaptchaVerifier for initial sign-in.
-export const phoneProvider = new PhoneAuthProvider(); 
+export const phoneProvider = new PhoneAuthProvider();
 
 // --- 4. Configure Authentication Persistence for User Experience ---
 setPersistence(auth, indexedDBLocalPersistence)
   .then(() => {
     console.log("Firebase Auth persistence set to IndexedDB Local.");
-    console.log("Firebase API Key:", process.env.PARCEL_FIREBASE_API_KEY);
   })
   .catch((error) => {
     console.error("Error setting Firebase Auth persistence (IndexedDB):", error);

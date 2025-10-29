@@ -61,14 +61,15 @@ function App(){
                         <Route path="/contact" element={<Contact />} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
                         <Route path="/terms" element={<TermsOfService />} />
-                        <Route path="/login" element={<Login/>} />
-                        <Route path="/signup" element={<Signup/>} />
-                        <Route path="/search" element={<SearchView/>} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<Signup />} />
+                        <Route path="/search" element={<SearchView />} />
 
                         {/* Protected Routes */}
                         <Route path="/profile" element={
                             
-                                <ProfileView/>       
+                                <ProfileView/>
+       
                         } />
                         <Route path="/owner-dashboard/:profession" element={
                             <ProtectedRoute allowedRoles={[ "owner"]}>

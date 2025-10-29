@@ -1,14 +1,14 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import { useIsMobile } from "../hooks/use-mobile"; // Assuming you have this custom hook
+import { useIsMobile } from "../hooks/use-mobile";
 import { Bed, MapPin, Mountain, Car, Users, Home as HomeIcon, Bike } from 'lucide-react';
-import { auth, db } from "../firebase"; // Ensure your firebase config is correctly exported
+import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut, signInAnonymously } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { toast } from "sonner";
 
 export const GlobalContext = createContext();
 
-// Mock data, as it was in your example
+// --- Static Data ---
 const categoriesData = [
   { icon: Bed, title: "Hotels & Resorts", description: "Comfortable stays" },
   { icon: MapPin, title: "Places to Visit", description: "Top attractions" },
@@ -19,10 +19,13 @@ const categoriesData = [
   { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" },
 ];
 
-const STORAGE_OWNER_PREFIX = "owner_listings_v3:"; // Using v3 for clarity
+const STORAGE_OWNER_PREFIX = "owner_listings_v3:";
 
+// --- Global Provider Component ---
 const GlobalProvider = ({ children }) => {
-  // Authentication & User State
+  // --- State Management ---
+
+  // Authentication & Core User State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
   const [userType, setUserType] = useState(""); // 'user', 'owner', 'guest'
@@ -40,12 +43,12 @@ const GlobalProvider = ({ children }) => {
   const [businessAddress, setBusinessAddress] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
 
-  // App UI State
+  // App-wide UI State
   const [showAIChat, setShowAIChat] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [language, setLanguage] = useState("en");
 
-  // User Data State (examples)
+  // User-Specific Data State
   const [userVisitedPlaces, setUserVisitedPlaces] = useState([]);
   const [userRecentBookings, setUserRecentBookings] = useState([]);
   const [userSavedPlaces, setUserSavedPlaces] = useState([]);
@@ -53,35 +56,47 @@ const GlobalProvider = ({ children }) => {
   const [userRoutes, setUserRoutes] = useState([]);
   const [categories] = useState(categoriesData);
 
-  const isMobile = useIsMobile(); // Custom hook
-
-  const [selectedLocationId, setSelectedLocationId] = useState(null);
-  const [locationDetails, setLocationDetails] = useState(null);
-
+  // App Navigation & Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [focusArea, setFocusArea] = useState("");
   const [selectedItemId, setSelectedItemId] = useState("");
   const [selectedDetailType, setSelectedDetailType] = useState(" ");
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [locationDetails, setLocationDetails] = useState(null);
 
-  // Fetches user profile from Firestore and populates the context state.
+  const isMobile = useIsMobile();
+
+  // --- Core Logic & Data Fetching ---
+
+  /**
+   * Fetches user data from Firestore or identifies a guest, then updates the global state.
+   * @param {object} user - The Firebase Auth user object.
+   */
   const fetchAndSetUser = async (user) => {
     if (!user) return;
-
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      const userData = userDocSnap.exists() ? userDocSnap.data() : {};
+      let userData = {};
+      if (!user.isAnonymous) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        userData = userDocSnap.exists() ? userDocSnap.data() : {};
+      }
 
       setIsLoggedIn(true);
       setUserName(user.displayName || userData.displayName || (user.isAnonymous ? 'Guest User' : 'New User'));
       setUserEmail(user.email || userData.email || "");
       setUserPhone(user.phoneNumber || userData.phoneNumber || "");
       setUserPhoneVerified(!!userData.phoneVerified);
-      setLoginPlatform(user.isAnonymous ? 'Guest' : (user.providerData?.[0]?.providerId.includes('google') ? 'Google' : 'Email'));
 
       const finalUserType = user.isAnonymous ? 'guest' : (userData.userType || 'user');
       setUserType(finalUserType);
+      
+      const providerId = user.providerData[0]?.providerId || 'anonymous';
+      if (user.isAnonymous) setLoginPlatform('Guest');
+      else if (providerId.includes('google.com')) setLoginPlatform('Google');
+      else if (providerId.includes('phone')) setLoginPlatform('Phone');
+      else if (providerId.includes('password')) setLoginPlatform('Email');
 
       if (finalUserType === 'owner') {
         setProfession(userData.profession || "");
@@ -97,12 +112,12 @@ const GlobalProvider = ({ children }) => {
       setUserSavedPlaces(userData.savedPlaces || []);
 
     } catch (error) {
-      toast.error("Error fetching user profile:", error);
-      // It's safer to sign out if the profile can't be loaded to avoid a broken state.
+      toast.error("Error fetching user profile:", error.message);
       await signOut(auth);
     }
   };
 
+  /** Resets all user-related state on logout. */
   const resetUserState = () => {
     setIsLoggedIn(false);
     setUserName("");
@@ -118,73 +133,65 @@ const GlobalProvider = ({ children }) => {
     setUserVisitedPlaces([]);
     setUserRecentBookings([]);
     setUserSavedPlaces([]);
+    setUserViewpoints([]);
+    setUserRoutes([]);
   };
 
+  /** Main effect to listen for authentication changes. */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        await fetchAndSetUser(user);
-      } else {
-        resetUserState();
-      }
+      if (user) await fetchAndSetUser(user);
+      else resetUserState();
       setLoadingUser(false);
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Universal function to update the user's profile in Firestore.
+  /** Signs in a user anonymously to create a guest session. */
+  const signInAnonymouslyAsGuest = async () => {
+    try {
+      await signInAnonymously(auth);
+      return { success: true };
+    } catch (error) {
+      console.error("Anonymous sign-in failed:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
+  /** Universal function to update a user's profile in Firestore. */
   const updateUserProfileInFirestore = async (updates) => {
-    if (!auth.currentUser) {
-      toast.error("Update failed: No user is currently logged in.");
+    if (!auth.currentUser || auth.currentUser.isAnonymous) {
+      toast.error("Guests cannot update profiles.");
       return false;
     }
     try {
       const userRef = doc(db, "users", auth.currentUser.uid);
-      // Add `updatedAt` timestamp to every update for tracking.
       await setDoc(userRef, { ...updates, updatedAt: serverTimestamp() }, { merge: true });
-      // Re-fetch user data to keep context fresh
-      await fetchAndSetUser(auth.currentUser); 
+      await fetchAndSetUser(auth.currentUser);
       return true;
     } catch (error) {
-      toast.error("Firestore update failed:", error);
+      toast.error("Firestore update failed:", error.message);
       return false;
     }
   };
   
-  // Example functions for local/remote storage, can be expanded.
+  // Functions for managing owner listings in local storage (can be replaced with Firestore).
   const getOwnerKey = (id) => `${STORAGE_OWNER_PREFIX}${id || ownerId}`;
-  
-  // Reads listings from local storage
-  const readOwnerListings = (id) => {
-      const key = getOwnerKey(id);
-      return JSON.parse(localStorage.getItem(key) || '[]');
-  };
-
-  // Writes listings to local storage
+  const readOwnerListings = (id) => JSON.parse(localStorage.getItem(getOwnerKey(id)) || '[]');
   const writeOwnerListings = (listings, id) => {
-      const key = getOwnerKey(id);
-      localStorage.setItem(key, JSON.stringify(listings));
-      return true;
+    localStorage.setItem(getOwnerKey(id), JSON.stringify(listings));
+    return true;
   };
-  
-  // Mock async remote functions for demonstration
-  // In a real app, these would interact with your backend/Firestore
   const readOwnerListingsRemote = async (id) => {
-    // console.log(`Simulating remote read for owner: ${id}`);
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500)); 
-    return readOwnerListings(id); // For now, reads from local storage
+    return readOwnerListings(id);
   };
-
   const writeOwnerListingsRemote = async (listings, id) => {
-    console.log(`Simulating remote write for owner: ${id}`, listings);
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    return writeOwnerListings(listings, id); // For now, writes to local storage
+    return writeOwnerListings(listings, id);
   };
 
-  // Logout function
+  /** Logs out the current user and resets state. */
   const logout1 = useCallback(async () => {
     await signOut(auth);
     setSearchQuery('');
@@ -196,51 +203,23 @@ const GlobalProvider = ({ children }) => {
     setSelectedLocationId(null);
   }, []);
 
+  // --- Context Value ---
   const contextValue = {
-    isLoggedIn,
-    loadingUser,
-    userType,
-    userName, setUserName,
-    userEmail, setUserEmail,
-    userPhone, setUserPhone,
-    userPhoneVerified,
-    loginPlatform,
-    ownerId,
-    profession, setProfession,
-    businessAddress, setBusinessAddress,
-    licenseNumber, setLicenseNumber,
+    isLoggedIn, loadingUser, userType, userName, setUserName, userEmail, setUserEmail, userPhone, setUserPhone,
+    userPhoneVerified, loginPlatform, ownerId, profession, setProfession, businessAddress, setBusinessAddress,
+    licenseNumber, setLicenseNumber, language, setLanguage, showAIChat, setShowAIChat, showMobileMenu, setShowMobileMenu,
+    isMobile, categories, userVisitedPlaces, userRecentBookings, userSavedPlaces, userViewpoints, userRoutes,
+    searchQuery, setSearchQuery, selectedCategory, setSelectedCategory, focusArea, setFocusArea, selectedItemId,
+    setSelectedItemId, selectedDetailType, setSelectedDetailType, selectedLocationId, setSelectedLocationId,
+    locationDetails, setLocationDetails,
+    // Functions
+    signInAnonymouslyAsGuest,
     updateUserProfileInFirestore,
-    language, setLanguage,
-    showAIChat, setShowAIChat,
-    showMobileMenu, setShowMobileMenu,
-    userVisitedPlaces,
-    userRecentBookings,
-    userSavedPlaces,
-    userViewpoints,
-    userRoutes,
-    categories,
-    isMobile,
-    // Owner listing functions
+    logout1,
     readOwnerListings,
     writeOwnerListings,
     readOwnerListingsRemote,
     writeOwnerListingsRemote,
-    logout1,// Renamed from logout1 for clarity
-    locationDetails,
-     setLocationDetails, 
-    selectedLocationId,
-     setSelectedLocationId, 
-    searchQuery,
-     setSearchQuery,
-    selectedCategory,
-     setSelectedCategory,
-    focusArea, 
-     setFocusArea,
-    selectedItemId, 
-     setSelectedItemId,
-    selectedDetailType, 
-     setSelectedDetailType,
-
   };
 
   return (
