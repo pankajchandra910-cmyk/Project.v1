@@ -54,7 +54,7 @@ function App(){
     return(
         <>
             <GlobalProvider>
-                <BrowserRouter>
+                <BrowserRouter >
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/about" element={<About />} />
@@ -67,10 +67,8 @@ function App(){
 
                         {/* Protected Routes */}
                         <Route path="/profile" element={
-                            <ProtectedRoute allowedRoles={["user", "owner"]}>
-                                <ProfileView/>
-                            </ProtectedRoute>
-                                   
+                            
+                                <ProfileView/>       
                         } />
                         <Route path="/owner-dashboard/:profession" element={
                             <ProtectedRoute allowedRoles={[ "owner"]}>

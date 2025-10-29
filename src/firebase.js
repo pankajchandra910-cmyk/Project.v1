@@ -16,8 +16,7 @@ const firebaseConfig = {
   projectId: process.env.PARCEL_FIREBASE_PROJECT_ID,
   storageBucket: process.env.PARCEL_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.PARCEL_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.PARCEL_FIREBASE_APP_ID,
-  measurementId: process.env.PARCEL_FIREBASE_MEASUREMENT_ID, // Optional: if using Google Analytics
+  appId: process.env.PARCEL_FIREBASE_APP_ID
 };
 
 // --- 2. Initialize Firebase App ---
@@ -43,6 +42,7 @@ export const phoneProvider = new PhoneAuthProvider();
 setPersistence(auth, indexedDBLocalPersistence)
   .then(() => {
     console.log("Firebase Auth persistence set to IndexedDB Local.");
+    console.log("Firebase API Key:", process.env.PARCEL_FIREBASE_API_KEY);
   })
   .catch((error) => {
     console.error("Error setting Firebase Auth persistence (IndexedDB):", error);
