@@ -1,3 +1,5 @@
+// src/pages/Login.js
+
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
@@ -46,7 +48,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otp, setOtp] = useState("");
-    const [userType, setUserType] = useState("user");
+    const [userType, setUserType] = useState("user"); // Role selected on the login page
     const [profession, setProfession] = useState("");
     const [loading, setLoading] = useState(false);
     const [showEmailPassword, setShowEmailPassword] = useState(false);
@@ -67,6 +69,7 @@ export default function Login() {
     const t = texts[language] || texts.en;
     
     // --- Side Effects ---
+    // Redirects if already logged in and user data is loaded
     useEffect(() => {
         if (!loadingUser && isLoggedIn && currentUserType !== 'guest') {
             const redirectPath = currentUserType === 'owner' ? `/owner-dashboard/${profession || 'other'}` : '/profile';
@@ -74,7 +77,7 @@ export default function Login() {
         }
     }, [isLoggedIn, loadingUser, currentUserType, navigate, profession]);
 
-    // Sets up invisible reCAPTCHA for phone auth
+    // Sets up invisible reCAPTCHA for phone authentication
     const setupRecaptcha = () => {
         if (!window.recaptchaVerifier) {
             window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
@@ -83,35 +86,60 @@ export default function Login() {
 
     // --- Authentication Logic & Handlers ---
 
+    // Handles successful login/signup/upgrade by saving user data and redirecting
     const handleLoginOrUpgradeSuccess = async (user) => {
         const userDocRef = doc(db, "users", user.uid);
         let userData;
 
+        // If the current user is a guest, this means they are upgrading their account.
         if (currentUserType === 'guest') {
             userData = {
                 uid: user.uid,
                 displayName: user.displayName || 'New User',
                 email: user.email || '',
                 phoneNumber: user.phoneNumber || '',
-                phoneVerified: !!user.phoneNumber,
-                userType: userType,
+                phoneVerified: !!user.phoneNumber, // true if phoneNumber exists
+                userType: userType, // Use the role selected on the page during upgrade
                 profession: userType === "owner" ? profession : "",
-                signupMethod: user.providerData[0]?.providerId.includes('google') ? 'google' : 'email',
+                signupMethod: user.providerData[0]?.providerId.includes('google') ? 'google' : 'email', // Determine based on provider
                 createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, userData);
             toast.success("Guest account successfully upgraded!");
         } else {
+            // Regular login: fetch existing user data
             const docSnap = await getDoc(userDocRef);
-            userData = docSnap.data();
+            if (!docSnap.exists()) {
+                // This scenario should ideally not happen for non-guest logins,
+                // as new users via Google are now handled directly in handleGoogleLogin.
+                // However, as a fallback or for other methods, we ensure consistency.
+                userData = {
+                    uid: user.uid,
+                    displayName: user.displayName || 'New User',
+                    email: user.email || '',
+                    phoneNumber: user.phoneNumber || '',
+                    phoneVerified: !!user.phoneNumber,
+                    userType: userType, // Use the role selected on the page
+                    profession: userType === "owner" ? profession : "",
+                    signupMethod: user.providerData[0]?.providerId.includes('google') ? 'google' : 'email',
+                    createdAt: serverTimestamp(),
+                };
+                await setDoc(userDocRef, userData);
+                toast.info("Welcome! Your account has been created.");
+            } else {
+                 userData = docSnap.data();
+            }
         }
 
+        // Final check for user type consistency before proceeding
+        // This is crucial to prevent users from logging in with the wrong role
         if (!userData || userData.userType !== userType) {
-            await auth.signOut();
+            await auth.signOut(); // Sign out if role mismatch
             toast.error(t.wrongUserType);
             return;
         }
 
+        // Successful login/upgrade and role validation
         toast.success(t.loginSuccess);
         if (userData.userType === 'owner') {
             navigate(`/owner-dashboard/${userData.profession || 'other'}`);
@@ -120,37 +148,83 @@ export default function Login() {
         }
     };
 
+    // UPDATED GOOGLE LOGIN LOGIC (Handles both existing and new users, and guest upgrades)
     const handleGoogleLogin = async () => {
         setLoading(true);
         try {
             if (currentUserType === 'guest' && auth.currentUser) {
-                const credential = new GoogleAuthProvider();
-                const result = await linkWithCredential(auth.currentUser, credential);
+                // Case: Guest user upgrading their account with Google
+                const credential = GoogleAuthProvider.credential(auth.currentUser.uid); // Create a credential from current user
+                const result = await linkWithCredential(auth.currentUser, credential); // Link Google to the guest account
                 await handleLoginOrUpgradeSuccess(result.user);
             } else {
+                // Case: Regular Google Login (or new user signing up with Google for the first time)
                 const result = await signInWithPopup(auth, googleProvider);
-                await handleLoginOrUpgradeSuccess(result.user);
+                const user = result.user;
+                const userDocRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(userDocRef);
+
+                if (docSnap.exists()) {
+                    // User exists in Firestore, proceed with normal login flow
+                    await handleLoginOrUpgradeSuccess(user);
+                } else {
+                    // New user: Create their profile in Firestore directly
+                    const userData = {
+                        uid: user.uid,
+                        displayName: user.displayName || 'New User',
+                        email: user.email,
+                        userType: userType, // Use the role selected on the page
+                        profession: userType === "owner" ? profession : "",
+                        signupMethod: 'google',
+                        createdAt: serverTimestamp(),
+                        phoneVerified: false,
+                        phoneNumber: user.phoneNumber || "",
+                    };
+                    await setDoc(userDocRef, userData);
+                    toast.info("Welcome! Your account has been created.");
+                    await handleLoginOrUpgradeSuccess(user); // Now proceed as a newly created user
+                }
             }
-        } catch (error) { toast.error(`Google Login Failed: ${error.code}`); }
-        finally { setLoading(false); }
+        } catch (error) { 
+            // Handle specific error for existing account with different credentials
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                const pendingCred = GoogleAuthProvider.credentialFromError(error);
+                const email = error.email;
+                
+                // Prompt user to link accounts or sign in with existing method
+                toast.error(`An account with ${email} already exists. Please sign in with your original method (e.g., Email/Password) to link this Google account.`);
+                // You might want to provide UI to allow them to sign in with email/password and then link.
+            } else {
+                toast.error(`Google Login Failed: ${error.code}`); 
+            }
+        } finally { 
+            setLoading(false); 
+        }
     };
     
+    // Handles email/password login (or guest upgrade)
     const handleEmailLogin = async () => {
         if (!email || !password) return toast.error(t.emailPasswordRequired);
         setLoading(true);
         try {
             if (currentUserType === 'guest' && auth.currentUser) {
+                // Case: Guest user upgrading with email/password
                 const credential = EmailAuthProvider.credential(email, password);
                 const result = await linkWithCredential(auth.currentUser, credential);
                 await handleLoginOrUpgradeSuccess(result.user);
             } else {
+                // Case: Regular email/password login
                 const result = await signInWithEmailAndPassword(auth, email, password);
                 await handleLoginOrUpgradeSuccess(result.user);
             }
-        } catch (error) { toast.error(t.noAccountEmail); }
-        finally { setLoading(false); }
+        } catch (error) { 
+            toast.error(t.noAccountEmail); 
+        } finally { 
+            setLoading(false); 
+        }
     };
     
+    // Allows user to proceed as a guest
     const handleGuestAccess = async () => {
       setLoading(true);
       const res = await signInAnonymouslyAsGuest();
@@ -163,6 +237,7 @@ export default function Login() {
       setLoading(false);
     };
 
+    // Handles sending password reset email
     const handleSendPasswordReset = async () => {
        if (!resetEmail) return toast.error('Please enter your email address.');
        setResetLoading(true);
@@ -174,11 +249,14 @@ export default function Login() {
        finally { setResetLoading(false); }
     };
     
+    // Handles sending OTP for phone number login
     const handleSendOTP = async () => {
         if (!phoneNumber) return toast.error(t.validPhoneRequired);
         setLoading(true);
         try {
             const number = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
+            
+            // Check if phone number exists in Firestore for an account
             const q = query(collection(db, "users"), where("phoneNumber", "==", number));
             const querySnapshot = await getDocs(q);
             if (querySnapshot.empty) {
@@ -186,6 +264,7 @@ export default function Login() {
                 setLoading(false); // Important: stop loading if no account is found
                 return;
             }
+            
             setupRecaptcha();
             const confirmation = await signInWithPhoneNumber(auth, number, window.recaptchaVerifier);
             setConfirmationResult(confirmation);
@@ -196,6 +275,7 @@ export default function Login() {
         finally { setLoading(false); }
     };
     
+    // Handles OTP verification and login
     const handleOTPLogin = async () => {
         if (!otp) return toast.error(t.enterOTP);
         setLoading(true);
@@ -214,7 +294,7 @@ export default function Login() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-            <div id="recaptcha-container"></div>
+            <div id="recaptcha-container"></div> {/* reCAPTCHA container */}
             <div className="bg-white rounded-lg shadow-xl p-6 sm:p-8 w-full max-w-md space-y-6">
                 
                 <div className="text-center">
@@ -222,6 +302,7 @@ export default function Login() {
                     <p className="text-muted-foreground">{t.discover}</p>
                 </div>
 
+                {/* Language Selector */}
                 <div className="flex justify-center">
                     <Select value={language} onValueChange={setLanguage}>
                         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
@@ -233,6 +314,7 @@ export default function Login() {
                 </div>
 
                 <div className="space-y-4">
+                    {/* User Type Selection */}
                     <div className="space-y-3">
                         <Label>{t.userType}</Label>
                         <RadioGroup value={userType} onValueChange={setUserType} className="flex justify-center space-x-6" disabled={loading}>
@@ -241,6 +323,7 @@ export default function Login() {
                         </RadioGroup>
                     </div>
 
+                    {/* Profession Selection (for Owners) */}
                     {userType === "owner" && (
                         <div className="space-y-2">
                             <Label>{t.profession}</Label>
@@ -259,9 +342,12 @@ export default function Login() {
                     )}
 
                     <Separator />
+
+                    {/* Google Login Button */}
                     <Button onClick={handleGoogleLogin} variant="outline" className="w-full flex items-center gap-2" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Mail className="w-4 h-4" />{t.googleLogin}</Button>
                     <Separator />
 
+                    {/* Phone Number OTP Login */}
                     <div className="space-y-2">
                         <Label htmlFor="phone">{t.phone}</Label>
                         <div className="flex gap-2">
@@ -277,6 +363,8 @@ export default function Login() {
                     </div>
 
                     <Separator />
+
+                    {/* Email/Password Login */}
                     <div className="space-y-3">
                         <div className="space-y-2"><Label htmlFor="email">{t.email}</Label><Input id="email" type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading}/></div>
                         <div className="space-y-2">
@@ -293,9 +381,12 @@ export default function Login() {
                     </div>
 
                     <Separator />
+
+                    {/* Guest Access & Sign Up Link */}
                     <Button onClick={handleGuestAccess} variant="outline" className="w-full" disabled={loading}>{t.guestAccess}</Button>
                     <p className="text-center text-sm text-muted-foreground">{t.newHere}{" "}<Link to="/signup" className="text-primary cursor-pointer hover:underline">{t.signUp}</Link></p>
 
+                    {/* Forgot Password Dialog */}
                     <Dialog open={resetModalOpen} onOpenChange={setResetModalOpen}>
                         <DialogContent className="sm:max-w-[425px]">
                             <DialogHeader><DialogTitle>{t.resetPasswordTitle}</DialogTitle><DialogDescription>{t.resetPasswordDesc}</DialogDescription></DialogHeader>
