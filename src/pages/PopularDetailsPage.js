@@ -2,54 +2,24 @@ import React, { useState, useCallback, useEffect, useContext, useRef } from "rea
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { hotelDetailsData } from "../assets/dummy";
+import { analytics } from "../firebase"; // Import Firebase Analytics
+import { logEvent } from "firebase/analytics"; // Import logEvent
 
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
-import { Input } from "../component/Input"; // Import Input for date selection
+import { Input } from "../component/Input";
 import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { FAQSection } from "../component/FAQSection";
 import { ImageWithFallback } from "../component/ImageWithFallback";
-// ADD THESE IMPORTS:
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";
 
-
 import {
-  ArrowLeft,
-  Star,
-  MapPin,
-  Wifi,
-  Car,
-  Waves,
-  Coffee,
-  Utensils,
-  Calendar,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  Navigation,
-  Phone,
-  Mail,
-  Shield,
-  Info
+  ArrowLeft, Star, MapPin, Wifi, Car, Waves, Coffee, Utensils,
+  Calendar, Users, ChevronLeft, ChevronRight, Navigation, Phone, Mail, Shield, Info
 } from "lucide-react";
 
-const iconMap = {
-  Wifi: Wifi,
-  Car: Car,
-  Waves: Waves,
-  Coffee: Coffee,
-  Utensils: Utensils,
-  Shield: Shield,
-  Calendar: Calendar,
-  Users: Users,
-  Phone: Phone,
-  Mail: Mail,
-  Star: Star,
-  MapPin: MapPin,
-  Navigation: Navigation,
-  Info: Info,
-};
+const iconMap = { Wifi, Car, Waves, Coffee, Utensils, Shield, Calendar, Users, Phone, Mail, Star, MapPin, Navigation, Info };
 
 export default function PopularDetailsPage() {
   const navigate = useNavigate();
@@ -61,16 +31,15 @@ export default function PopularDetailsPage() {
   const [popularItemData, setPopularItemData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [checkInDate, setCheckInDate] = useState("");
   const [checkOutDate, setCheckOutDate] = useState("");
   const [guests, setGuests] = useState("2");
   const [selectedRoomType, setSelectedRoomType] = useState("");
-
   const bookingCardRef = useRef(null);
   const [faqStickyTop, setFaqStickyTop] = useState(450);
 
   useEffect(() => {
+    // Data fetching logic
     setLoading(true);
     setError(null);
     if (popularId) {
@@ -78,15 +47,31 @@ export default function PopularDetailsPage() {
       if (data) {
         setPopularItemData(data);
         setLoading(false);
-        setCurrentImageIndex(0); // Reset image index for new item
+        setCurrentImageIndex(0);
 
-        // Parse query parameters for pre-filled booking data
+        // Log view_item event here for Firebase Analytics
+        if (analytics) {
+            logEvent(analytics, 'view_item', {
+                item_category: 'Popular',
+                item_id: popularId,
+                item_name: data.name,
+                currency: 'INR', // Example currency
+                value: parseFloat(data.price?.replace(/[^0-9.]/g, '')) || 0, // Example value
+            });
+            // Also log screen_view for the details page
+            logEvent(analytics, 'screen_view', {
+                firebase_screen: 'PopularDetails',
+                firebase_screen_class: 'PopularDetailsPage',
+                item_id: popularId,
+                item_name: data.name
+            });
+        }
+
         const params = new URLSearchParams(location.search);
         setCheckInDate(params.get("checkIn") || "");
         setCheckOutDate(params.get("checkOut") || "");
         setGuests(params.get("guests") || "2");
         setSelectedRoomType(params.get("roomType") || (data.roomTypes.length > 0 ? data.roomTypes[0].name : ""));
-
       } else {
         setError("Popular item not found.");
         setLoading(false);
@@ -97,52 +82,75 @@ export default function PopularDetailsPage() {
       setLoading(false);
       setPopularItemData(null);
     }
-  }, [popularId, location.search]); // Re-run effect when popularId or location.search changes
+  }, [popularId, location.search]);
 
-  // Effect to calculate the sticky top for FAQ section
   useEffect(() => {
     const calculateFaqStickyTop = () => {
       if (bookingCardRef.current) {
         const bookingCardHeight = bookingCardRef.current.offsetHeight;
-        const bookingCardTopOffset = 80; // This corresponds to 'top-20' in Tailwind CSS
-        const gapBetweenElements = 16; // This corresponds to 'gap-4' in Tailwind CSS
+        const bookingCardTopOffset = 80;
+        const gapBetweenElements = 16;
         setFaqStickyTop(bookingCardTopOffset + bookingCardHeight + gapBetweenElements);
       }
     };
 
-    calculateFaqStickyTop(); // Calculate on initial render
-
-    // Recalculate if window resizes (heights might change)
-    window.addEventListener('resize', calculateFaqStickyTop); // Changed to calculateFaqStickyTop
-    // Recalculate if popularItemData changes (content might change height)
-    // Small delay to ensure content is rendered before calculating height
+    calculateFaqStickyTop();
+    window.addEventListener('resize', calculateFaqStickyTop);
     const timer = setTimeout(calculateFaqStickyTop, 100);
-
 
     return () => {
       window.removeEventListener('resize', calculateFaqStickyTop);
       clearTimeout(timer);
     };
-  }, [popularItemData, checkInDate, checkOutDate, guests, selectedRoomType]); // Recalculate when popularItemData or booking inputs change
+  }, [popularItemData, checkInDate, checkOutDate, guests, selectedRoomType]);
 
   const handleBack = useCallback(() => {
-    navigate(-1); // Go back to the previous page in history
-  }, [navigate]);
+    navigate(-1);
+    if (analytics) {
+      logEvent(analytics, 'navigation', {
+        action: 'go_back',
+        from_page: 'PopularDetails',
+        item_id: popularId,
+      });
+    }
+  }, [navigate, popularId]);
 
   const handleBookNow = useCallback((id) => {
-    // Navigate to the booking page with the item ID and current booking data
-    const queryParams = new URLSearchParams();
-    if (checkInDate) queryParams.append("checkIn", checkInDate);
-    if (checkOutDate) queryParams.append("checkOut", checkOutDate);
-    if (guests) queryParams.append("guests", guests);
-    if (selectedRoomType) queryParams.append("roomType", selectedRoomType);
-
+    if (analytics) {
+      logEvent(analytics, 'begin_checkout', {
+        item_id: id,
+        item_name: popularItemData?.name,
+        currency: 'INR',
+        value: parseFloat(popularItemData?.price?.replace(/[^0-9.]/g, '')) || 0,
+        // Add more e-commerce parameters like items array if available
+        items: [{
+          item_id: id,
+          item_name: popularItemData?.name,
+          item_category: 'Popular',
+          price: parseFloat(popularItemData?.price?.replace(/[^0-9.]/g, '')),
+          quantity: 1, // Assuming one booking at a time for simplicity
+          // Add booking specifics
+          check_in_date: checkInDate,
+          check_out_date: checkOutDate,
+          guests: guests,
+          room_type: selectedRoomType,
+        }]
+      });
+    }
+    const queryParams = new URLSearchParams({ checkIn: checkInDate, checkOut: checkOutDate, guests, roomType: selectedRoomType });
     navigate(`/book-item/${id}?${queryParams.toString()}`);
-  }, [navigate, checkInDate, checkOutDate, guests, selectedRoomType]);
+  }, [navigate, checkInDate, checkOutDate, guests, selectedRoomType, popularItemData]);
 
   const handleViewMap = useCallback((locationName) => {
+    if (analytics) {
+      logEvent(analytics, 'view_map', {
+        item_name: locationName,
+        source_page: 'PopularDetails',
+        item_id: popularId,
+      });
+    }
     const focusId = popularId.toLowerCase().replace(/\s/g, '-');
-    setFocusArea(focusId); // Set focus area in global context for the map
+    setFocusArea(focusId);
     navigate(`/map-view/${focusId}?destName=${encodeURIComponent(locationName)}`);
   }, [navigate, setFocusArea, popularId]);
 
@@ -156,23 +164,44 @@ export default function PopularDetailsPage() {
       trek: `/trek-details/${id}`,
       lake: `/place-details/${id}`,
       viewpoint: `/place-details/${id}`,
-      // Add other types as needed
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
-  }, [navigate, setSelectedItemId, setSelectedDetailType]);
+
+    if (analytics) {
+      logEvent(analytics, 'select_item', {
+        item_category: 'Nearby Attraction',
+        item_id: id,
+        item_name: type, // Assuming type can serve as name here
+        source_page: 'PopularDetails',
+        parent_item_id: popularId
+      });
+    }
+  }, [navigate, setSelectedItemId, setSelectedDetailType, popularId]);
 
   const nextImage = useCallback(() => {
     if (popularItemData && popularItemData.images && popularItemData.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % popularItemData.images.length);
+      if (analytics) {
+        logEvent(analytics, 'carousel_interaction', {
+          action: 'next_image',
+          item_id: popularId,
+        });
+      }
     }
-  }, [popularItemData]);
+  }, [popularItemData, popularId]);
 
   const prevImage = useCallback(() => {
     if (popularItemData && popularItemData.images && popularItemData.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + popularItemData.images.length) % popularItemData.images.length);
+      if (analytics) {
+        logEvent(analytics, 'carousel_interaction', {
+          action: 'prev_image',
+          item_id: popularId,
+        });
+      }
     }
-  }, [popularItemData]);
+  }, [popularItemData, popularId]);
 
   const calculateNumberOfNights = () => {
     if (!checkInDate || !checkOutDate) return 0;
@@ -188,10 +217,10 @@ export default function PopularDetailsPage() {
     const room = popularItemData.roomTypes.find(rt => rt.name === selectedRoomType);
     if (!room) return 0;
 
-    const roomPrice = parseFloat(room.price); // Parse directly as it's just a number string now
+    const roomPrice = parseFloat(room.price);
     const nights = calculateNumberOfNights();
     const basePrice = roomPrice * nights;
-    const taxesAndFees = 500; // Mock taxes and fees
+    const taxesAndFees = 500;
     return basePrice + taxesAndFees;
   };
 
@@ -325,7 +354,7 @@ export default function PopularDetailsPage() {
                       <h3 className="font-semibold mb-3">Amenities</h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {popularItemData.amenities.map((amenity, index) => {
-                          const IconComponent = iconMap[amenity.icon] || Info; // Use mapped icon or fallback
+                          const IconComponent = iconMap[amenity.icon] || Info;
                           return (
                             <div key={index} className="flex items-center space-x-2">
                               <IconComponent className="w-4 h-4 text-primary" />
@@ -447,8 +476,8 @@ export default function PopularDetailsPage() {
           </div>
 
           {/* Booking Sidebar and FAQs */}
-          <div className="lg:col-span-1 flex flex-col gap-4"> {/* Added flex-col and gap for spacing */}
-            <Card ref={bookingCardRef} className="sticky top-20 shadow-sm"> {/* Book Your Stay card, sticks at 80px from top */}
+          <div className="lg:col-span-1 flex flex-col gap-4">
+            <Card ref={bookingCardRef} className="sticky top-20 shadow-sm">
               <CardHeader>
                 <CardTitle>Book Your Stay</CardTitle>
               </CardHeader>

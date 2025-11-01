@@ -1,5 +1,7 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { analytics } from "../firebase"; // Import Firebase Analytics
+import { logEvent } from "firebase/analytics"; // Import logEvent
 import { GlobalContext } from "../component/GlobalContext";
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
@@ -34,6 +36,7 @@ import {
   Footprints
 } from "lucide-react";
 
+// Mapping of icon names to Lucide-React components
 const iconMap = {
   Car: Car,
   Train: Train,
@@ -58,21 +61,39 @@ export default function LocationDetailsPage() {
   const navigate = useNavigate();
   const { locationId } = useParams();
   const { setSelectedItemId, setSelectedDetailType, setFocusArea, locationDetails, setLocationDetails } = useContext(GlobalContext);
+
+  // State variables for UI logic
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllViewpoints, setShowAllViewpoints] = useState(false);
   const [showAllHotels, setShowAllHotels] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Effect hook to load location details and track page view
   useEffect(() => {
     setLoading(true);
     setError(null);
+
     if (locationId) {
+      // Safely access data from locationsData, handling potential array wrapping
       const data = Array.isArray(locationsData[locationId]) ? locationsData[locationId][0] : locationsData[locationId];
+
       if (data) {
         setLocationDetails(data);
         setLoading(false);
         setCurrentImageIndex(0);
+
+        // --- Firebase Analytics Event Tracking for Location View ---
+        if (analytics) {
+          logEvent(analytics, 'view_item', {
+            item_category: 'Location',
+            item_id: locationId,
+            item_name: data.name,
+            value: data.annualVisitors || 0
+          });
+        }
+        // --- End of Firebase Analytics Tracking ---
+
       } else {
         setError("Location not found.");
         setLoading(false);
@@ -85,34 +106,72 @@ export default function LocationDetailsPage() {
     }
   }, [locationId, setLocationDetails]);
 
+  // Callback for navigating to the next image in the gallery
   const nextImage = useCallback(() => {
-    if (locationDetails && locationDetails.gallery && locationDetails.gallery.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % locationDetails.gallery.length);
+    if (locationDetails?.gallery?.length > 0) {
+      const newIndex = (currentImageIndex + 1) % locationDetails.gallery.length;
+      setCurrentImageIndex(newIndex);
+      // Firebase Analytics event for next image navigation
+      if (analytics) {
+        logEvent(analytics, 'select_content', { content_type: 'image_gallery', item_id: `${locationDetails.name} - Image ${newIndex + 1}` });
+      }
     }
-  }, [locationDetails]);
+  }, [locationDetails, currentImageIndex]);
 
+  // Callback for navigating to the previous image in the gallery
   const prevImage = useCallback(() => {
-    if (locationDetails && locationDetails.gallery && locationDetails.gallery.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + locationDetails.gallery.length) % locationDetails.gallery.length);
+    if (locationDetails?.gallery?.length > 0) {
+      const newIndex = (currentImageIndex - 1 + locationDetails.gallery.length) % locationDetails.gallery.length;
+      setCurrentImageIndex(newIndex);
+      // Firebase Analytics event for previous image navigation
+      if (analytics) {
+        logEvent(analytics, 'select_content', { content_type: 'image_gallery', item_id: `${locationDetails.name} - Image ${newIndex + 1}` });
+      }
+    }
+  }, [locationDetails, currentImageIndex]);
+
+  // Callback for direct image selection via dots
+  const handleImageDotClick = useCallback((index) => {
+    setCurrentImageIndex(index);
+    // Firebase Analytics event for image dot navigation
+    if (analytics) {
+      logEvent(analytics, 'select_content', { content_type: 'image_dot_nav', item_id: `${locationDetails.name} - Image ${index + 1}` });
     }
   }, [locationDetails]);
 
+  // Callback for handling the back button click
   const handleBack = useCallback(() => {
+    // Firebase Analytics event for back button click
+    if (analytics) {
+      logEvent(analytics, 'navigation_back', { from_page: 'LocationDetails' });
+    }
     navigate(-1);
   }, [navigate]);
 
+  // Callback for getting directions to a specific point
   const handleGetDirections = useCallback((lat, lng, name) => {
-    const currentFocusId = locationDetails?.id || "nainital-area";
+    // Firebase Analytics event for getting directions
+    if (analytics) {
+      logEvent(analytics, 'get_directions', { item_name: name, location_context: locationDetails?.name });
+    }
+    const currentFocusId = locationDetails?.id || "nainital-area"; // Fallback focus area
     setFocusArea(currentFocusId);
     navigate(`/map-view/${currentFocusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
   }, [navigate, setFocusArea, locationDetails]);
 
+  // Callback for viewing details of an item (hotel, place, etc.)
   const handleViewDetails = useCallback((id, type) => {
+    // Firebase Analytics event for viewing item details
+    if (analytics) {
+      logEvent(analytics, 'select_item', { item_list_name: 'Location Details Page', item_id: id, item_category: type });
+    }
     setSelectedItemId(id);
     setSelectedDetailType(type);
+
+    // Map item types to their respective detail routes
     const routeMap = {
       hotel: `/hotel-details/${id}`,
-      popular:`/popular-details/${id}`,
+      popular: `/popular-details/${id}`,
       place: `/place-details/${id}`,
       trek: `/trek-details/${id}`,
       bike: `/bike-details/${id}`,
@@ -130,12 +189,53 @@ export default function LocationDetailsPage() {
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
-  }, [navigate, setSelectedItemId, setSelectedDetailType]);
+  }, [navigate, setSelectedItemId, setSelectedDetailType, locationDetails]);
 
+  // Callback for booking a hotel
   const handleBookHotel = useCallback((hotelId) => {
+    // Firebase Analytics event for initiating hotel booking
+    if (analytics) {
+      logEvent(analytics, 'begin_checkout', { item_category: 'Hotel', item_id: hotelId, source_page: 'LocationDetails', location_context: locationDetails?.name });
+    }
     navigate(`/book-hotel/${hotelId}`);
-  }, [navigate]);
+  }, [navigate, locationDetails]);
 
+  // Callback for handling tab changes
+  const handleTabChange = useCallback((value) => {
+    // Firebase Analytics event for tab selection
+    if (analytics) {
+      logEvent(analytics, 'select_content', { content_type: 'tab', item_id: value, location_context: locationDetails?.name });
+    }
+  }, [locationDetails]);
+
+  // Callback for seeing more attractions
+  const handleSeeMoreAttractions = useCallback(() => {
+    setShowAllViewpoints(true);
+    // Firebase Analytics event for "See More Attractions"
+    if (analytics) {
+      logEvent(analytics, 'view_more', { content_type: 'Attractions', location_context: locationDetails?.name });
+    }
+  }, [locationDetails]);
+
+  // Callback for seeing more hotels
+  const handleSeeMoreHotels = useCallback(() => {
+    setShowAllHotels(true);
+    // Firebase Analytics event for "See More Hotels"
+    if (analytics) {
+      logEvent(analytics, 'view_more', { content_type: 'Hotels', location_context: locationDetails?.name });
+    }
+  }, [locationDetails]);
+
+  // Callback for finding local guides
+  const handleFindLocalGuides = useCallback(() => {
+    // Firebase Analytics event for "Find Local Guides"
+    if (analytics) {
+      logEvent(analytics, 'find_guides', { source_page: 'LocationDetails', location_context: locationDetails?.name });
+    }
+    handleViewDetails("local-guides", "guide"); // Assuming "local-guides" is a valid ID for guides
+  }, [locationDetails, handleViewDetails]);
+
+  // --- Render Loading, Error, or No Data States ---
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -162,22 +262,20 @@ export default function LocationDetailsPage() {
     );
   }
 
+  // Determine image and background image
   const displayImage = locationDetails.gallery[currentImageIndex];
   const mainBackgroundImage = locationDetails.gallery[0];
 
-  const whatToExpectItems = locationDetails.whatToExpect && locationDetails.whatToExpect.length > 0
-    ? locationDetails.whatToExpect.map(item => ({
-        ...item,
-        icon: iconMap[item.icon] || Info
-      }))
-    : [];
+  // Prepare data for "What to Expect" and "Other Activities"
+  const whatToExpectItems = locationDetails.whatToExpect?.map(item => ({
+    ...item,
+    icon: iconMap[item.icon] || Info
+  })) || [];
 
-  const otherActivitiesItems = locationDetails.otherActivities && locationDetails.otherActivities.length > 0
-    ? locationDetails.otherActivities.map(activity => ({
-        ...activity,
-        icon: iconMap[activity.icon] || Info
-      }))
-    : [];
+  const otherActivitiesItems = locationDetails.otherActivities?.map(activity => ({
+    ...activity,
+    icon: iconMap[activity.icon] || Info
+  })) || [];
 
   return (
     <div
@@ -191,6 +289,7 @@ export default function LocationDetailsPage() {
         backgroundColor: '#f9fafb'
       }}
     >
+      {/* Back Button and Header */}
       <div className="bg-white/95 backdrop-blur-sm shadow-sm px-4 py-3 md:px-6 sticky top-0 z-10">
         <Button variant="ghost" onClick={handleBack} className="mb-0">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -199,6 +298,7 @@ export default function LocationDetailsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Image Gallery Section */}
         <div className="relative mb-6">
           <div className="relative h-64 md:h-96 rounded-lg overflow-hidden">
             <img
@@ -231,7 +331,7 @@ export default function LocationDetailsPage() {
                       className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
                         index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                       }`}
-                      onClick={() => setCurrentImageIndex(index)}
+                      onClick={() => handleImageDotClick(index)}
                     />
                   ))}
                 </div>
@@ -240,9 +340,12 @@ export default function LocationDetailsPage() {
           </div>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Details and Tabs */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 shadow-sm">
+              {/* Location Header */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold mb-2">{locationDetails.name.split(' - ')[0]}</h1>
@@ -266,6 +369,7 @@ export default function LocationDetailsPage() {
                 </div>
               </div>
 
+              {/* Quick Facts Section */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50/80 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Thermometer className="w-4 h-4 text-primary" />
@@ -290,7 +394,8 @@ export default function LocationDetailsPage() {
                 </div>
               </div>
 
-              <Tabs defaultValue="overview" className="w-full">
+              {/* Tabs Section */}
+              <Tabs defaultValue="overview" className="w-full" onValueChange={handleTabChange}>
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="routes">Routes</TabsTrigger>
@@ -299,6 +404,7 @@ export default function LocationDetailsPage() {
                   <TabsTrigger value="activities">Activities</TabsTrigger>
                 </TabsList>
 
+                {/* Overview Tab Content */}
                 <TabsContent value="overview" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-3">About {locationDetails.name.split(' - ')[0]}</h3>
@@ -370,6 +476,7 @@ export default function LocationDetailsPage() {
                   )}
                 </TabsContent>
 
+                {/* Routes Tab Content */}
                 <TabsContent value="routes" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-4">How to Reach {locationDetails.name.split(' - ')[0]}</h3>
@@ -401,6 +508,7 @@ export default function LocationDetailsPage() {
                   </div>
                 </TabsContent>
 
+                {/* Attractions Tab Content */}
                 <TabsContent value="attractions" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-4">Popular Attractions ({locationDetails.popularSpots ? locationDetails.popularSpots.length : 0}+ Spots)</h3>
@@ -444,7 +552,7 @@ export default function LocationDetailsPage() {
                     {!showAllViewpoints && locationDetails.popularSpots && locationDetails.popularSpots.length > 6 && (
                       <Button
                         variant="outline"
-                        onClick={() => setShowAllViewpoints(true)}
+                        onClick={handleSeeMoreAttractions}
                         className="w-full mt-4"
                       >
                         See More Attractions ({locationDetails.popularSpots.length - 6} more)
@@ -453,8 +561,32 @@ export default function LocationDetailsPage() {
                   </div>
                 </TabsContent>
 
+                {/* Hotels Tab Content */}
                 <TabsContent value="hotels" className="space-y-6 mt-6">
-                  <div>
+
+                       <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+                          <div className="text-center">
+                            {/* Changed text-indigo-700 to text-[#228B22] for Forest Green */}
+                            <h1 className="text-5xl md:text-7xl font-extrabold text-[#228B22] mb-4 animate-pulse">
+                              Page Coming Soon
+                            </h1>
+                            <p className="text-xl md:text-2xl text-gray-600">
+                              We're working hard to bring you something great!
+                            </p>
+                          </div>
+
+                          <style jsx>{`
+                            @keyframes pulse {
+                              0%, 100% { opacity: 1; }
+                              50% { opacity: 0.7; }
+                            }
+                            .animate-pulse {
+                              animation: pulse 2s infinite ease-in-out;
+                            }
+                          `}</style>
+                       </div> 
+                               {/* when real hotel data is present */}
+                  {/* <div>
                     <h3 className="font-semibold mb-4">Recommended Hotels</h3>
                     <div className="grid gap-4">
                       {locationDetails.hotels && locationDetails.hotels.length > 0 ? (
@@ -500,15 +632,16 @@ export default function LocationDetailsPage() {
                     {!showAllHotels && locationDetails.hotels && locationDetails.hotels.length > 3 && (
                       <Button
                         variant="outline"
-                        onClick={() => setShowAllHotels(true)}
+                        onClick={handleSeeMoreHotels}
                         className="w-full mt-4"
                       >
                         See More Hotels ({locationDetails.hotels.length - 3} more)
                       </Button>
                     )}
-                  </div>
+                  </div> */}
                 </TabsContent>
 
+                {/* Activities Tab Content */}
                 <TabsContent value="activities" className="space-y-6 mt-6">
                   {locationDetails.boatingPoints && locationDetails.boatingPoints.length > 0 ? (
                     <div>
@@ -577,6 +710,7 @@ export default function LocationDetailsPage() {
             </div>
           </div>
 
+          {/* Right Column - Plan Your Visit & FAQs */}
           <div className="lg:col-span-1">
             <div className="sticky top-20 space-y-4">
               <Card className="bg-white/95 backdrop-blur-sm">
@@ -616,13 +750,14 @@ export default function LocationDetailsPage() {
                     </div>
                   </div>
 
-                  <Button variant="outline" className="w-full" onClick={() => handleViewDetails("local-guides", "guide")}>
+                  <Button variant="outline" className="w-full" onClick={handleFindLocalGuides}>
                     <Users className="w-4 h-4 mr-2" />
                     Find Local Guides
                   </Button>
                 </CardContent>
               </Card>
 
+              {/* FAQ Section */}
               {locationDetails.faqs && locationDetails.faqs.length > 0 && (
                 <FAQSection faqs={locationDetails.faqs} className="bg-white/95 backdrop-blur-sm" />
               )}

@@ -228,7 +228,7 @@ export default function BookingPage() {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
           <CardContent className="p-8 text-center">
             <div className="animate-bounce mb-4">

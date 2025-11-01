@@ -1,51 +1,30 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { analytics } from "../firebase"; // 1. Import analytics
+import { logEvent } from "firebase/analytics"; // 2. Import logEvent
+
+// --- Component Imports ---
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
 import { Button } from "./button";
 import { Input } from "./Input";
 import { ScrollArea } from "./scroll-area";
 import { Send, Bot, User } from "lucide-react";
 
-/**
- * @typedef {object} AIChatProps
- * @property {boolean} isOpen
- * @property {() => void} onClose
- * @property {'en' | 'hi'} language - 'en' for English, 'hi' for Hindi
- */
-
-/**
- * @typedef {object} Message
- * @property {string} id
- * @property {'user' | 'ai'} type
- * @property {string} content
- * @property {Date} timestamp
- */
-
-/**
- * AI Chat component for NainiExplore.
- * @param {AIChatProps} props
- */
 export default function AIchat({ isOpen, onClose, language }) {
-  /** @type {[Message[], import('react').Dispatch<import('react').SetStateAction<Message[]>>]} */
   const [messages, setMessages] = useState(() => [
     {
       id: 'initial-ai',
       type: 'ai',
       content:
         language === 'hi'
-          ? 'नमस्ते! मैं आपका NainiExplore AI सहायक हूं। उत्तराखंड के होटल, झीलों, बाइक रेंटल, टैक्सी और ट्रेकिंग के बारे में पूछें।'
-          : "Hello! I'm your NainiExplore AI assistant. Ask me about Uttarakhand hotels, lakes, bike rentals, taxis, and trekking.",
+          ? 'नमस्ते! मैं आपका Buddy In Hills AI सहायक हूं। उत्तराखंड के होटल, झीलों, बाइक रेंटल, टैक्सी और ट्रेकिंग के बारे में पूछें।'
+          : "Hello! I'm your Buddy In Hills AI assistant. Ask me about Uttarakhand hotels, lakes, bike rentals, taxis, and trekking.",
       timestamp: new Date(),
     },
   ]);
 
-  /** @type {[string, import('react').Dispatch<import('react').SetStateAction<string>>]} */
   const [inputMessage, setInputMessage] = useState("");
-
-  /** @type {[boolean, import('react').Dispatch<import('react').SetStateAction<boolean>>]} */
   const [isTyping, setIsTyping] = useState(false);
-
-  const scrollAreaRef = useRef(null);
-  const messagesEndRef = useRef(null); // Ref for the last message to scroll into view
+  const messagesEndRef = useRef(null);
 
   // Scroll to the bottom of the chat when messages change or dialog opens
   useEffect(() => {
@@ -69,11 +48,6 @@ export default function AIchat({ isOpen, onClose, language }) {
           "Local taxi rates?",
         ];
 
-  /**
-   * Generates an AI response based on the user's message.
-   * @param {string} userMessage
-   * @returns {string}
-   */
   const getAIResponse = useCallback((userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
 
@@ -117,7 +91,6 @@ export default function AIchat({ isOpen, onClose, language }) {
   const handleSendMessage = useCallback(() => {
     if (!inputMessage.trim()) return;
 
-    /** @type {Message} */
     const userMessage = {
       id: Date.now().toString(),
       type: 'user',
@@ -125,13 +98,19 @@ export default function AIchat({ isOpen, onClose, language }) {
       timestamp: new Date(),
     };
 
+    // 3. Log the custom event when a message is sent
+    if (analytics) {
+        logEvent(analytics, 'custom_ask_ai', {
+            question_text: userMessage.content // Send the full user question
+        });
+    }
+
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsTyping(true);
 
     // Simulate AI response delay
     setTimeout(() => {
-      /** @type {Message} */
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
@@ -143,10 +122,6 @@ export default function AIchat({ isOpen, onClose, language }) {
     }, 1500);
   }, [inputMessage, getAIResponse]); // Depend on inputMessage and getAIResponse
 
-  /**
-   * Handles a quick question click.
-   * @param {string} question
-   */
   const handleQuickQuestion = useCallback((question) => {
     setInputMessage(question);
     // Use a small delay to allow inputMessage to update before sending
@@ -175,7 +150,7 @@ export default function AIchat({ isOpen, onClose, language }) {
         {/* Main content area within the dialog */}
         <div className="flex-1 flex flex-col space-y-4 overflow-hidden">
           {/* Messages Scroll Area */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 pr-2">
+          <ScrollArea className="flex-1 pr-2">
             <div className="space-y-4 pb-4">
               {messages.map((message) => (
                 <div

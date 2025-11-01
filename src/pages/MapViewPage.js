@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef, useContext } from "react";
+import React, { useState, useContext, useEffect, useRef, useCallback } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { GlobalContext } from "../component/GlobalContext";
+import { analytics } from "../firebase"; // 1. Import analytics
+import { logEvent } from "firebase/analytics"; // 2. Import logEvent
+
+// --- Component Imports & Data ---
 import { Button } from "../component/button";
 import { Input } from "../component/Input";
 import { Card, CardContent } from "../component/Card";
 import { Badge } from "../component/badge";
-import { GlobalContext } from "../component/GlobalContext";
-import { ArrowLeft, Search, ZoomIn, ZoomOut, MapPin, Navigation, Star, X } from "lucide-react";
+import { ArrowLeft, Search, ZoomIn, ZoomOut, Navigation, Star, X } from "lucide-react";
 import { ImageWithFallback } from "../component/ImageWithFallback";
 import { locationsData } from "../assets/dummy"; // Assuming this contains all your location data
-import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function MapViewPage() {
   const navigate = useNavigate();
@@ -143,7 +147,6 @@ export default function MapViewPage() {
     return pins;
   }, []);
 
-
   // Initialize all pins once when component mounts
   useEffect(() => {
     allMapPins.current = extractMapPins();
@@ -167,7 +170,6 @@ export default function MapViewPage() {
     }
     setFilteredPins(currentPins);
   }, [searchQuery, activeFilter]); // Depend on searchQuery and activeFilter
-
 
   const getPinColor = (type) => {
     switch (type) {
@@ -283,7 +285,6 @@ export default function MapViewPage() {
     }
   }, [searchParams, focusArea]); // Depend on searchParams and focusArea to re-initialize map if needed
 
-
   // Render markers on the map
   const renderMarkers = useCallback((pins) => {
     if (!googleMap.current) return;
@@ -312,6 +313,15 @@ export default function MapViewPage() {
           e.stop();
           setSelectedPin(pin);
           googleMap.current?.panTo({ lat: pin.lat, lng: pin.lng });
+
+          // 3. Log map pin click event
+          if (analytics) {
+            logEvent(analytics, 'select_content', {
+              content_type: 'map_pin',
+              item_id: pin.name,
+              item_category: pin.type
+            });
+          }
         });
         markersRef.current.push(marker);
         bounds.extend(marker.getPosition());
@@ -335,12 +345,24 @@ export default function MapViewPage() {
     }
   }, [filteredPins, renderMarkers]);
 
-
   const handleBack = useCallback(() => {
+    if (analytics) {
+      logEvent(analytics, 'button_click', {
+        button_name: 'Back',
+        source_page: 'MapView'
+      });
+    }
     navigate(-1);
   }, [navigate]);
 
   const handleViewDetails = useCallback((id, type) => {
+    if (analytics) {
+      logEvent(analytics, 'select_item', {
+        item_list_name: 'Map Pin Card',
+        item_id: id,
+        item_category: type,
+      });
+    }
     setSelectedItemId(id);
     setSelectedDetailType(type);
     const routeMap = {
@@ -367,12 +389,24 @@ export default function MapViewPage() {
   const handleZoomIn = () => {
     if (googleMap.current) {
       googleMap.current.setZoom(googleMap.current.getZoom() + 1);
+      if (analytics) {
+        logEvent(analytics, 'map_interaction', {
+          action: 'zoom_in',
+          zoom_level: googleMap.current.getZoom()
+        });
+      }
     }
   };
 
   const handleZoomOut = () => {
     if (googleMap.current) {
       googleMap.current.setZoom(googleMap.current.getZoom() - 1);
+      if (analytics) {
+        logEvent(analytics, 'map_interaction', {
+          action: 'zoom_out',
+          zoom_level: googleMap.current.getZoom()
+        });
+      }
     }
   };
 
@@ -393,10 +427,24 @@ export default function MapViewPage() {
 
       googleMap.current.panTo({ lat: centerLat, lng: centerLng });
       googleMap.current.setZoom(defaultZoom);
+
+      if (analytics) {
+        logEvent(analytics, 'map_interaction', {
+          action: 'recenter',
+          target_area: focusArea || 'Nainital'
+        });
+      }
     }
   };
 
   const handleGetDirections = useCallback((lat, lng, name, parentId) => {
+    if (analytics) {
+      logEvent(analytics, 'get_directions', {
+        source: 'Map Pin Card',
+        item_name: name,
+      });
+    }
+
     // Set the focusArea to the parent location ID if the selected pin is a sub-item,
     // otherwise, use the pin's own ID as the focus area.
     const currentFocusId = parentId || selectedPin?.id || focusArea || "nainital-area";
@@ -405,9 +453,41 @@ export default function MapViewPage() {
   }, [navigate, setFocusArea, focusArea, selectedPin]);
 
   const handleQuickFilter = (type) => {
-    setActiveFilter(prev => (prev === type ? null : type)); // Toggle filter
+    const newFilter = activeFilter === type ? null : type;
+    setActiveFilter(newFilter);
+
+    if (analytics) {
+        logEvent(analytics, 'filter_map', {
+            filter_type: newFilter || 'None'
+        });
+    }
   };
 
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // This event can be noisy. Consider debouncing or triggering on submit instead.
+    if (analytics && query.length > 2) { // Example: only log if search is substantial
+        logEvent(analytics, 'search', {
+            search_term: query,
+            source_page: 'MapView'
+        });
+    }
+  };
+
+  const handleNearbyPinClick = (pin) => {
+    setSelectedPin(pin);
+    googleMap.current?.panTo({ lat: pin.lat, lng: pin.lng });
+
+    if (analytics) {
+      logEvent(analytics, 'select_content', {
+        content_type: 'nearby_pin_list',
+        item_id: pin.name,
+        item_category: pin.type
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -434,7 +514,7 @@ export default function MapViewPage() {
                 <Input
                   placeholder="Search locations..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange} // Use the GA-tracked handler
                   className="pl-10 w-full sm:w-64" // Full width on small, 64 on small-medium and up
                 />
               </div>
@@ -559,7 +639,7 @@ export default function MapViewPage() {
                       <div
                         key={pin.id ?? `${pin.lat}-${pin.lng}-${(pin.name||'').replace(/\s/g,'-')}`}
                         className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
-                        onClick={() => setSelectedPin(pin)}
+                        onClick={() => handleNearbyPinClick(pin)} // Use the GA-tracked handler
                       >
                         <div>
                           <p className="font-medium text-sm">{pin.name}</p>

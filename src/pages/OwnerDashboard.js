@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from '../component/dialog';
-import { auth, db } from '../firebase'; // Ensure 'db' is imported from your firebase config
+import { analytics, auth, db } from '../firebase'; // Import analytics and db from firebase config
+import { logEvent } from "firebase/analytics"; // Import logEvent from firebase/analytics
 import { signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { doc, setDoc, addDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore"; // Import serverTimestamp
 
@@ -46,6 +47,7 @@ export default function OwnerDashboard() {
   } = useContext(GlobalContext);
 
   const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState("add-listing");
   const [syncStatus, setSyncStatus] = useState('idle'); // States: idle, syncing, synced, error
   const [isSyncing, setIsSyncing] = useState(false);
@@ -64,7 +66,6 @@ export default function OwnerDashboard() {
   const [phoneLoading, setPhoneLoading] = useState(false);
 
   // --- Data Fetching & Sync ---
-
   // Fetches listings from Firestore
   const fetchListings = useCallback(async () => {
     if (ownerId) {
@@ -84,15 +85,22 @@ export default function OwnerDashboard() {
   }, [userPhone]);
 
   // Function to sync local listings with the cloud (Firestore)
+  // --- Sync Listings with Firebase Analytics Tracking ---
   const syncListings = useCallback(async () => {
     if (!ownerId || isSyncing) return;
     setIsSyncing(true);
     setSyncStatus('syncing');
     try {
-      // Assuming writeOwnerListingsRemote handles batch updates or individual writes
       const success = await writeOwnerListingsRemote(ownerListings, ownerId);
       if (success) {
-        // After a successful write, re-read from Firestore to ensure consistency
+        // --- Firebase Analytics Event Tracking for Sync ---
+        if (analytics) {
+          logEvent(analytics, 'sync_listings', {
+            owner_id: ownerId,
+            listing_count: ownerListings.length
+          });
+        }
+        // --- End of Firebase Analytics Tracking ---
         await fetchListings();
         setSyncStatus('synced');
         toast.success("Listings synced with the cloud!");
@@ -103,14 +111,12 @@ export default function OwnerDashboard() {
     } catch (e) {
       setSyncStatus('error');
       toast.error("An error occurred during sync.");
-      // console.error("Sync error:", e);
     } finally {
       setIsSyncing(false);
     }
   }, [ownerId, ownerListings, writeOwnerListingsRemote, isSyncing, fetchListings]);
 
   // --- Form Handlers ---
-
   // Generic handler for text input changes
   const handleFormChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -196,49 +202,60 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // --- CRUD Operations with Firestore ---
-
-  // Handles publishing or updating a listing to Firestore
+  // --- CRUD Operations with Firebase Analytics Tracking ---
   const handlePublishListing = async () => {
-    if (!formData.name || !formData.location) {
-      return toast.error("Listing Name and Location are required.");
-    }
-    if (!ownerId) {
-      return toast.error("Authentication error. Please re-login.");
-    }
+    if (!formData.name || !formData.location) return toast.error("Listing Name and Location are required.");
+    if (!ownerId) return toast.error("Authentication error. Please re-login.");
 
     const listingData = {
       ...formData,
       profession: globalProfession,
       ownerId,
-      status: "Active", // Default status for new listings
-      bookings: 0, // Default for new listings
-      revenue: "₹0", // Default for new listings
+      status: "Active",
+      bookings: 0,
+      revenue: "₹0",
     };
 
     try {
       if (editingListingId) {
-        // Update existing document
+        // --- Update Logic ---
         const docRef = doc(db, "listings", editingListingId);
         await setDoc(docRef, { ...listingData, updatedAt: serverTimestamp() }, { merge: true });
+
+        // --- Firebase Analytics Event Tracking for Update ---
+        if (analytics) {
+          logEvent(analytics, 'update_listing', {
+            profession: globalProfession,
+            listing_name: formData.name,
+          });
+        }
+        // --- End of Firebase Analytics Tracking ---
+
         toast.success("Listing updated successfully!");
       } else {
-        // Add new document
+        // --- Create Logic ---
         const listingsCollectionRef = collection(db, "listings");
         const newDocRef = await addDoc(listingsCollectionRef, { ...listingData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        // After creation, update the document with its own ID for consistent data structure
         await setDoc(newDocRef, { id: newDocRef.id }, { merge: true });
+
+        // --- Firebase Analytics Event Tracking for Creation ---
+        if (analytics) {
+          logEvent(analytics, 'create_listing', {
+            profession: globalProfession,
+            listing_name: formData.name,
+            price: parseInt(formData.price) || 0 // Track the price of the new listing if available
+          });
+        }
+        // --- End of Firebase Analytics Tracking ---
+
         toast.success("Listing published successfully!");
       }
-
-      // Reset form and refresh listings from Firestore to update UI
       setFormData(initialFormData);
       setEditingListingId(null);
-      await fetchListings(); // Re-fetch all listings
-      setActiveTab("my-listings"); // Navigate to my-listings tab
+      await fetchListings();
+      setActiveTab("my-listings");
     } catch (error) {
       toast.error("Failed to save listing to the database.");
-      // console.error("Firestore write error:", error);
     }
   };
 
@@ -256,22 +273,27 @@ export default function OwnerDashboard() {
 
   // Deletes a listing from Firestore
   const handleDeleteListing = async (listingId) => {
-    if (!window.confirm("Are you sure you want to permanently delete this listing? This action cannot be undone.")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to permanently delete this listing?")) return;
+
+    const listingToDelete = ownerListings.find(l => l.id === listingId); // Get listing details before deleting
     try {
       await deleteDoc(doc(db, "listings", listingId));
+      // --- Firebase Analytics Event Tracking for Deletion ---
+      if (analytics && listingToDelete) {
+        logEvent(analytics, 'delete_listing', {
+          profession: listingToDelete.profession,
+          listing_name: listingToDelete.name
+        });
+      }
+      // --- End of Firebase Analytics Tracking ---
       toast.success("Listing deleted successfully.");
-      // Optimistically update local state by filtering out the deleted listing
       setOwnerListings(prev => prev.filter(l => l.id !== listingId));
     } catch (error) {
       toast.error("Failed to delete listing.");
-      // console.error("Firestore delete error:", error);
     }
   };
 
   // --- Profile & Phone Verification ---
-
   // Updates user profile in Firestore
   const handleUpdateProfile = async () => {
     const success = await updateUserProfileInFirestore({
@@ -281,7 +303,17 @@ export default function OwnerDashboard() {
       businessAddress,
       licenseNumber
     });
-    toast[success ? 'success' : 'error'](success ? 'Profile updated successfully!' : 'Profile update failed.');
+
+    if (success) {
+      // --- Firebase Analytics Event Tracking for Profile Update ---
+      if (analytics) {
+        logEvent(analytics, 'update_owner_profile', { owner_id: ownerId });
+      }
+      // --- End of Firebase Analytics Tracking ---
+      toast.success('Profile updated successfully!');
+    } else {
+      toast.error('Profile update failed.');
+    }
   };
 
   // Initiates sending OTP to the provided phone number
@@ -332,7 +364,6 @@ export default function OwnerDashboard() {
   };
 
   // --- Render Functions ---
-
   // Renders profession-specific form fields based on globalProfession
   const renderProfessionForm = () => {
     switch (globalProfession) {
@@ -713,10 +744,10 @@ export default function OwnerDashboard() {
                 </CardContent>
             </Card>
             </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* My Listings Tab Content */}
-        <TabsContent value="my-listings" className="mt-6 space-y-4">
+          {/* My Listings Tab Content */}
+          <TabsContent value="my-listings" className="mt-6 space-y-4">
             {ownerListings.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">No listings found. Add your first one!</p>
             ) : (
@@ -748,10 +779,10 @@ export default function OwnerDashboard() {
                 </Card>
             ))
             )}
-        </TabsContent>
+          </TabsContent>
 
-        {/* Profile Tab Content */}
-        <TabsContent value="profile" className="mt-6">
+          {/* Profile Tab Content */}
+          <TabsContent value="profile" className="mt-6">
             <Card>
             <CardHeader><CardTitle>Business Profile</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -798,40 +829,39 @@ export default function OwnerDashboard() {
                 <Button onClick={handleUpdateProfile} className="w-full">Update Profile</Button>
             </CardContent>
             </Card>
-        </TabsContent>
+          </TabsContent>
         </Tabs>
-    </div>
-
-    {/* Phone Verification Dialog */}
-    <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
+      </div>
+      {/* Phone Verification Dialog */}
+      <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
         <DialogContent>
-        <DialogHeader>
+          <DialogHeader>
             <DialogTitle>Verify Phone Number</DialogTitle>
             <DialogDescription>{phoneOtpSent ? "Enter the 6-digit code we sent." : "We will send an OTP to this number."}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+          </DialogHeader>
+          <div className="space-y-4 py-4">
             {!phoneOtpSent ? (
-            <>
+              <>
                 <Label htmlFor="phone-verify">Phone Number</Label>
                 <Input id="phone-verify" value={phoneToVerify} onChange={(e) => setPhoneToVerify(e.target.value)} placeholder="+911234567890" />
-            </>
+              </>
             ) : (
-            <>
+              <>
                 <Label htmlFor="otp-verify">Enter OTP</Label>
                 <Input id="otp-verify" value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} placeholder="123456" />
-            </>
+              </>
             )}
-        </div>
-        <DialogFooter>
+          </div>
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowPhoneModal(false)} disabled={phoneLoading}>Cancel</Button>
             {!phoneOtpSent ? (
-            <Button onClick={handleSendPhoneOTP} disabled={phoneLoading || !phoneToVerify}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send OTP'}</Button>
+              <Button onClick={handleSendPhoneOTP} disabled={phoneLoading || !phoneToVerify}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Send OTP'}</Button>
             ) : (
-            <Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading || !phoneOtp}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Link'}</Button>
+              <Button onClick={handleConfirmPhoneOTP} disabled={phoneLoading || !phoneOtp}>{phoneLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Verify & Link'}</Button>
             )}
-        </DialogFooter>
+          </DialogFooter>
         </DialogContent>
-    </Dialog>
+      </Dialog>
     </div>
-);
+  );
 }

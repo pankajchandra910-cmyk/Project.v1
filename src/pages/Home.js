@@ -1,13 +1,15 @@
-import React, { useState, useContext, useCallback } from "react";
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import Header from "../component/Header";
 import MobileMenu from "../component/MobileMenu";
-import HeroCarousel from "../component/HeroCarousel"; // Ensure this is the updated HeroCarousel
+import HeroCarousel from "../component/HeroCarousel";
 import CategoryCard from "../component/CategoryCard";
 import FeaturedCard from "../component/FeaturedCard";
 import LocationCarousel from "../component/LocationCarousel";
 import Footer from "../component/Footer";
+import { analytics } from "../firebase"; // Import Firebase Analytics
+import { logEvent } from "firebase/analytics"; // Import logEvent
 
 import {
   Bed,
@@ -21,7 +23,7 @@ import {
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
-import { featuredPlaces } from "../assets/dummy"; // Ensure featuredPlaces is correctly imported
+import { featuredPlaces } from "../assets/dummy";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -49,6 +51,18 @@ export default function Home() {
     setFocusArea,
   } = useContext(GlobalContext);
 
+  // No need for a separate useEffect for page views with Firebase Analytics,
+  // as it automatically tracks screen views if configured correctly in Firebase.
+  // However, you can manually log a screen_view event if needed for more detail.
+  useEffect(() => {
+    if (analytics) {
+      logEvent(analytics, 'screen_view', {
+        firebase_screen: 'Home',
+        firebase_screen_class: 'Home',
+      });
+    }
+  }, []);
+
   const handleViewDetails = useCallback((id, type = " ") => {
     const routeMap = {
       hotel: `/hotel-details/${id}`,
@@ -62,45 +76,92 @@ export default function Home() {
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
-  }, [navigate]);
 
+    if (analytics) {
+      logEvent(analytics, 'view_item', {
+        content_type: 'Featured Card',
+        item_id: id,
+        item_category: type,
+      });
+    }
+  }, [navigate]);
 
   const handleSearch = useCallback((query) => {
     setSearchQuery(query);
     setSelectedCategory("");
     navigate("/search");
+
+    if (analytics) {
+      logEvent(analytics, 'search', {
+        search_term: query
+      });
+    }
   }, [navigate, setSearchQuery, setSelectedCategory]);
- 
+
   const handleLogoClick = useCallback(() => {
     navigate(`/`);
+    if (analytics) {
+      logEvent(analytics, 'select_content', {
+        content_type: 'Logo',
+        item_id: 'logo_click'
+      });
+    }
   }, [navigate]);
 
   const handleProfileClick = useCallback(() => {
     if (userType === "owner") {
       navigate(`/owner-dashboard/${profession}`);
+      if (analytics) {
+        logEvent(analytics, 'select_content', {
+          content_type: 'Profile Click',
+          item_id: 'owner_dashboard_profile',
+          user_type: userType
+        });
+      }
     } else {
       navigate("/profile");
+      if (analytics) {
+        logEvent(analytics, 'select_content', {
+          content_type: 'Profile Click',
+          item_id: 'user_profile',
+          user_type: userType
+        });
+      }
     }
   }, [navigate, userType, profession]);
 
-  // Removed handleBooking as it's now handled within HeroCarousel internally based on button actions.
-  // const handleBooking = useCallback(() => {
-  //   navigate("/search");
-  // }, [navigate]);
-
   const handleCategoryClick = useCallback((category) => {
+    if (analytics) {
+      logEvent(analytics, 'select_content', {
+        content_type: 'Category Card',
+        item_id: category
+      });
+    }
     setSelectedCategory(category);
-    setSearchQuery("");
-    navigate("/book-item/:itemId");//navigate to the commig soon page 
-  }, [navigate, setSelectedCategory, setSearchQuery]);
+    navigate("/book-item/:itemId"); //navigate to the coming soon page
+  }, [navigate, setSelectedCategory]);
 
   const handleExploreMore = useCallback((locationName) => {
+    if (analytics) {
+      logEvent(analytics, 'select_content', {
+        content_type: 'Location Carousel',
+        item_id: locationName
+      });
+    }
     const locationId = locationName.toLowerCase().replace(/\s/g, '-');
-    setSelectedLocationId(locationId); // This might be used by LocationDetailsPage, ensure consistency.
+    setSelectedLocationId(locationId);
     navigate(`/location-details/${locationId}`);
   }, [navigate, setSelectedLocationId]);
 
   const handleGetDirections = useCallback((locationIdParam, lat, lng, name) => {
+    if (analytics) {
+      logEvent(analytics, 'get_directions', {
+        source: 'Home Banner',
+        item_name: name,
+        destination_latitude: lat,
+        destination_longitude: lng
+      });
+    }
     const focusId = locationIdParam.toLowerCase().replace(/\s/g, '-');
     setFocusArea(focusId);
     navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
@@ -129,8 +190,8 @@ export default function Home() {
         )}
 
         <main className="container mx-auto px-4 py-8 space-y-12">
-          {/* Hero Carousel - Removed onBooking prop */}
-          <HeroCarousel /> 
+          {/* Hero Carousel */}
+          <HeroCarousel />
 
           {/* Location Carousel */}
           <LocationCarousel onLocationClick={handleExploreMore} />
@@ -180,7 +241,7 @@ export default function Home() {
                 <div
                   className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url('https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
+                    backgroundImage: `url('https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHwxNzU3NjE2OTg4fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`
                   }}
                 />
                 <div className="absolute inset-0" /> {/* Added overlay */}

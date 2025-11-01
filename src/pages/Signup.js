@@ -1,8 +1,16 @@
-// src/pages/Signup.js
-
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { toast } from "sonner";
+
+// --- Global Context, Components & Firebase Imports ---
 import { GlobalContext } from "../component/GlobalContext";
+import { analytics, auth, googleProvider, db } from "../firebase"; // 1. Import analytics
+import { logEvent } from "firebase/analytics"; // 2. Import logEvent
+import {
+    createUserWithEmailAndPassword, signInWithPopup, signInWithPhoneNumber,
+    updateProfile, RecaptchaVerifier,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 
 // --- Component Imports ---
 import { Button } from "../component/button";
@@ -12,47 +20,35 @@ import { Separator } from "../component/separator";
 import { RadioGroup, RadioGroupItem } from "../component/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../component/select";
 
-// --- Icon & Library Imports ---
+// --- Icon Imports ---
 import { Eye, EyeOff, User, Building, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
-// --- Firebase Imports ---
-import { auth, googleProvider, db } from "../firebase";
-import {
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    signInWithPhoneNumber,
-    updateProfile,
-    RecaptchaVerifier,
-} from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 
 export default function Signup() {
     const navigate = useNavigate();
     const { isLoggedIn, language, setLanguage, loadingUser } = useContext(GlobalContext);
 
-    // Form State
+    // --- State Management ---
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [otp, setOtp] = useState("");
-    
-    // UI State
+
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [confirmationResult, setConfirmationResult] = useState(null);
 
-    // User Role State
     const [userType, setUserType] = useState("user");
     const [profession, setProfession] = useState("");
 
-    // Language Text Definitions
+    // --- Language Definitions ---
     const texts = {
         en: { createAccount: "Create Your Account", joinCommunity: "Join our community of travelers and owners", userType: "I am a", user: "User", owner: "Business Owner", profession: "Profession/Type", name: "Full Name", googleSignup: "Sign Up with Google", phone: "Phone Number", sendOTP: "Send OTP", verifyOTP: "Verify & Sign Up", email: "Email", password: "Password", signup: "Create Account", haveAccount: "Already have an account?", login: "Login", language: "Language", enterOTP: "Please enter the 6-digit OTP.", otpSentSuccess: "OTP sent successfully!", otpSendFailed: "Failed to send OTP. Please check the number and try again.", otpVerifyFailed: "Failed to verify OTP. It might be incorrect or expired.", signupSuccess: "Account created successfully!", formValidationError: "Please fill in all required fields.", passwordLengthError: "Password must be at least 6 characters.", userExistsError: "An account with this email or phone number already exists. Please log in.", phoneExistsError: "This phone number is already registered. Please log in.",
         },
-        hi: { createAccount: "अपना खाता बनाएं", joinCommunity: "यात्रियों और मालिकों के हमारे समुदाय में शामिल हों", userType: "मैं हूँ", user: "उपयोगकर्ता", owner: "व्यवसाय मालिक", profession: "पेशा/प्रकार", name: "पूरा नाम", googleSignup: "Google से साइन अप करें", phone: "फ़ोन नंबर", sendOTP: "OTP भेजें", verifyOTP: "OTP सत्यापित करें और साइन अप करें", email: "ईमेल", password: "पासवर्ड", signup: "खाता बनाएं", haveAccount: "पहले से ही एक खाता है?", login: "लॉगिन", language: "भाषा", enterOTP: "कृपया 6-अंकीय OTP दर्ज करें।", otpSentSuccess: "OTP सफलतापूर्वक भेजा गया!", otpSendFailed: "OTP भेजने में विफल। कृपया नंबर जांचें और पुनः प्रयास करें।", otpVerifyFailed: "OTP सत्यापित करने में विफल। यह गलत या समाप्त हो सकता है।", signupSuccess: "खाता सफलतापूर्वक बन गया!", formValidationError: "कृपया सभी आवश्यक फ़ील्ड भरें।", passwordLengthError: "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए।", userExistsError: "इस ईमेल या फोन नंबर वाला खाता पहले से मौजूद है। कृपया लॉग इन करें।", phoneExistsError: "यह फ़ोन नंबर पहले से पंजीकृत है। कृपया लॉग इन करें।",
+        hi: { createAccount: "अपना खाता बनाएं", joinCommunity: "यात्रियों और मालिकों के हमारे समुदाय में शामिल हों", userType: "मैं हूँ", user: "उपयोगकर्ता", owner: "व्यवसाय मालिक", profession: "पेशा/प्रकार", name: "पूरा नाम", googleSignup: "Google से साइन अप करें", phone: "फ़ोन नंबर", sendOTP: "OTP भेजें", verifyOTP: "OTP सत्यापित करें और साइन अप करें", email: "ईमेल", password: "पासवर्ड", signup: "खाता बनाएं", haveAccount: "पहले से ही एक खाता है?", login: "लॉगिन", language: "भाषा", enterOTP: "कृपया 6-अंकीय OTP दर्ज करें।", otpSentSuccess: "OTP सफलतापूर्वक भेजा गया!", otpSendFailed: "OTP भेजने में विफल। कृपया नंबर जांचें और पुनः प्रयास करें।", otpVerifyFailed: "OTP सत्यापित करने में विफल। यह गलत या समाप्त हो सकता है।", signupSuccess: "खाता सफलतापूर्वक बन गया!", formValidationError: "कृपया सभी आवश्यक फ़ील्ड भरें।", passwordLengthError: "पासवर्ड कम से " +
+        "कम 6 अक्षरों का होना चाहिए।", userExistsError: "इस ईमेल या फोन नंबर वाला खाता पहले से मौजूद है। कृपया लॉग इन करें।", phoneExistsError: "यह फ़ोन नंबर पहले से पंजीकृत है। कृपया लॉग इन करें।",
         }
     };
     const t = texts[language] || texts.en;
@@ -69,12 +65,12 @@ export default function Signup() {
             });
         }
     };
-    
+
     // Universal function to save user data to Firestore and redirect after successful signup
     const handleSuccessfulSignup = async (user, method) => {
         const userDocRef = doc(db, 'users', user.uid);
         // Use Google's display name if available, otherwise fallback to manually entered name or 'New User'
-        const finalName = method === 'google' ? user.displayName : name; 
+        const finalName = method === 'google' ? user.displayName : name;
 
         const userData = {
             uid: user.uid,
@@ -94,8 +90,18 @@ export default function Signup() {
             if (name && !user.displayName) {
                 await updateProfile(user, { displayName: name });
             }
+
+            // 3. Log the successful sign_up event using Firebase Analytics
+            if (analytics) {
+                logEvent(analytics, 'sign_up', {
+                    method: method, // 'google', 'email', or 'phone'
+                    user_role: userType, // 'user' or 'owner'
+                    user_id: user.uid, // Optionally log user ID for analytics
+                });
+            }
+
             toast.success(t.signupSuccess);
-            
+
             // --- CRITICAL REDIRECTION LOGIC ---
             if (userType === 'owner') {
                  navigate(`/owner-dashboard/${userData.profession || 'other'}`);
@@ -104,6 +110,13 @@ export default function Signup() {
             }
         } catch (error) {
             toast.error("Failed to save profile: " + error.message);
+            // Log signup failure related to profile saving
+            if (analytics) {
+                logEvent(analytics, 'profile_save_failed', {
+                    method: method,
+                    error_code: error.code,
+                });
+            }
         }
     };
 
@@ -119,6 +132,13 @@ export default function Signup() {
                 toast.error(t.userExistsError);
                 await auth.signOut(); // Sign out the newly created auth user if Firestore profile exists
                 navigate('/login'); // Redirect to login
+                // Log signup failure
+                if (analytics) {
+                    logEvent(analytics, 'sign_up_failed', {
+                        method: 'google',
+                        reason: 'account_already_exists',
+                    });
+                }
                 return;
             }
             await handleSuccessfulSignup(result.user, 'google');
@@ -130,11 +150,18 @@ export default function Signup() {
             } else {
                 toast.error(error.message);
             }
+            // Log signup failure
+            if (analytics) {
+                logEvent(analytics, 'sign_up_failed', {
+                    method: 'google',
+                    error_code: error.code,
+                });
+            }
         } finally {
             setLoading(false);
         }
     };
-    
+
     // Handles Email/Password Signup
     const handleEmailSignup = async () => {
         if (!name || !email || !password) return toast.error(t.formValidationError);
@@ -145,25 +172,38 @@ export default function Signup() {
             await handleSuccessfulSignup(userCredential.user, 'email');
         } catch (error) {
             toast.error(error.code === 'auth/email-already-in-use' ? t.userExistsError : error.message);
+            // Log signup failure
+            if (analytics) {
+                logEvent(analytics, 'sign_up_failed', {
+                    method: 'email',
+                    error_code: error.code,
+                });
+            }
         } finally {
             setLoading(false);
         }
     };
-    
+
     // Handles sending OTP for phone number signup
     const handleSendOTP = async () => {
         if (!name || !phoneNumber) return toast.error(t.formValidationError);
         setLoading(true);
-        
+
         try {
             const formattedPhoneNumber = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-            
+
             // Check if phone number already exists in Firestore
             const q = query(collection(db, "users"), where("phoneNumber", "==", formattedPhoneNumber));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 toast.error(t.phoneExistsError);
                 setLoading(false);
+                // Log OTP send failure
+                if (analytics) {
+                    logEvent(analytics, 'otp_send_failed', {
+                        reason: 'phone_already_registered',
+                    });
+                }
                 return;
             }
 
@@ -173,13 +213,26 @@ export default function Signup() {
             setConfirmationResult(confirmation);
             setShowOtpInput(true);
             toast.success(t.otpSentSuccess);
+            // Log OTP sent event
+            if (analytics) {
+                logEvent(analytics, 'otp_sent', {
+                    phone_number_prefix: formattedPhoneNumber.substring(0, 3), // Avoid logging full number
+                });
+            }
         } catch (error) {
             toast.error(t.otpSendFailed + ` (${error.code})`);
+            // Log OTP send failure
+            if (analytics) {
+                logEvent(analytics, 'otp_send_failed', {
+                    reason: 'firebase_error',
+                    error_code: error.code,
+                });
+            }
         } finally {
             setLoading(false);
         }
     };
-    
+
     // Handles OTP verification and final signup for phone number
     const handleVerifyOTPAndSignup = async () => {
         if (!otp || otp.length !== 6) return toast.error(t.enterOTP);
@@ -189,6 +242,12 @@ export default function Signup() {
             await handleSuccessfulSignup(result.user, 'phone');
         } catch (error) {
             toast.error(t.otpVerifyFailed);
+            // Log OTP verification failure
+            if (analytics) {
+                logEvent(analytics, 'otp_verify_failed', {
+                    error_code: error.code,
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -235,7 +294,7 @@ export default function Signup() {
                             </Select>
                         </div>
                     )}
-                    
+
                     {/* Full Name Input */}
                     <div className="space-y-2">
                         <Label htmlFor="name">{t.name}</Label>
@@ -266,7 +325,7 @@ export default function Signup() {
                             </div>
                         </div>
                     )}
-                    
+
                     <Separator />
 
                     {/* Email/Password Signup */}
@@ -283,7 +342,7 @@ export default function Signup() {
                         </div>
                         <Button onClick={handleEmailSignup} className="w-full bg-primary" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{t.signup}</Button>
                     </div>
-                    
+
                     <Separator />
 
                     {/* Already have an account? Login Link */}

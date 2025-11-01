@@ -2,6 +2,8 @@ import React, { useState, useCallback, useContext, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext"; // Import GlobalContext
 import { placeDetailsData } from "../assets/dummy"; // Import the dummy data
+import { analytics } from "../firebase"; // Import Firebase Analytics
+import { logEvent } from "firebase/analytics"; // Import logEvent
 
 import { Button } from "../component/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
@@ -9,32 +11,12 @@ import { Badge } from "../component/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { FAQSection } from "../component/FAQSection";
 import {
-  ArrowLeft,
-  Star,
-  MapPin,
-  Navigation,
-  Clock,
-  Camera,
-  Mountain,
-  ChevronLeft,
-  ChevronRight,
-  Sunrise,
-  TreePine,
-  Info,
-  Car,
-  Plane,
-  Train,
-  Bike,
-  Users,
-  Home,
-  Bed,
-  Wifi,
-  Fish,
-  Bird,
-  Activity,
-  Book,
+  ArrowLeft, Star, MapPin, Navigation, Clock, Camera, Mountain,
+  ChevronLeft, ChevronRight, Sunrise, TreePine, Info, Car, Plane,
+  Train, Bike, Users, Home, Bed, Wifi, Fish, Bird, Activity, Book,
 } from "lucide-react";
 
+// Map string names to Lucide-React icons
 const iconMap = {
   Car: Car,
   Plane: Plane,
@@ -59,7 +41,7 @@ const iconMap = {
 export default function PlaceDetailsPage() {
   const navigate = useNavigate();
   const { placeId } = useParams();
-  const { setSelectedItemId, setSelectedDetailType ,setFocusArea} = useContext(GlobalContext);
+  const { setSelectedItemId, setSelectedDetailType, setFocusArea } = useContext(GlobalContext);
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [placeData, setPlaceData] = useState(null);
@@ -75,6 +57,17 @@ export default function PlaceDetailsPage() {
         setPlaceData(data);
         setLoading(false);
         setCurrentImageIndex(0);
+
+        // --- Firebase Analytics Event Tracking for Place View ---
+        if (analytics) {
+          logEvent(analytics, 'view_item', {
+            item_category: 'Place',
+            item_id: placeId,
+            item_name: data.name
+          });
+        }
+        // --- End of Firebase Analytics Tracking ---
+
       } else {
         setError("Place not found.");
         setLoading(false);
@@ -88,16 +81,28 @@ export default function PlaceDetailsPage() {
   }, [placeId]);
 
   const handleBack = useCallback(() => {
+    // Firebase Analytics Event: Back Button Clicked
+    if (analytics) {
+      logEvent(analytics, 'navigation_back', { from_page: 'PlaceDetails' });
+    }
     navigate(-1);
   }, [navigate]);
 
   const handleGetDirections = useCallback((lat, lng, name) => {
+    // Firebase Analytics Event: Get Directions Clicked
+    if (analytics) {
+      logEvent(analytics, 'get_directions', { item_name: name, item_id: placeId });
+    }
     const focusId = placeId.toLowerCase().replace(/\s/g, '-');
     setFocusArea(focusId);
     navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
   }, [navigate, setFocusArea, placeId]);
 
   const handleViewDetails = useCallback((id, type) => {
+    // Firebase Analytics Event: View Nearby Item Details
+    if (analytics) {
+      logEvent(analytics, 'select_item', { item_list_name: 'Nearby Items on Place Page', item_id: id, item_category: type, place_context: placeId });
+    }
     setSelectedItemId(id);
     setSelectedDetailType(type);
     const routeMap = {
@@ -118,20 +123,71 @@ export default function PlaceDetailsPage() {
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
-  }, [navigate, setSelectedItemId, setSelectedDetailType]);
+  }, [navigate, setSelectedItemId, setSelectedDetailType, placeId]);
 
   const nextImage = useCallback(() => {
-    if (placeData && placeData.images && placeData.images.length > 0) {
+    if (placeData?.images?.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % placeData.images.length);
+      // Firebase Analytics Event: Next Image Clicked
+      if (analytics) {
+        logEvent(analytics, 'select_content', { content_type: 'image_gallery_next', item_id: placeData.name, new_image_index: (currentImageIndex + 1) % placeData.images.length });
+      }
     }
-  }, [placeData]);
+  }, [placeData, currentImageIndex]);
 
   const prevImage = useCallback(() => {
-    if (placeData && placeData.images && placeData.images.length > 0) {
+    if (placeData?.images?.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + placeData.images.length) % placeData.images.length);
+      // Firebase Analytics Event: Previous Image Clicked
+      if (analytics) {
+        logEvent(analytics, 'select_content', { content_type: 'image_gallery_prev', item_id: placeData.name, new_image_index: (currentImageIndex - 1 + placeData.images.length) % placeData.images.length });
+      }
+    }
+  }, [placeData, currentImageIndex]);
+  
+  const handleImageDotClick = useCallback((index) => {
+    setCurrentImageIndex(index);
+    // Firebase Analytics Event: Image Dot Navigation
+    if (analytics) {
+        logEvent(analytics, 'select_content', { content_type: 'image_dot_nav', item_id: `${placeData.name} - Image ${index + 1}`, new_image_index: index });
+      }
+  },[placeData]);
+
+  const handleTabChange = useCallback((value) => {
+    // Firebase Analytics Event: Tab Selected
+    if (analytics) {
+      logEvent(analytics, 'select_content', { content_type: 'tab', item_id: value, location_context: placeData?.name });
     }
   }, [placeData]);
 
+  const handleBookNow = useCallback(() => {
+    // Firebase Analytics Event: Book Now Button Clicked (for hotels)
+    if (analytics) {
+      logEvent(analytics, 'begin_checkout', {
+        currency: 'INR', // Assuming INR, adjust if needed
+        value: parseFloat(placeData.price?.replace(/[^0-9.]/g, '')) || 0,
+        items: [{
+          item_id: placeId,
+          item_name: placeData.name,
+          item_category: 'hotel',
+          price: parseFloat(placeData.price?.replace(/[^0-9.]/g, '')) || 0,
+          quantity: 1
+        }]
+      });
+    }
+    console.log(`Booking ${placeData.name}`);
+    // navigate(`/book-item/${placeId}`); // Uncomment to navigate to booking page
+  }, [placeData, placeId]);
+
+  const handleFindLocalGuides = useCallback(() => {
+    // Firebase Analytics Event: Find Local Guides Clicked
+    if (analytics) {
+      logEvent(analytics, 'find_guides', { source_page: 'PlaceDetails', location_context: placeData?.name });
+    }
+    handleViewDetails("local-guides", "guide");
+  }, [handleViewDetails, placeData]);
+  
+  // --- Render Loading, Error, or No Data States ---
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -158,12 +214,10 @@ export default function PlaceDetailsPage() {
     );
   }
 
-  const whatToExpectItems = placeData.whatToExpect
-    ? placeData.whatToExpect.map(item => ({
-        ...item,
-        icon: iconMap[item.icon] || Info
-      }))
-    : [];
+  const whatToExpectItems = placeData.whatToExpect?.map(item => ({
+    ...item,
+    icon: iconMap[item.icon] || Info
+  })) || [];
 
   const isHotelPage = placeData.id.includes("hotel") || placeData.id.includes("resort");
 
@@ -179,6 +233,7 @@ export default function PlaceDetailsPage() {
         backgroundColor: '#f9fafb'
       }}
     >
+      {/* Back Button and Header */}
       <div className="bg-white/95 backdrop-blur-sm shadow-sm px-4 py-3 md:px-6 sticky top-0 z-10">
         <Button variant="ghost" onClick={handleBack} className="mb-0">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -187,6 +242,7 @@ export default function PlaceDetailsPage() {
       </div>
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Image Gallery Section */}
         <div className="relative mb-6">
           <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-lg">
             <img
@@ -219,7 +275,7 @@ export default function PlaceDetailsPage() {
                       className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
                         index === currentImageIndex ? 'bg-white' : 'bg-white/50'
                       }`}
-                      onClick={() => setCurrentImageIndex(index)}
+                      onClick={() => handleImageDotClick(index)}
                     />
                   ))}
                 </div>
@@ -228,9 +284,12 @@ export default function PlaceDetailsPage() {
           </div>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Details and Tabs */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 shadow-sm">
+              {/* Place Header */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold mb-2">{placeData.name}</h1>
@@ -257,6 +316,7 @@ export default function PlaceDetailsPage() {
                 </div>
               </div>
 
+              {/* Quick Facts Section */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
                 {!isHotelPage ? (
                   <>
@@ -319,7 +379,8 @@ export default function PlaceDetailsPage() {
                 )}
               </div>
 
-              <Tabs defaultValue="overview" className="w-full">
+              {/* Tabs Section */}
+              <Tabs defaultValue="overview" className="w-full" onValueChange={handleTabChange}>
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="photos">Photos</TabsTrigger>
@@ -327,6 +388,7 @@ export default function PlaceDetailsPage() {
                   <TabsTrigger value="nearby">Nearby</TabsTrigger>
                 </TabsList>
 
+                {/* Overview Tab Content */}
                 <TabsContent value="overview" className="space-y-6 mt-6">
                   <div>
                     <h3 className="font-semibold mb-3">About {placeData.name}</h3>
@@ -428,202 +490,212 @@ export default function PlaceDetailsPage() {
                   )}
                 </TabsContent>
 
+                {/* Photos Tab Content */}
                 <TabsContent value="photos" className="mt-6">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {placeData.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`${placeData.name} - Photo ${index + 1}`}
-                        className="w-full h-32 md:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
-                        onClick={() => setCurrentImageIndex(index)}
-                      />
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="reviews" className="mt-6">
-                  <div className="space-y-4">
-                    {placeData.reviews && placeData.reviews.length > 0 ? (
-                        placeData.reviews.map((review, index) => (
-                            <div key={index} className="border-b pb-4 last:border-b-0">
-                                <div className="flex items-center space-x-2 mb-2">
-                                    <div className="flex">
-                                        {Array(5).fill(0).map((_, i) => (
-                                            <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                                        ))}
-                                    </div>
-                                    <span className="font-medium">{review.author}</span>
-                                    <span className="text-sm text-muted-foreground">{review.date}</span>
-                                </div>
-                                <p className="text-muted-foreground leading-relaxed">{review.comment}</p>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-muted-foreground">No reviews available yet.</p>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="nearby" className="mt-6">
-                  <div className="space-y-6">
-                    {placeData.nearbyAttractions && placeData.nearbyAttractions.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3">Nearby Attractions</h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {placeData.nearbyAttractions.map((attraction, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
-                                onClick={() => handleViewDetails(attraction.id, attraction.type)}
-                            >
-                              <div>
-                                <h4 className="font-medium">{attraction.name}</h4>
-                                <p className="text-sm text-muted-foreground">{attraction.type}</p>
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs">{attraction.rating}</span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-medium">{attraction.distance}</div>
-                                <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(attraction.id, attraction.type); }}>
-                                  <Navigation className="w-3 h-3 mr-1" />
-                                  View
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {placeData.nearbyHotels && placeData.nearbyHotels.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold mb-3">Nearby Hotels</h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {placeData.nearbyHotels.map((hotel, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
-                                onClick={() => handleViewDetails(hotel.id, "hotel")}
-                            >
-                              <div>
-                                <h4 className="font-medium">{hotel.name}</h4>
-                                <div className="flex items-center space-x-1 mt-1">
-                                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                  <span className="text-xs">{hotel.rating}</span>
-                                </div>
-                                <p className="text-sm text-primary font-medium">{hotel.price}/night</p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-sm font-medium">{hotel.distance}</div>
-                                <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(hotel.id, "hotel"); }}>
-                                  View Hotel
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="sticky top-20 space-y-4">
-              <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
-                <CardHeader>
-                  <CardTitle>{isHotelPage ? "Book Your Stay" : "Visit This Place"}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isHotelPage ? (
-                    <Button
-                      className="w-full bg-primary hover:bg-primary/90"
-                      size="lg"
-                      onClick={() => console.log(`Booking ${placeData.name}`)}
-                    >
-                      <Home className="w-4 h-4 mr-2" />
-                      Book Now
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full bg-primary hover:bg-primary/90"
-                      size="lg"
-                      // Ensure lat and lng are passed for directions
-                      onClick={() => handleGetDirections(placeData.lat, placeData.lng, placeData.name)}
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      Get Directions
-                    </Button>
-                  )}
-
-                  <div className="space-y-3 text-sm">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium mb-2">Quick Info</h4>
-                      <div className="space-y-1">
-                        {!isHotelPage && placeData.entryFee && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Entry Fee:</span>
-                            <span className="font-medium text-green-600">{placeData.entryFee}</span>
-                          </div>
-                        )}
-                        {!isHotelPage && placeData.duration && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Duration:</span>
-                            <span>{placeData.duration}</span>
-                          </div>
-                        )}
-                        {placeData.bestTime && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Best Time:</span>
-                            <span>{placeData.bestTime}</span>
-                          </div>
-                        )}
-                        {isHotelPage && placeData.price && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Starting Price:</span>
-                            <span className="font-medium">{placeData.price}/night</span>
-                          </div>
-                        )}
-                        {isHotelPage && placeData.checkInTime && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Check-in:</span>
-                            <span>{placeData.checkInTime}</span>
-                          </div>
-                        )}
-                      </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {placeData.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image}
+                          alt={`${placeData.name} - Photo ${index + 1}`}
+                          className="w-full h-32 md:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
+                          onClick={() => {
+                            setCurrentImageIndex(index);
+                            // Firebase Analytics Event: Click Photo Thumbnail
+                            if (analytics) {
+                              logEvent(analytics, 'select_content', { content_type: 'photo_thumbnail', item_id: placeData.name, new_image_index: index });
+                            }
+                          }}
+                        />
+                      ))}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </TabsContent>
 
-              {!isHotelPage && (
+                  {/* Reviews Tab Content */}
+                  <TabsContent value="reviews" className="mt-6">
+                    <div className="space-y-4">
+                      {placeData.reviews && placeData.reviews.length > 0 ? (
+                          placeData.reviews.map((review, index) => (
+                              <div key={index} className="border-b pb-4 last:border-b-0">
+                                  <div className="flex items-center space-x-2 mb-2">
+                                      <div className="flex">
+                                          {Array(5).fill(0).map((_, i) => (
+                                              <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                                          ))}
+                                      </div>
+                                      <span className="font-medium">{review.author}</span>
+                                      <span className="text-sm text-muted-foreground">{review.date}</span>
+                                  </div>
+                                  <p className="text-muted-foreground leading-relaxed">{review.comment}</p>
+                              </div>
+                          ))
+                      ) : (
+                          <p className="text-muted-foreground">No reviews available yet.</p>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  {/* Nearby Tab Content */}
+                  <TabsContent value="nearby" className="mt-6">
+                    <div className="space-y-6">
+                      {placeData.nearbyAttractions && placeData.nearbyAttractions.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold mb-3">Nearby Attractions</h3>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {placeData.nearbyAttractions.map((attraction, index) => (
+                              <div
+                                  key={index}
+                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                                  onClick={() => handleViewDetails(attraction.id, attraction.type)}
+                              >
+                                <div>
+                                  <h4 className="font-medium">{attraction.name}</h4>
+                                  <p className="text-sm text-muted-foreground">{attraction.type}</p>
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs">{attraction.rating}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium">{attraction.distance}</div>
+                                  <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(attraction.id, attraction.type); }}>
+                                    <Navigation className="w-3 h-3 mr-1" />
+                                    View
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* {placeData.nearbyHotels && placeData.nearbyHotels.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold mb-3">Nearby Hotels</h3>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {placeData.nearbyHotels.map((hotel, index) => (
+                              <div
+                                  key={index}
+                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                                  onClick={() => handleViewDetails(hotel.id, "hotel")}
+                              >
+                                <div>
+                                  <h4 className="font-medium">{hotel.name}</h4>
+                                  <div className="flex items-center space-x-1 mt-1">
+                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs">{hotel.rating}</span>
+                                  </div>
+                                  <p className="text-sm text-primary font-medium">{hotel.price}/night</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-medium">{hotel.distance}</div>
+                                  <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(hotel.id, "hotel"); }}>
+                                    View Hotel
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )} */}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+
+            {/* Right Column - Call to Actions & FAQs */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-20 space-y-4">
                 <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-base">Need a Guide?</CardTitle>
+                    <CardTitle>{isHotelPage ? "Book Your Stay" : "Visit This Place"}</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Get a local guide for the best experience and safety.
-                    </p>
-                    <Button variant="outline" className="w-full" size="sm" onClick={() => handleViewDetails("local-guides", "guide")}>
-                      Find Local Guides
-                    </Button>
+                  <CardContent className="space-y-4">
+                    {isHotelPage ? (
+                      <Button
+                        className="w-full bg-primary hover:bg-primary/90"
+                        size="lg"
+                        onClick={handleBookNow}
+                      >
+                        <Home className="w-4 h-4 mr-2" />
+                        Book Now
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-primary hover:bg-primary/90"
+                        size="lg"
+                        // Ensure lat and lng are passed for directions
+                        onClick={() => handleGetDirections(placeData.lat, placeData.lng, placeData.name)}
+                      >
+                        <Navigation className="w-4 h-4 mr-2" />
+                        Get Directions
+                      </Button>
+                    )}
+
+                    <div className="space-y-3 text-sm">
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <h4 className="font-medium mb-2">Quick Info</h4>
+                        <div className="space-y-1">
+                          {!isHotelPage && placeData.entryFee && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Entry Fee:</span>
+                              <span className="font-medium text-green-600">{placeData.entryFee}</span>
+                            </div>
+                          )}
+                          {!isHotelPage && placeData.duration && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Duration:</span>
+                              <span>{placeData.duration}</span>
+                            </div>
+                          )}
+                          {placeData.bestTime && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Best Time:</span>
+                              <span>{placeData.bestTime}</span>
+                            </div>
+                          )}
+                          {isHotelPage && placeData.price && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Starting Price:</span>
+                              <span className="font-medium">{placeData.price}/night</span>
+                            </div>
+                          )}
+                          {isHotelPage && placeData.checkInTime && (
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Check-in:</span>
+                              <span>{placeData.checkInTime}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
 
-              {placeData.faqs && placeData.faqs.length > 0 && (
-                <FAQSection faqs={placeData.faqs} className="bg-white/95 backdrop-blur-sm shadow-sm" />
-              )}
+                {!isHotelPage && (
+                  <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-base">Need a Guide?</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Get a local guide for the best experience and safety.
+                      </p>
+                      <Button variant="outline" className="w-full" size="sm" onClick={handleFindLocalGuides}>
+                        Find Local Guides
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {placeData.faqs && placeData.faqs.length > 0 && (
+                  <FAQSection faqs={placeData.faqs} className="bg-white/95 backdrop-blur-sm shadow-sm" />
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }
