@@ -30,7 +30,9 @@ const RouteChangeTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
+
     if (analytics) {
+
       logEvent(analytics, 'page_view', {
         page_location: `${window.location.origin}${location.pathname}${location.search}`,
         page_path: location.pathname,
@@ -44,7 +46,7 @@ const RouteChangeTracker = () => {
 
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
-    const { isLoggedIn, loadingUser, userType } = useContext(GlobalContext);
+    const { isLoggedIn, loadingUser, userType } = useContext(GlobalContext); // userType will now be correct for guests
 
     if (loadingUser) {
         return (
@@ -54,6 +56,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
         );
     }
     if (!isLoggedIn) return <Navigate to="/login" replace />;
+    // This logic now works correctly because userType is directly 'user' or 'owner' for guests too
     if (allowedRoles.length > 0 && !allowedRoles.includes(userType)) {
         return <Navigate to="/" replace />;
     }
@@ -76,18 +79,15 @@ function App() {
                     <Route path="/search" element={<SearchView />} />
 
                     {/* Protected Routes */}
-                    {/* The /profile route should probably also be protected for all logged-in users */}
-                    <Route path="/profile" element={<ProtectedRoute ><ProfileView/></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProfileView/>} />
                     <Route path="/owner-dashboard/:profession" element={<ProtectedRoute allowedRoles={["owner"]}><OwnerDashboard /></ProtectedRoute>} />
                     <Route path="/listings/:id" element={<ProtectedRoute allowedRoles={["owner"]}><ListingDetail /></ProtectedRoute>} />
-                    
-                    {/* === MODIFIED ROUTES BELOW TO ALLOW GUEST ACCESS === */}
-                    <Route path="/location-details/:locationId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><LocationDetailsPage /></ProtectedRoute>} />
-                    <Route path="/place-details/:placeId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><PlaceDetailsPage /></ProtectedRoute>} />
-                    <Route path="/trek-details/:trekId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><TrekDetailsPage /></ProtectedRoute>} />
-                    <Route path="/map-view/:focusId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><MapViewPage/></ProtectedRoute>} />
-                    <Route path="/popular-details/:popularId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><PopularDetailsPage/></ProtectedRoute>} />
-                    <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><ComingSoonPage /></ProtectedRoute>} />
+                    <Route path="/location-details/:locationId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><LocationDetailsPage /></ProtectedRoute>} />
+                    <Route path="/place-details/:placeId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><PlaceDetailsPage /></ProtectedRoute>} />
+                    <Route path="/trek-details/:trekId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><TrekDetailsPage /></ProtectedRoute>} />
+                    <Route path="/map-view/:focusId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><MapViewPage/></ProtectedRoute>} />
+                    <Route path="/popular-details/:popularId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><PopularDetailsPage/></ProtectedRoute>} />
+                    <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner"]}><ComingSoonPage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>
             <Toaster />

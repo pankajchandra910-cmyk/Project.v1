@@ -403,8 +403,7 @@ export default function Login() {
                         <Label>I am a:</Label>
                         <RadioGroup value={guestSelectedRole} onValueChange={setGuestSelectedRole} className="flex space-x-6 mt-2">
                             <div className="flex items-center space-x-2"><RadioGroupItem value="user" id="guest-user" /><Label htmlFor="guest-user" className="flex items-center gap-2 cursor-pointer"><User className="w-4 h-4" />{t.user}</Label></div>
-                            <div className="flex items-center space-x-2"><RadioGroupItem value="owner" id="guest-owner" /><Label htmlFor="guest-owner" className="flex items-center gap-2 cursor-pointer"><Building className="w-4 h-4" />{t.owner}</Label></div>
-                        </RadioGroup>
+                          </RadioGroup>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowGuestRoleModal(false)}>{t.cancel}</Button>

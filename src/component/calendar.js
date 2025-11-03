@@ -7,18 +7,7 @@ import { DayPicker } from "react-day-picker"; // Corrected import for react-day-
 import { cn } from "./utils"; // Assuming cn is a utility for class concatenation
 import { buttonVariants } from "./button"; // Assuming buttonVariants are from your UI button component
 
-/**
- * @typedef {object} CalendarProps
- * @property {string} [className]
- * @property {object} [classNames]
- * @property {boolean} [showOutsideDays=true]
- * @property {any} [props] - All other props supported by react-day-picker's DayPicker component
- */
 
-/**
- * Renders a customizable calendar component.
- * @param {CalendarProps} props
- */
 function Calendar({
   className,
   classNames,

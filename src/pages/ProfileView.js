@@ -36,7 +36,7 @@ export default function ProfileView() {
 
     // --- Global Context States ---
     const {
-        isLoggedIn, userName, setUserName, userPhone, setUserPhone, userEmail, setUserEmail,
+        isLoggedIn, userName, setUserName, userPhone, setUserPhone, userEmail, setUserEmail,profession,
         loginPlatform, userType, showMobileMenu, setShowMobileMenu, showAIChat, setShowAIChat,
         language, userVisitedPlaces, userRecentBookings, userSavedPlaces, userViewpoints, userRoutes,
         updateUserProfileInFirestore, userPhoneVerified, fetchAndSetUser,
@@ -83,7 +83,27 @@ export default function ProfileView() {
         }
     }, [userEmail, emailToAdd]);
 
-
+      const handleProfileClick = useCallback(() => {
+        if (userType === "owner") {
+          navigate(`/owner-dashboard/${profession}`);
+          if (analytics) {
+            logEvent(analytics, 'select_content', {
+              content_type: 'Profile Click',
+              item_id: 'owner_dashboard_profile',
+              user_type: userType
+            });
+          }
+        } else {
+          navigate("/profile");
+          if (analytics) {
+            logEvent(analytics, 'select_content', {
+              content_type: 'Profile Click',
+              item_id: 'user_profile',
+              user_type: userType
+            });
+          }
+        }
+      }, [navigate, userType, profession]);
     // Setup RecaptchaVerifier once on component mount for logged-in users
     useEffect(() => {
         if (isLoggedIn && !recaptchaVerifier) {
@@ -381,6 +401,7 @@ export default function ProfileView() {
                 onSearch={handleSearch}
                 userName={userName}
                 onLogoClick={handleLogoClick}
+                onProfileClick={handleProfileClick}
                 onMenuToggle={() => setShowMobileMenu(!showMobileMenu)}
                 showMobileMenu={showMobileMenu}
             />

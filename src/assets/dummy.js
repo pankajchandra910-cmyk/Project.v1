@@ -4,7 +4,7 @@
     image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
     title: "Naina Devi Temple",
     location: "Nainital, Uttarakhand",
-    price: "Free Entry",
+    price: "₹6800",
     rating: 4.7,
     description: "Visited by 500K+ annually—iconic spiritual destination ⭐ 4.7/5",
     type: "Popular"
@@ -14,7 +14,7 @@
     image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWRlYXlhfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "China Peak",
     location: "Nainital, Uttarakhand",
-    price: "₹50",
+    price: "₹5200",
     rating: 4.8,
     description: "Top for adventure views—highest peak around Nainital ⭐ 4.8/5",
     type: "Popular"
@@ -24,7 +24,7 @@
     image: "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Bhimtal Lake",
     location: "Bhimtal, Uttarakhand",
-    price: "₹30",
+    price: "₹4500",
     rating: 4.6,
     description: "Popular family spot—larger than Naini Lake ⭐ 4.6/5",
     type: "Popular"
@@ -34,7 +34,7 @@
     image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     title: "Tiffin Top",
     location: "Nainital, Uttarakhand",
-    price: "Free",
+    price: "₹3200",
     rating: 4.5,
     description: "Eco-trail favorite—perfect for nature walks ⭐ 4.5/5",
     type: "Popular"
@@ -564,7 +564,6 @@ export const locationsData = {
       "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtb3VudGFpbiUyMHZpZXdwb2ludCUyMHN1bnJpc2V8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHtoaW1hbGF5YSUyMG1vdW50YWluJTIwdmlld3xlbnwxfHx8fDE3MzcwMzg0MDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1464822759844-d150ad6d1f6f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHx0cmVra2luZyUyMHRyYWlsJTIwZm9yZXN0fGVuMXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080"
     ],
     description: "Nainital, the 'Queen of Hills,' is a picturesque hill station centered around the beautiful Naini Lake. Located at 2,084 meters above sea level, it offers stunning Himalayan views, colonial charm, and perfect weather. Home to over 500K+ annual visitors, Nainital features 20+ major attractions including lakes, viewpoints, temples, and adventure activities.",
