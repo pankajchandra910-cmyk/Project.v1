@@ -458,24 +458,24 @@ export const routes = [
   {
     id: "3",
     name: "Sukhatal",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://savekumaon.com/wp-content/uploads/2021/07/devadar-and-himalayas-1.jpg",
     distance: "18km",
     viewpoints: ["Sukhatal Lake", "Forest Walks", "Bird Watching Points"],
     description: "Peaceful lake perfect for meditation and nature photography",
     gallery: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      "https://savekumaon.com/wp-content/uploads/2021/07/devadar-and-himalayas-1.jpg"
     ]
   },
   {
     id: "4",
     name: "Brahmsthali",
-    image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://www.shutterstock.com/image-photo/view-winter-brahmatal-trek-uttarakhand-600nw-2326635231.jpg",
     distance: "26km",
     viewpoints: ["Brahma Temple", "Himalayan Views", "Sunrise Point"],
     description: "Spiritual destination with panoramic mountain views",
     gallery: [
-      "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-    ]
+      "https://www.shutterstock.com/image-photo/view-winter-brahmatal-trek-uttarakhand-600nw-2326635231.jpg"
+       ]
   },
   {
     id: "5",
@@ -491,23 +491,23 @@ export const routes = [
   {
     id: "6",
     name: "Kanchi Dhaam",
-    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image:"https://blogs.tripzygo.in/wp-content/uploads/2025/04/kainchi-dham.jpg",
     distance: "15km",
     viewpoints: ["Temple Complex", "Valley Views", "Sacred Ponds"],
     description: "Ancient temple complex with spiritual significance",
     gallery: [
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-    ]
+     "https://blogs.tripzygo.in/wp-content/uploads/2025/04/kainchi-dham.jpg"
+      ]
   },
   {
     id: "7",
     name: "Naina Devi Temple",
-    image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
     distance: "2km",
     viewpoints: ["Temple Premises", "Lake Views", "Prayer Halls"],
     description: "Sacred temple dedicated to Goddess Naina Devi",
     gallery: [
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg"
     ]
   },
   {
@@ -535,12 +535,12 @@ export const routes = [
   {
     id: "10",
     name: "Pangoot",
-    image: "https://images.unsplash.com/photo-1617469767053-d3b523a0b982?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxZnxtb3VudGFpbiUyMGxha2V8ZW58MXx8fHwxNzU3NjIyNzUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image:"https://media.newindianexpress.com/newindianexpress%2F2024-03%2Fc4eefacd-c89f-4189-a5d3-67d115f0fc4d%2FWhere.jpg?rect=72%2C0%2C1008%2C567&w=1024&auto=format%2Ccompress&fit=max",
     distance: "15km",
     viewpoints: ["Bird Watching", "Forest Trails", "Eco Point"],
     description: "Paradise for bird watchers and nature enthusiasts",
     gallery: [
-      "https://images.unsplash.com/photo-1617469767053-d3b523a0b982?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxZnxtb3VudGFpbiUyMGxha2V8ZW58MXx8fHwxNzU3NjIyNzUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+      "https://media.newindianexpress.com/newindianexpress%2F2024-03%2Fc4eefacd-c89f-4189-a5d3-67d115f0fc4d%2FWhere.jpg?rect=72%2C0%2C1008%2C567&w=1024&auto=format%2Ccompress&fit=max"  
     ]
   }
 ];
@@ -746,9 +746,9 @@ export const locationsData = {
     image: "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     gallery: [
     "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-    "https://images.unsplash.com/photo-1596707328691-0361e27a1e1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwdGVtcGxlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1589182373030-a9b0c7a7b8e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoYWlkYWtoYW4lMjB0ZW1wbGUlMjBiaGltdGFsfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-    ],
+    "https://i0.wp.com/www.tusktravel.com/blog/wp-content/uploads/2023/07/Must-See-Destinations-in-Bhimtal.jpg?w=1000&ssl=1",
+    "https://hblimg.mmtcdn.com/content/hubble/img/maingalleryimgs/mmt/activities/m_Bhimtal_2_l_563_1000.jpg"
+   ],
     description: "Bhimtal is a serene lake town, larger than Nainital and known for Bhimtal Lake, which has a small island in the center. It offers a quieter alternative with opportunities for boating, kayaking, and exploring the surrounding nature.",
     highlights: [
     "Largest lake in Kumaon",
@@ -856,10 +856,11 @@ export const locationsData = {
   annualVisitors: 150000,
   lat: 29.4050,
   lng: 79.4300,
-  image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  image: "https://savekumaon.com/wp-content/uploads/2021/07/devadar-and-himalayas-1.jpg",
   gallery: [
-  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-  ],
+    "https://savekumaon.com/wp-content/uploads/2021/07/devadar-and-himalayas-1.jpg",
+    "https://static.rome2rio.com/lp-proxy/assets/drive-landscape-1920px-Dx6xCWtu.jpeg"
+   ],
   description: "Sukhatal is a peaceful lake known for its tranquil environment, ideal for meditation and nature photography. It's often less crowded than Naini Lake, offering a serene escape.",
   highlights: [
   "Peaceful lake",
@@ -920,9 +921,10 @@ export const locationsData = {
   annualVisitors: 100000,
   lat: 29.4100,
   lng: 79.4900,
-  image: "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  image: "https://www.shutterstock.com/image-photo/view-winter-brahmatal-trek-uttarakhand-600nw-2326635231.jpg",
   gallery: [
-  "https://images.unsplash.com/photo-1717050788940-189e308415fb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtb3VudGFpbiUyMHRyZWtraW5nJTIwaGltYWxheWFzfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+  "https://www.shutterstock.com/image-photo/view-winter-brahmatal-trek-uttarakhand-600nw-2326635231.jpg",
+  "https://s3.india.com/travel/wp-content/uploads/2014/11/Uttarakhand1.jpg"
   ],
   description: "Brahmsthali is a spiritual destination offering panoramic views of the Himalayan ranges. It's known for its serene temple and a spectacular sunrise point.",
   highlights: [
@@ -986,7 +988,8 @@ export const locationsData = {
   lng: 79.4678, // Tiffin Top coordinates
   image: "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
   gallery: [
-  "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+  "https://images.unsplash.com/photo-1670555383991-ae6ad4bb39df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoaWxsJTIwcmVzb3J0JTIwbW91bnRhaW4lMjB2aWV3fGVufDF8fHx8MTc1NzYxNjk4OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "https://i0.wp.com/www.tusktravel.com/blog/wp-content/uploads/2024/05/Nainital.jpg?fit=2000%2C1333&ssl=1"
   ],
   description: "Naini Track encompasses popular trekking routes around Nainital, leading to famous viewpoints like Tiffin Top, Dorothy's Seat, and Land's End. It's a favorite for adventure seekers and nature lovers.",
   highlights: [
@@ -1024,7 +1027,9 @@ export const locationsData = {
   boatingPoints: [],
   hotels: [], // Trekking routes themselves don't have hotels, but are accessible from Nainital hotels
   localFood: [
-  "Small food stalls at viewpoints selling tea, coffee, and quick snacks."
+  "Small food stalls at viewpoints selling tea",
+  "coffee", 
+  "quick snacks"
   ],
   otherActivities: [
     { name: "Horse riding to Tiffin Top", icon: "Horse", description: "Enjoy a unique way to reach Tiffin Top." },
@@ -1049,9 +1054,10 @@ export const locationsData = {
   annualVisitors: 400000,
   lat: 29.4750,
   lng: 79.5250,
-  image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  image: "https://blogs.tripzygo.in/wp-content/uploads/2025/04/kainchi-dham.jpg",
   gallery: [
-  "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+    "https://blogs.tripzygo.in/wp-content/uploads/2025/04/kainchi-dham.jpg",
+    "https://static.toiimg.com/photo/91622425.cms"
   ],
   description: "Kainchi Dham is a revered ashram and temple complex located in the Kumaon hills. Founded by Neem Karoli Baba, it's a spiritual hub attracting devotees worldwide, famous for its serene ambiance and beautiful valley views.",
   highlights: [
@@ -1126,9 +1132,10 @@ export const locationsData = {
   annualVisitors: 500000,
   lat: 29.3950,
   lng: 79.4580,
-  image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  image: "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
   gallery: [
-  "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHx0ZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+  "https://nainitaltourism.org.in/images/places-to-visit/headers/naina-devi-temple-nainital-tourism-entry-fee-timings-holidays-reviews-header.jpg",
+  "https://daajupahadi.com/wp-content/uploads/2023/07/Naini-Devi-Mandir-min.jpg",
   ],
   description: "The Naina Devi Temple is one of the most revered Shakti Peeths in India, located on the northern shore of Naini Lake. It is dedicated to Goddess Naina Devi and is a significant pilgrimage site for devotees.",
   highlights: [
@@ -1346,11 +1353,11 @@ export const locationsData = {
     annualVisitors: 200000,
     lat: 29.4670,
     lng: 79.4750,
-    image: "https://images.unsplash.com/photo-1617469767053-d3b523a0b982?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxZnxtb3VudGFpbiUyMGxha2V8ZW58MXx8fHwxNzU3NjIyNzUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://media.newindianexpress.com/newindianexpress%2F2024-03%2Fc4eefacd-c89f-4189-a5d3-67d115f0fc4d%2FWhere.jpg?rect=72%2C0%2C1008%2C567&w=1024&auto=format%2Ccompress&fit=max",
     gallery: [
-      "https://images.unsplash.com/photo-1617469767053-d3b523a0b982?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxZnxtb3VudGFpbiUyMGxha2V8ZW58MXx8fHwxNzU3NjIyNzUyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      "https://images.unsplash.com/photo-1546522303-3162788ca5f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaXJkcyUyMGZvcmVzdHxlbnwxfHx8fDE3NTc2MjI4NTJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1517424911228-569d6b9d6e87?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXR1cmUlMjB0cmFpbHMlMjBoaWxsfGVufDF8fHx8MTc1NzYyMjg1M3ww&ixlib=rb-4.1.0&q=80&w=1080"
+    "https://media.newindianexpress.com/newindianexpress%2F2024-03%2Fc4eefacd-c89f-4189-a5d3-67d115f0fc4d%2FWhere.jpg?rect=72%2C0%2C1008%2C567&w=1024&auto=format%2Ccompress&fit=max",
+    "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcSVmbu-s-wfDX97KsCh4ZAlv4U6bs8eOiz1hA5vLmXCZ6BZ7f-uQMyK2O0MGrpwTb3nSn-epG-IR4DZSKSxXP3bFZ8&s=19",
+    "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzMcRsROUWJ-uMJNXdKSKI1b5bwHYju7bH_iA93iDnqK-40hfLC_8UXh0EDN_xGD5I4Ee4Ajogq0cjo-jkpwkU7zyUVrg8HArRJE_Wmwb7gBnVm21v3PbPhK0SytgT76N5iHp8nWA=w675-h390-n-k-no"
     ],
     description: "Pangoot, a charming village located 15km from Nainital, is a paradise for birdwatchers and nature enthusiasts. Surrounded by lush oak and pine forests, it boasts over 250 species of birds, making it an ideal destination for serene forest trails and eco-tourism.",
     highlights: [
@@ -1453,13 +1460,11 @@ export const locationsData = {
     annualVisitors: 600000,
     lat: 29.3175,
     lng: 79.5960,
-    image: "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+    image: "https://static.thehosteller.com/blogimage/Naukuchiatal%20Intro%20Image-1692952272093.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBsYWtlfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-      "https://images.unsplash.com/photo-1542385150-51a823b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYXVrdWNoaWF0YWwlMjBzaG9yZXN8ZW58MXx8fHwxNzA2MjY5MTk0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1589182373030-a9b0c7a7b8e1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxoYWlkYWtoYW4lMjB0ZW1wbGUlMjBiaGltdGFsfGVufDF8fHx8MTcwMzYyMzYwMHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1628173516327-0243e8b53a06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxhZHZlbnR1cmUlMjBzcG9ydHMlMjBsYWtlfGVufDF8fHx8MTcwNjI2OTI0MHww&ixlib=rb-4.1.0&q=80&w=1080"
-    ],
+      "https://static.thehosteller.com/blogimage/Naukuchiatal%20Intro%20Image-1692952272093.jpg",
+      "https://www.thehosteller.com/_next/image/?url=https%3A%2F%2Fstatic.thehosteller.com%2Fhostel%2Fimages%2FCover%20Image.jpg%2FCover%20Image-1692940621038.jpg&w=2048&q=75",
+     ],
     description: "Naukuchiatal, the 'lake of nine corners,' is a mesmerizing freshwater lake nestled in a picturesque valley. It's known for its unique shape, serene environment, and a variety of adventure activities, making it a perfect blend of tranquility and thrill.",
     highlights: [
       "Nine-cornered lake",

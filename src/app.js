@@ -79,7 +79,7 @@ function App() {
                     {/* The /profile route should probably also be protected for all logged-in users */}
                     <Route path="/profile" element={<ProtectedRoute ><ProfileView/></ProtectedRoute>} />
                     <Route path="/owner-dashboard/:profession" element={<ProtectedRoute allowedRoles={["owner"]}><OwnerDashboard /></ProtectedRoute>} />
-                    <Route path="/listings/:id" element={<ProtectedRoute allowedRoles={["owner"]}><ListingDetail /></ProtectedRoute>} />
+                    {/* <Route path="/listings/:id" element={<ProtectedRoute allowedRoles={["owner"]}><ListingDetail /></ProtectedRoute>} /> */}
                     
                     {/* === MODIFIED ROUTES BELOW TO ALLOW GUEST ACCESS === */}
                     <Route path="/location-details/:locationId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><LocationDetailsPage /></ProtectedRoute>} />
