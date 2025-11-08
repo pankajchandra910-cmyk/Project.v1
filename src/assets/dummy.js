@@ -561,11 +561,10 @@ export const locationsData = {
     image: "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHNlYXJjaHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8MHwxfHxuYWluXzQ2N3x_MTA0NDUzNjZ8ZW58MXx8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
     gallery: [
       "https://images.unsplash.com/photo-1656828059867-3fb503eb2214?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxuYWluX3x8fHwxNzU3NjE2OTg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtZW1wbGUlMjBtb3VudGFpbnN8ZW58MXx8fHwxNzU3NjIyODUyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxtb3VudGFpbiUyMHZpZXdwb2ludCUyMHN1bnJpc2V8ZW58MXx8fHwxNzM3MDM4NDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHtoaW1hbGF5YSUyMG1vdW50YWluJTIwdmlld3xlbnwxfHx8fDE3MzcwMzg0MDB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "https://images.unsplash.com/photo-1683973200791-47539048cf63?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHxiaGltdGFsJTIwbGFrZSUyMHV0dGFyYWtoYW5kfGVufDF8fHx8MTc1NzYxNjk4OHww&ixlib=rb-4.1.0&q=80&w=1080"
-    ],
+      "https://hblimg.mmtcdn.com/content/hubble/img/desttvimg/mmt/destination/m_Nainital_tv_destination_img_4_l_795_1192.jpg",
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTdaPErAqEuVkauRFdicYKTUr9qgkz7vNxMw&s"
+     ],
     description: "Nainital, the 'Queen of Hills,' is a picturesque hill station centered around the beautiful Naini Lake. Located at 2,084 meters above sea level, it offers stunning Himalayan views, colonial charm, and perfect weather. Home to over 500K+ annual visitors, Nainital features 20+ major attractions including lakes, viewpoints, temples, and adventure activities.",
     highlights: [
       "Pristine Naini Lake",
@@ -1027,9 +1026,9 @@ export const locationsData = {
   boatingPoints: [],
   hotels: [], // Trekking routes themselves don't have hotels, but are accessible from Nainital hotels
   localFood: [
-  "Small food stalls at viewpoints selling tea",
-  "coffee", 
-  "quick snacks"
+  "Small food stalls at viewpoints selling tea.",
+  "coffee.", 
+  "quick snacks."
   ],
   otherActivities: [
     { name: "Horse riding to Tiffin Top", icon: "Horse", description: "Enjoy a unique way to reach Tiffin Top." },

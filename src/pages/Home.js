@@ -275,7 +275,7 @@ export default function Home() {
 
           {/* About Section */}
           <section className="bg-white rounded-lg p-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Why Choose NainiExplore?</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Choose Buddy In Hills?</h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               Your local Uttarakhand guide, covering Nainital to remote hills. We provide
               real-time local guide availability, detailed trekking paths with maps, and
