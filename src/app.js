@@ -81,12 +81,11 @@ function App() {
                     <Route path="/owner-dashboard/:profession" element={<ProtectedRoute allowedRoles={["owner"]}><OwnerDashboard /></ProtectedRoute>} />
                     {/* <Route path="/listings/:id" element={<ProtectedRoute allowedRoles={["owner"]}><ListingDetail /></ProtectedRoute>} /> */}
                     
-                    {/* === MODIFIED ROUTES BELOW TO ALLOW GUEST ACCESS === */}
-                    <Route path="/location-details/:locationId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><LocationDetailsPage /></ProtectedRoute>} />
-                    <Route path="/place-details/:placeId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><PlaceDetailsPage /></ProtectedRoute>} />
-                    <Route path="/trek-details/:trekId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><TrekDetailsPage /></ProtectedRoute>} />
-                    <Route path="/map-view/:focusId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><MapViewPage/></ProtectedRoute>} />
-                    <Route path="/popular-details/:popularId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><PopularDetailsPage/></ProtectedRoute>} />
+                    <Route path="/location-details/:locationId" element={<LocationDetailsPage />}/>
+                    <Route path="/place-details/:placeId" element={<PlaceDetailsPage />} />
+                    <Route path="/trek-details/:trekId" element={<TrekDetailsPage />}/>
+                    <Route path="/map-view/:focusId" element={<MapViewPage/>} />
+                    <Route path="/popular-details/:popularId" element={<PopularDetailsPage/>} />
                     <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><ComingSoonPage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>
