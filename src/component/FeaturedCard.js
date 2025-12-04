@@ -41,8 +41,8 @@ export default function FeaturedCard({
 
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-lg font-semibold text-primary">{price}</span>
-            <span className="text-sm text-muted-foreground">/night</span>
+            {/* <span className="text-lg font-semibold text-primary">{price}</span>
+            <span className="text-sm text-muted-foreground">/night</span> */}
           </div>
           <Button
             size="sm"

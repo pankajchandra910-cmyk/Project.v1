@@ -13,27 +13,26 @@ import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from '../component/dialog';
-import { analytics, auth, db } from '../firebase'; // Import analytics and db from firebase config
-import { logEvent } from "firebase/analytics"; // Import logEvent from firebase/analytics
+import { analytics, auth, db } from '../firebase'; 
+import { logEvent } from "firebase/analytics"; 
 import { signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
-import { doc, setDoc, addDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore"; // Import serverTimestamp
+import { doc, setDoc, addDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore";
 
 // Initial structure for new listings
 const initialFormData = {
-  // Use a temporary ID for new items, which will be replaced by Firestore's actual document ID
   id: null,
   name: "",
   location: "",
   description: "",
   price: "",
-  photos: [], // Storing base64 strings directly. For production, consider Firebase Storage.
+  photos: [], 
   listingDetails: {
     rooms: [],
     bikes: [],
     vehicles: [],
-    guideFeatures: [], // This will store Expertise/Specialization for guides and general listings
+    guideFeatures: [],
     treks: [],
-    hillStayAmenities: [], // Currently not used in renderProfessionForm, but kept for future use
+    hillStayAmenities: [],
   },
 };
 
@@ -49,13 +48,13 @@ export default function OwnerDashboard() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("add-listing");
-  const [syncStatus, setSyncStatus] = useState('idle'); // States: idle, syncing, synced, error
+  const [syncStatus, setSyncStatus] = useState('idle');
   const [isSyncing, setIsSyncing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [ownerListings, setOwnerListings] = useState([]);
   const [editingListingId, setEditingListingId] = useState(null);
-  const [newGuideFeatureText, setNewGuideFeatureText] = useState(""); // For adding guide features
-  const fileInputRef = useRef(null); // Ref for file input
+  const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
+  const fileInputRef = useRef(null);
 
   // --- Phone Verification State ---
   const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -65,8 +64,7 @@ export default function OwnerDashboard() {
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
 
-  // --- Data Fetching & Sync ---
-  // Fetches listings from Firestore
+  // --- Data Fetching ---
   const fetchListings = useCallback(async () => {
     if (ownerId) {
       const listings = await readOwnerListingsRemote(ownerId);
@@ -74,18 +72,15 @@ export default function OwnerDashboard() {
     }
   }, [ownerId, readOwnerListingsRemote]);
 
-  // Effect to load listings when the component mounts or ownerId changes
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
 
-  // Effect to update phoneToVerify if userPhone changes
   useEffect(() => {
     setPhoneToVerify(userPhone || "");
   }, [userPhone]);
 
-  // Function to sync local listings with the cloud (Firestore)
-  // --- Sync Listings with Firebase Analytics Tracking ---
+  // --- Sync Listings ---
   const syncListings = useCallback(async () => {
     if (!ownerId || isSyncing) return;
     setIsSyncing(true);
@@ -93,14 +88,12 @@ export default function OwnerDashboard() {
     try {
       const success = await writeOwnerListingsRemote(ownerListings, ownerId);
       if (success) {
-        // --- Firebase Analytics Event Tracking for Sync ---
         if (analytics) {
           logEvent(analytics, 'sync_listings', {
             owner_id: ownerId,
             listing_count: ownerListings.length
           });
         }
-        // --- End of Firebase Analytics Tracking ---
         await fetchListings();
         setSyncStatus('synced');
         toast.success("Listings synced with the cloud!");
@@ -117,13 +110,9 @@ export default function OwnerDashboard() {
   }, [ownerId, ownerListings, writeOwnerListingsRemote, isSyncing, fetchListings]);
 
   // --- Form Handlers ---
-  // Generic handler for text input changes
   const handleFormChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
-
-  // Generic handler for Select component changes
   const handleSelectChange = (name, value) => setFormData(p => ({ ...p, [name]: value }));
 
-  // Handles photo uploads, reads files as Data URLs
   const handlePhotoUpload = (e) => {
     const files = Array.from(e.target.files);
     if (formData.photos.length + files.length > 10) {
@@ -136,10 +125,8 @@ export default function OwnerDashboard() {
     });
   };
 
-  // Removes a photo by index
   const removePhoto = (index) => setFormData(p => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
 
-  // Updates a field in a nested array (e.g., changing room type)
   const updateNestedArray = (arr, id, field, val) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -148,7 +135,6 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Adds a new item to a nested array (e.g., adding a new room)
   const addToArray = (arr, item) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -157,7 +143,6 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Deletes an item from a nested array
   const deleteFromArray = (arr, id) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -166,7 +151,6 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Toggles a value within a sub-array of an item in a nested array (e.g., room features)
   const toggleInArray = (arr, id, field, val) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -179,7 +163,6 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Adds a new guide feature (Expertise/Specialization)
   const addGuideFeature = useCallback(() => {
     if (newGuideFeatureText.trim() && !formData.listingDetails.guideFeatures.includes(newGuideFeatureText.trim())) {
       setFormData(p => ({
@@ -189,11 +172,10 @@ export default function OwnerDashboard() {
           guideFeatures: [...p.listingDetails.guideFeatures, newGuideFeatureText.trim()]
         }
       }));
-      setNewGuideFeatureText(""); // Clear the input after adding
+      setNewGuideFeatureText(""); 
     }
   }, [newGuideFeatureText, formData.listingDetails.guideFeatures]);
 
-  // Removes a guide feature (Expertise/Specialization)
   const removeGuideFeature = (feature) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -202,51 +184,70 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // --- CRUD Operations with Firebase Analytics Tracking ---
-  const handlePublishListing = async () => {
+  // --- CRUD Operations ---
+   const handlePublishListing = async () => {
+    // 1. Basic Validation
     if (!formData.name || !formData.location) return toast.error("Listing Name and Location are required.");
     if (!ownerId) return toast.error("Authentication error. Please re-login.");
+
+    // 2. Profile Completeness Validation
+    if (!userPhone) {
+      toast.error("Contact Number is required. Please update your Profile.");
+      setActiveTab("profile");
+      return;
+    }
 
     const listingData = {
       ...formData,
       profession: globalProfession,
-      ownerId,
+      
+      // --- LINKING DATA FOR DYNAMIC FETCHING ---
+      ownerId, 
+      
+      // --- CONTACT SNAPSHOT ---
+      contactSnapshot: {
+        phone: userPhone,
+        email: userEmail,
+        name: userName
+      },
+      
       status: "Active",
       bookings: 0,
       revenue: "₹0",
+      
+      // --- NEW FIELD ADDED HERE ---
+      verified: false, 
     };
 
     try {
       if (editingListingId) {
-        // --- Update Logic ---
+        // Update Logic
         const docRef = doc(db, "listings", editingListingId);
+        // We include verified: false here so if they edit an existing listing,
+        // it resets to unverified until approved again.
         await setDoc(docRef, { ...listingData, updatedAt: serverTimestamp() }, { merge: true });
 
-        // --- Firebase Analytics Event Tracking for Update ---
         if (analytics) {
           logEvent(analytics, 'update_listing', {
             profession: globalProfession,
             listing_name: formData.name,
           });
         }
-        // --- End of Firebase Analytics Tracking ---
 
         toast.success("Listing updated successfully!");
       } else {
-        // --- Create Logic ---
+        // Create Logic
         const listingsCollectionRef = collection(db, "listings");
         const newDocRef = await addDoc(listingsCollectionRef, { ...listingData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         await setDoc(newDocRef, { id: newDocRef.id }, { merge: true });
 
-        // --- Firebase Analytics Event Tracking for Creation ---
         if (analytics) {
           logEvent(analytics, 'create_listing', {
             profession: globalProfession,
             listing_name: formData.name,
-            price: parseInt(formData.price) || 0 // Track the price of the new listing if available
+            price: parseInt(formData.price) || 0
           });
         }
-        // --- End of Firebase Analytics Tracking ---
 
         toast.success("Listing published successfully!");
       }
@@ -255,37 +256,34 @@ export default function OwnerDashboard() {
       await fetchListings();
       setActiveTab("my-listings");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to save listing to the database.");
     }
   };
 
-  // Sets the form to edit an existing listing
+
   const handleEditListing = (listingId) => {
     const listing = ownerListings.find(l => l.id === listingId);
     if (listing) {
-      // Ensure all initialFormData fields are present to prevent controlled component issues
       setFormData({ ...initialFormData, ...listing });
-      setGlobalProfession(listing.profession); // Set global profession context
+      setGlobalProfession(listing.profession); 
       setEditingListingId(listingId);
       setActiveTab("add-listing");
     }
   };
 
-  // Deletes a listing from Firestore
   const handleDeleteListing = async (listingId) => {
     if (!window.confirm("Are you sure you want to permanently delete this listing?")) return;
 
-    const listingToDelete = ownerListings.find(l => l.id === listingId); // Get listing details before deleting
+    const listingToDelete = ownerListings.find(l => l.id === listingId);
     try {
       await deleteDoc(doc(db, "listings", listingId));
-      // --- Firebase Analytics Event Tracking for Deletion ---
       if (analytics && listingToDelete) {
         logEvent(analytics, 'delete_listing', {
           profession: listingToDelete.profession,
           listing_name: listingToDelete.name
         });
       }
-      // --- End of Firebase Analytics Tracking ---
       toast.success("Listing deleted successfully.");
       setOwnerListings(prev => prev.filter(l => l.id !== listingId));
     } catch (error) {
@@ -294,7 +292,6 @@ export default function OwnerDashboard() {
   };
 
   // --- Profile & Phone Verification ---
-  // Updates user profile in Firestore
   const handleUpdateProfile = async () => {
     const success = await updateUserProfileInFirestore({
       displayName: userName,
@@ -305,40 +302,32 @@ export default function OwnerDashboard() {
     });
 
     if (success) {
-      // --- Firebase Analytics Event Tracking for Profile Update ---
       if (analytics) {
         logEvent(analytics, 'update_owner_profile', { owner_id: ownerId });
       }
-      // --- End of Firebase Analytics Tracking ---
-      toast.success('Profile updated successfully!');
+      toast.success('Profile updated successfully! Information is now available for your listings.');
     } else {
       toast.error('Profile update failed.');
     }
   };
 
-  // Initiates sending OTP to the provided phone number
   const handleSendPhoneOTP = async () => {
-    // Add reCAPTCHA verifier here if not already handled globally
     if (!phoneToVerify || phoneToVerify.length < 10) {
       return toast.error('Please enter a valid phone number, including country code (e.g., +919876543210).');
     }
     setPhoneLoading(true);
     try {
-      // Firebase signInWithPhoneNumber requires a reCAPTCHA verifier if not done implicitly
-      // For this example, assuming reCAPTCHA is handled or test numbers are used.
       const confirmationResult = await signInWithPhoneNumber(auth, phoneToVerify);
       setPhoneConfirmationResult(confirmationResult);
       setPhoneOtpSent(true);
       toast.success(`OTP sent to ${phoneToVerify}`);
     } catch (e) {
       toast.error(`Failed to send OTP: ${e.message}`);
-      // console.error("Send OTP error:", e);
     } finally {
       setPhoneLoading(false);
     }
   };
 
-  // Confirms the OTP and links the phone number to the current user
   const handleConfirmPhoneOTP = async () => {
     if (!phoneConfirmationResult || !phoneOtp) {
       return toast.error('Please enter the OTP to verify.');
@@ -346,25 +335,22 @@ export default function OwnerDashboard() {
     setPhoneLoading(true);
     try {
       const phoneCred = PhoneAuthProvider.credential(phoneConfirmationResult.verificationId, phoneOtp);
-      await linkWithCredential(auth.currentUser, phoneCred); // Link to the currently logged-in user
+      await linkWithCredential(auth.currentUser, phoneCred); 
       await updateUserProfileInFirestore({ phoneNumber: phoneToVerify, phoneVerified: true });
-      setUserPhone(phoneToVerify); // Update local context
+      setUserPhone(phoneToVerify); 
       toast.success('Phone number verified and linked!');
       setShowPhoneModal(false);
-      // Reset phone verification states
       setPhoneOtp("");
       setPhoneConfirmationResult(null);
       setPhoneOtpSent(false);
     } catch (e) {
       toast.error(`Failed to verify OTP: ${e.message}`);
-      // console.error("Verify OTP error:", e);
     } finally {
       setPhoneLoading(false);
     }
   };
 
   // --- Render Functions ---
-  // Renders profession-specific form fields based on globalProfession
   const renderProfessionForm = () => {
     switch (globalProfession) {
       case "resort-hotel":
@@ -555,7 +541,6 @@ export default function OwnerDashboard() {
             <div>
               <Label>Amenities</Label>
               <p className="text-muted-foreground text-sm">Add key amenities like 'Fireplace','private balcony', 'Kitchen' in the main description section above.</p>
-              {/* Future: Could add a similar badge input for amenities as guide features */}
             </div>
           </div>
         );
@@ -569,12 +554,11 @@ export default function OwnerDashboard() {
             </div>
             <div>
               <Label>Difficulty</Label>
-              {/* Ensure treks array is initialized if accessing first element */}
               <Select value={formData.listingDetails.treks[0]?.difficulty || ""} onValueChange={v => setFormData(p => ({
                 ...p,
                 listingDetails: {
                   ...p.listingDetails,
-                  treks: [{ id: Date.now(), difficulty: v }] // Initialize or update the first trek object
+                  treks: [{ id: Date.now(), difficulty: v }] 
                 }
               }))}>
                 <SelectTrigger>
@@ -590,7 +574,7 @@ export default function OwnerDashboard() {
             <p className="text-muted-foreground text-sm">Add duration, itinerary, and inclusions in the main description.</p>
           </div>
         );
-      default: // Fallback for "other" or unset profession
+      default:
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">General Listing Details</h3>
@@ -608,7 +592,7 @@ export default function OwnerDashboard() {
                     ...p,
                     listingDetails: {
                       ...p.listingDetails,
-                      guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean), // Split by comma, trim, filter empty
+                      guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean),
                     },
                   }))
                 }
@@ -620,7 +604,6 @@ export default function OwnerDashboard() {
     }
   };
 
-  // Determines the price string for the live preview
   const getPreviewPrice = () => {
     if (globalProfession === "resort-hotel" && formData.listingDetails.rooms.length > 0) {
       return `₹${formData.listingDetails.rooms[0].price || "---"}/night`;
@@ -632,7 +615,6 @@ export default function OwnerDashboard() {
       return `${formData.listingDetails.vehicles[0].rate || "---"}`;
     }
     if (formData.price) {
-      // For guides, hill stays, treks, and general
       return `₹${formData.price}`;
     }
     return "N/A";
@@ -700,7 +682,7 @@ export default function OwnerDashboard() {
                   <div className="border-2 border-dashed rounded-lg p-6 text-center relative mt-1">
                     <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handlePhotoUpload} ref={fileInputRef} />
                     <Upload className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-                    <p>Drop files or <span className="text-primary font-medium">browse</span> (Max 10)</p>
+                    <p>Drop files or <span className="text-primary font-medium">browse</span> (Max 5 )</p>
                   </div>
                   {formData.photos.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-2">
@@ -716,7 +698,7 @@ export default function OwnerDashboard() {
                   )}
                 </div>
                 <Separator />
-                {renderProfessionForm()} {/* Renders profession-specific fields */}
+                {renderProfessionForm()} 
                 <Separator />
                 <div className="flex justify-end space-x-4">
                   <Button variant="outline" onClick={() => { setFormData(initialFormData); setEditingListingId(null); }}>Clear Form</Button>
@@ -725,7 +707,6 @@ export default function OwnerDashboard() {
               </CardContent>
             </Card>
 
-            {/* Live Preview Card */}
             <div className="lg:col-span-1">
               <Card>
                 <CardHeader><CardTitle>Live Preview</CardTitle></CardHeader>
@@ -762,12 +743,10 @@ export default function OwnerDashboard() {
                     <p className="text-muted-foreground capitalize">{l.location}</p>
                     <div className="mt-2 flex items-center space-x-4 text-sm">
                         <Badge>{l.status}</Badge>
-                        {/* You can add more details here if needed */}
                         <span className="text-gray-600">
                         {globalProfession === "local-guides" && l.listingDetails.guideFeatures?.length > 0 && (
                             `Expertise: ${l.listingDetails.guideFeatures.join(', ')}`
                         )}
-                        {/* Add other profession-specific details if desired */}
                         </span>
                     </div>
                     </div>
@@ -792,7 +771,7 @@ export default function OwnerDashboard() {
                     <Input id="business-name" value={userName} onChange={e => setUserName(e.target.value)} />
                 </div>
                 <div>
-                    <Label htmlFor="contact-number">Contact Number</Label>
+                    <Label htmlFor="contact-number">Contact Number (Required for Listings)</Label>
                     <div className="flex items-center gap-3">
                     <Input id="contact-number" value={userPhone} onChange={e => setUserPhone(e.target.value)} disabled={userPhoneVerified} />
                     {userPhoneVerified ? <Badge variant="secondary">Verified</Badge> : <Button size="sm" variant="outline" onClick={() => setShowPhoneModal(true)} disabled={!userPhone}>Verify</Button>}
@@ -800,7 +779,7 @@ export default function OwnerDashboard() {
                 </div>
                 <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" value={userEmail || ""} disabled /> {/* Email is usually from auth, not editable here */}
+                    <Input id="email" value={userEmail || ""} disabled />
                 </div>
                 <div>
                     <Label htmlFor="profession-select">Profession</Label>
@@ -819,19 +798,20 @@ export default function OwnerDashboard() {
                 </div>
                 </div>
                 <div>
-                <Label htmlFor="license-number">License Number</Label>
-                <Input id="license-number" value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)} />
+                <Label htmlFor="license-number">Business License Number</Label>
+                <Input id="license-number" value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)} placeholder="e.g., GSTIN, Trade License" />
                 </div>
                 <div>
                 <Label htmlFor="business-address">Business Address</Label>
                 <Textarea id="business-address" value={businessAddress} onChange={e => setBusinessAddress(e.target.value)} />
                 </div>
-                <Button onClick={handleUpdateProfile} className="w-full">Update Profile</Button>
+                <Button onClick={handleUpdateProfile} className="w-full">Update Profile & Save Contact Info</Button>
             </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+      
       {/* Phone Verification Dialog */}
       <Dialog open={showPhoneModal} onOpenChange={setShowPhoneModal}>
         <DialogContent>

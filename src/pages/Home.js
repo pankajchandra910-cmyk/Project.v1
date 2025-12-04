@@ -130,15 +130,23 @@ export default function Home() {
     }
   }, [navigate, userType, profession]);
 
-  const handleCategoryClick = useCallback((category) => {
+  const handleCategoryClick = useCallback((categoryTitle, categoryId) => {
     if (analytics) {
       logEvent(analytics, 'select_content', {
         content_type: 'Category Card',
-        item_id: category
+        item_id: categoryTitle
       });
     }
-    setSelectedCategory(category);
-    navigate("/book-item/:itemId"); //navigate to the coming soon page
+    
+    setSelectedCategory(categoryTitle);
+    
+    // Route logic based on category ID
+    if (categoryTitle === 'Hotels & Resorts') {
+      navigate('/hotels');
+    } else {
+      // Fallback for other coming soon pages
+     navigate("/book-item/:itemId")
+    }
   }, [navigate, setSelectedCategory]);
 
   const handleExploreMore = useCallback((locationName) => {

@@ -1,701 +1,586 @@
-import React, { useState, useCallback, useContext, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { GlobalContext } from "../component/GlobalContext"; // Import GlobalContext
-import { placeDetailsData } from "../assets/dummy"; // Import the dummy data
-import { analytics } from "../firebase"; // Import Firebase Analytics
-import { logEvent } from "firebase/analytics"; // Import logEvent
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ArrowLeft, Home, MapPin, Wifi, Car, Coffee, Phone, Filter, 
+  Loader2, ChevronLeft, ChevronRight, Star, Clock, Info, 
+  CheckCircle2, Mountain, Users, BedDouble, Camera
+} from 'lucide-react';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'; 
+import { db } from '../firebase'; 
+// Assuming these components exist based on your provided code
+import { Card, CardContent, CardHeader, CardTitle } from '../component/Card';
+import { Button } from '../component/button';
+import { Badge } from '../component/badge';
+import { Input } from '../component/Input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../component/tabs';
+import { FAQSection } from '../component/FAQSection'; // Optional if you have it
 
-import { Button } from "../component/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../component/Card";
-import { Badge } from "../component/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
-import { FAQSection } from "../component/FAQSection";
-import {
-  ArrowLeft, Star, MapPin, Navigation, Clock, Camera, Mountain,
-  ChevronLeft, ChevronRight, Sunrise, TreePine, Info, Car, Plane,
-  Train, Bike, Users, Home, Bed, Wifi, Fish, Bird, Activity, Book,
-} from "lucide-react";
-
-// Map string names to Lucide-React icons
-const iconMap = {
-  Car: Car,
-  Plane: Plane,
-  Train: Train,
-  Bike: Bike,
-  Mountain: Mountain,
-  Sunrise: Sunrise,
-  Camera: Camera,
-  TreePine: TreePine,
-  Info: Info,
-  Clock: Clock,
-  Users: Users,
-  Home: Home,
-  Bed: Bed,
-  Wifi: Wifi,
-  Fish: Fish,
-  Bird: Bird,
-  Activity: Activity,
-  Book: Book,
-};
-
-export default function PlaceDetailsPage() {
+export default function HotelDetails() {
   const navigate = useNavigate();
-  const { placeId } = useParams();
-  const { setSelectedItemId, setSelectedDetailType, setFocusArea } = useContext(GlobalContext);
-
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [placeData, setPlaceData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    if (placeId) {
-      const data = placeDetailsData[placeId];
-      if (data) {
-        setPlaceData(data);
-        setLoading(false);
-        setCurrentImageIndex(0);
-
-        // --- Firebase Analytics Event Tracking for Place View ---
-        if (analytics) {
-          logEvent(analytics, 'view_item', {
-            item_category: 'Place',
-            item_id: placeId,
-            item_name: data.name
-          });
-        }
-        // --- End of Firebase Analytics Tracking ---
-
-      } else {
-        setError("Place not found.");
-        setLoading(false);
-        setPlaceData(null);
-      }
-    } else {
-      setError("No place ID provided.");
-      setLoading(false);
-      setPlaceData(null);
-    }
-  }, [placeId]);
-
-  const handleBack = useCallback(() => {
-    // Firebase Analytics Event: Back Button Clicked
-    if (analytics) {
-      logEvent(analytics, 'navigation_back', { from_page: 'PlaceDetails' });
-    }
-    navigate(-1);
-  }, [navigate]);
-
-  const handleGetDirections = useCallback((lat, lng, name) => {
-    // Firebase Analytics Event: Get Directions Clicked
-    if (analytics) {
-      logEvent(analytics, 'get_directions', { item_name: name, item_id: placeId });
-    }
-    const focusId = placeId.toLowerCase().replace(/\s/g, '-');
-    setFocusArea(focusId);
-    navigate(`/map-view/${focusId}?destLat=${lat}&destLng=${lng}&destName=${encodeURIComponent(name)}`);
-  }, [navigate, setFocusArea, placeId]);
-
-  const handleViewDetails = useCallback((id, type) => {
-    // Firebase Analytics Event: View Nearby Item Details
-    if (analytics) {
-      logEvent(analytics, 'select_item', { item_list_name: 'Nearby Items on Place Page', item_id: id, item_category: type, place_context: placeId });
-    }
-    setSelectedItemId(id);
-    setSelectedDetailType(type);
-    const routeMap = {
-      hotel: `/hotel-details/${id}`,
-      popular:`/popular-details/${id}`,
-      place: `/place-details/${id}`,
-      trek: `/trek-details/${id}`,
-      bike: `/bike-details/${id}`,
-      cab: `/cab-details/${id}`,
-      guide: `/guide-details/${id}`,
-      resort: `/hotel-details/${id}`,
-      viewpoint: `/place-details/${id}`,
-      lake: `/place-details/${id}`,
-      adventure: `/place-details/${id}`,
-      wildlife: `/place-details/${id}`,
-      temple: `/place-details/${id}`,
-      "historic site": `/place-details/${id}`,
-    };
-    const path = routeMap[type.toLowerCase()] || "/";
-    navigate(path);
-  }, [navigate, setSelectedItemId, setSelectedDetailType, placeId]);
-
-  const nextImage = useCallback(() => {
-    if (placeData?.images?.length > 0) {
-      setCurrentImageIndex((prev) => (prev + 1) % placeData.images.length);
-      // Firebase Analytics Event: Next Image Clicked
-      if (analytics) {
-        logEvent(analytics, 'select_content', { content_type: 'image_gallery_next', item_id: placeData.name, new_image_index: (currentImageIndex + 1) % placeData.images.length });
-      }
-    }
-  }, [placeData, currentImageIndex]);
-
-  const prevImage = useCallback(() => {
-    if (placeData?.images?.length > 0) {
-      setCurrentImageIndex((prev) => (prev - 1 + placeData.images.length) % placeData.images.length);
-      // Firebase Analytics Event: Previous Image Clicked
-      if (analytics) {
-        logEvent(analytics, 'select_content', { content_type: 'image_gallery_prev', item_id: placeData.name, new_image_index: (currentImageIndex - 1 + placeData.images.length) % placeData.images.length });
-      }
-    }
-  }, [placeData, currentImageIndex]);
   
-  const handleImageDotClick = useCallback((index) => {
-    setCurrentImageIndex(index);
-    // Firebase Analytics Event: Image Dot Navigation
-    if (analytics) {
-        logEvent(analytics, 'select_content', { content_type: 'image_dot_nav', item_id: `${placeData.name} - Image ${index + 1}`, new_image_index: index });
+  // --- State Management ---
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedHotel, setSelectedHotel] = useState(null);
+  
+  // Owner & Interaction State
+  const [ownerPhone, setOwnerPhone] = useState(null);
+  const [loadingOwner, setLoadingOwner] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Filters State
+  const [filters, setFilters] = useState({
+    location: 'all',
+    price: 'all',
+    search: ''
+  });
+
+  // --- 1. Fetch Hotels List ---
+  useEffect(() => {
+    const fetchHotels = async () => {
+      try {
+        setLoading(true);
+        // Querying for both resorts and hill-stays
+        const q = query(
+          collection(db, "listings"), 
+          where("profession", "in", ["resort-hotel", "hill-stays"])
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const fetchedData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setListings(fetchedData);
+      } catch (error) {
+        console.error("Error fetching hotels:", error);
+      } finally {
+        setLoading(false);
       }
-  },[placeData]);
+    };
 
-  const handleTabChange = useCallback((value) => {
-    // Firebase Analytics Event: Tab Selected
-    if (analytics) {
-      logEvent(analytics, 'select_content', { content_type: 'tab', item_id: value, location_context: placeData?.name });
+    fetchHotels();
+  }, []);
+
+  // --- 2. Fetch Owner Phone Number dynamically ---
+  useEffect(() => {
+    const fetchOwnerDetails = async () => {
+      setOwnerPhone(null);
+      if (selectedHotel && selectedHotel.ownerId) {
+        setLoadingOwner(true);
+        try {
+          const userDocRef = doc(db, "users", selectedHotel.ownerId);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            setOwnerPhone(userData.phoneNumber || null);
+          }
+        } catch (error) {
+          console.error("Error fetching owner details:", error);
+        } finally {
+          setLoadingOwner(false);
+        }
+      }
+    };
+
+    fetchOwnerDetails();
+    if (selectedHotel) {
+      setCurrentImageIndex(0);
+      window.scrollTo(0, 0); // Scroll to top when opening details
     }
-  }, [placeData]);
+  }, [selectedHotel]);
 
-  const handleBookNow = useCallback(() => {
-    // Firebase Analytics Event: Book Now Button Clicked (for hotels)
-    if (analytics) {
-      logEvent(analytics, 'begin_checkout', {
-        currency: 'INR', // Assuming INR, adjust if needed
-        value: parseFloat(placeData.price?.replace(/[^0-9.]/g, '')) || 0,
-        items: [{
-          item_id: placeId,
-          item_name: placeData.name,
-          item_category: 'hotel',
-          price: parseFloat(placeData.price?.replace(/[^0-9.]/g, '')) || 0,
-          quantity: 1
-        }]
+  // --- Helper Functions ---
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return null;
+    let cleaned = phone.toString().trim();
+    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+    if (!cleaned.startsWith('+91')) cleaned = '+91' + cleaned;
+    return cleaned;
+  };
+
+  const getPrice = (hotel) => {
+    if (hotel.listingDetails?.rooms?.length > 0) {
+      const prices = hotel.listingDetails.rooms.map(r => Number(r.price));
+      return Math.min(...prices);
+    }
+    return Number(hotel.price) || 0;
+  };
+
+  const getAmenities = (hotel) => {
+    let amenities = new Set();
+    // Check global features
+    if (hotel.features && Array.isArray(hotel.features)) {
+        hotel.features.forEach(f => amenities.add(f));
+    }
+    // Check room specific features
+    if (hotel.listingDetails?.rooms) {
+      hotel.listingDetails.rooms.forEach(room => {
+        if(room.features) room.features.forEach(f => amenities.add(f));
       });
     }
-    console.log(`Booking ${placeData.name}`);
-    // navigate(`/book-item/${placeId}`); // Uncomment to navigate to booking page
-  }, [placeData, placeId]);
+    return Array.from(amenities);
+  };
 
-  const handleFindLocalGuides = useCallback(() => {
-    // Firebase Analytics Event: Find Local Guides Clicked
-    if (analytics) {
-      logEvent(analytics, 'find_guides', { source_page: 'PlaceDetails', location_context: placeData?.name });
-    }
-    handleViewDetails("local-guides", "guide");
-  }, [handleViewDetails, placeData]);
-  
-  // --- Render Loading, Error, or No Data States ---
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        Loading place details...
-      </div>
+  const getAmenityIcon = (amenity) => {
+    const key = amenity.toLowerCase();
+    if (key.includes('wifi')) return <Wifi className="h-4 w-4" />;
+    if (key.includes('park') || key.includes('car')) return <Car className="h-4 w-4" />;
+    if (key.includes('food') || key.includes('dining')) return <Coffee className="h-4 w-4" />;
+    if (key.includes('view') || key.includes('mountain')) return <Mountain className="h-4 w-4" />;
+    return <CheckCircle2 className="h-4 w-4" />;
+  };
+
+  // --- Slider Logic ---
+  const nextImage = useCallback((e) => {
+    e?.stopPropagation();
+    if (!selectedHotel?.photos) return;
+    setCurrentImageIndex((prev) => 
+      prev === selectedHotel.photos.length - 1 ? 0 : prev + 1
     );
-  }
+  }, [selectedHotel]);
 
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen text-red-600">
-        Error: {error}
-        <Button variant="link" onClick={handleBack}>Go Back</Button>
-      </div>
+  const prevImage = useCallback((e) => {
+    e?.stopPropagation();
+    if (!selectedHotel?.photos) return;
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? selectedHotel.photos.length - 1 : prev - 1
     );
-  }
+  }, [selectedHotel]);
 
-  if (!placeData) {
+  // --- Filter Logic ---
+  const filteredListings = listings.filter(hotel => {
+    const price = getPrice(hotel);
+    if (filters.location !== 'all' && hotel.location.toLowerCase() !== filters.location.toLowerCase()) return false;
+    if (filters.search && !hotel.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.price === 'budget' && price > 3000) return false;
+    if (filters.price === 'mid' && (price < 3000 || price > 6000)) return false;
+    if (filters.price === 'luxury' && price < 6000) return false;
+    return true;
+  });
+
+
+  // ==========================================
+  // VIEW 1: DETAILS PAGE (Uses PlaceDetails UI)
+  // ==========================================
+  if (selectedHotel) {
+    const amenities = getAmenities(selectedHotel);
+    const displayPrice = getPrice(selectedHotel);
+    const displayPhone = formatPhoneNumber(ownerPhone);
+    const photos = selectedHotel.photos && selectedHotel.photos.length > 0 
+      ? selectedHotel.photos 
+      : ["https://placehold.co/1200x600?text=No+Image"];
+
     return (
-      <div className="flex justify-center items-center min-h-screen text-gray-600">
-        No place data available.
-        <Button variant="link" onClick={handleBack}>Go Back</Button>
-      </div>
-    );
-  }
-
-  const whatToExpectItems = placeData.whatToExpect?.map(item => ({
-    ...item,
-    icon: iconMap[item.icon] || Info
-  })) || [];
-
-  const isHotelPage = placeData.id.includes("hotel") || placeData.id.includes("resort");
-
-  return (
-    <div
-      className="min-h-screen"
-      style={{
-        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url('${placeData.images[0]}')`,
-        backgroundPosition: 'center',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-        backgroundColor: '#f9fafb'
-      }}
-    >
-      {/* Back Button and Header */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-sm px-4 py-3 md:px-6 sticky top-0 z-10">
-        <Button variant="ghost" onClick={handleBack} className="mb-0">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Places
-        </Button>
-      </div>
-
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* Image Gallery Section */}
-        <div className="relative mb-6">
-          <div className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-lg">
-            <img
-              src={placeData.images[currentImageIndex]}
-              alt={`${placeData.name} - Image ${currentImageIndex + 1}`}
-              className="w-full h-full object-cover"
-            />
-            {placeData.images.length > 1 && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-80 hover:opacity-100"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {placeData.images.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-2 h-2 rounded-full cursor-pointer transition-colors ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
-                      onClick={() => handleImageDotClick(index)}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+      <div className="min-h-screen bg-gray-50">
+        {/* Sticky Header */}
+        <div className="bg-white/95 backdrop-blur-sm shadow-sm px-4 py-3 sticky top-0 z-20 flex justify-between items-center">
+            <Button variant="ghost" onClick={() => setSelectedHotel(null)} className="mb-0 text-gray-600 hover:text-primary">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Hotels
+            </Button>
+            <div className="hidden md:flex items-center gap-2 text-sm font-semibold text-gray-700">
+               {selectedHotel.name}
+            </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Details and Tabs */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 shadow-sm">
-              {/* Place Header */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{placeData.name}</h1>
-                  <div className="flex items-center space-x-2 text-muted-foreground mb-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{placeData.location}</span>
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          
+          {/* Hero Image Slider */}
+          <div className="relative mb-6 group">
+            <div className="relative h-64 md:h-[500px] rounded-xl overflow-hidden shadow-lg bg-gray-200">
+              <img
+                src={photos[currentImageIndex]}
+                alt={`${selectedHotel.name} view`}
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+              
+              {/* Slider Controls */}
+              {photos.length > 1 && (
+                <>
+                  <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full text-white transition-all opacity-0 group-hover:opacity-100">
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full text-white transition-all opacity-0 group-hover:opacity-100">
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+                    {photos.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full cursor-pointer transition-all ${index === currentImageIndex ? 'bg-white w-4' : 'bg-white/50'}`}
+                        onClick={() => setCurrentImageIndex(index)}
+                      />
+                    ))}
                   </div>
-                  <div className="flex items-center space-x-4 flex-wrap gap-2">
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{placeData.rating}</span>
-                      <span className="text-muted-foreground">({placeData.reviewCount} reviews)</span>
-                    </div>
-                    {!isHotelPage && placeData.entryFee && (
-                       <Badge className="bg-green-100 text-green-800">{placeData.entryFee}</Badge>
-                    )}
-                    {placeData.difficulty && (
-                      <Badge variant="outline">{placeData.difficulty}</Badge>
-                    )}
-                    {isHotelPage && placeData.price && (
-                       <Badge className="bg-primary text-primary-foreground">Starting from {placeData.price}</Badge>
-                    )}
-                  </div>
-                </div>
+                </>
+              )}
+              
+              <div className="absolute bottom-6 left-6 text-white">
+                 <Badge className="mb-2 bg-primary/90 text-white border-none">{selectedHotel.profession === 'hill-stays' ? 'Hill Stay' : 'Resort'}</Badge>
+                 <h1 className="text-3xl md:text-5xl font-bold drop-shadow-md">{selectedHotel.name}</h1>
+                 <div className="flex items-center gap-2 mt-2 text-gray-100 drop-shadow-sm">
+                    <MapPin className="w-4 h-4" /> {selectedHotel.location}, Uttarakhand
+                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Quick Facts Section */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                {!isHotelPage ? (
-                  <>
-                    {placeData.duration && (
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-sm font-medium">Duration</div>
-                          <div className="text-xs text-muted-foreground">{placeData.duration}</div>
-                        </div>
-                      </div>
-                    )}
-                    {placeData.bestTime && (
-                      <div className="flex items-center space-x-2">
-                        <Sunrise className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-sm font-medium">Best Time</div>
-                          <div className="text-xs text-muted-foreground">{placeData.bestTime}</div>
-                        </div>
-                      </div>
-                    )}
-                    {placeData.difficulty && (
-                      <div className="flex items-center space-x-2">
-                        <Mountain className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-sm font-medium">Difficulty</div>
-                          <div className="text-xs text-muted-foreground">{placeData.difficulty}</div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-2">
-                      <Star className="w-4 h-4 text-primary" />
-                      <div>
-                        <div className="text-sm font-medium">Rating</div>
-                        <div className="text-xs text-muted-foreground">{placeData.rating} ({placeData.reviewCount} reviews)</div>
-                      </div>
+          {/* Main Content Grid */}
+          <div className="grid lg:grid-cols-3 gap-8">
+            
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Quick Info Bar */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex flex-wrap gap-6 md:justify-between items-center">
+                 <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                        <Star className="w-5 h-5 fill-blue-600" />
                     </div>
-                    {placeData.checkInTime && (
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-sm font-medium">Check-in</div>
-                          <div className="text-xs text-muted-foreground">{placeData.checkInTime}</div>
-                        </div>
-                      </div>
-                    )}
-                    {placeData.checkOutTime && (
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <div>
-                          <div className="text-sm font-medium">Check-out</div>
-                          <div className="text-xs text-muted-foreground">{placeData.checkOutTime}</div>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Rating</p>
+                        <p className="font-medium">4.8 (New)</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-50 rounded-lg text-green-600">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Check-in</p>
+                        <p className="font-medium">12:00 PM</p>
+                    </div>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
+                        <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">Check-out</p>
+                        <p className="font-medium">11:00 AM</p>
+                    </div>
+                 </div>
               </div>
 
               {/* Tabs Section */}
-              <Tabs defaultValue="overview" className="w-full" onValueChange={handleTabChange}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="photos">Photos</TabsTrigger>
-                  <TabsTrigger value="reviews">Reviews</TabsTrigger>
-                  <TabsTrigger value="nearby">Nearby</TabsTrigger>
-                </TabsList>
-
-                {/* Overview Tab Content */}
-                <TabsContent value="overview" className="space-y-6 mt-6">
-                  <div>
-                    <h3 className="font-semibold mb-3">About {placeData.name}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{placeData.description}</p>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <Tabs defaultValue="overview" className="w-full">
+                  <div className="border-b px-6 pt-4">
+                    <TabsList className="grid w-full grid-cols-3 md:w-[400px]">
+                      <TabsTrigger value="overview">Overview</TabsTrigger>
+                      <TabsTrigger value="rooms">Rooms</TabsTrigger>
+                      <TabsTrigger value="photos">Photos</TabsTrigger>
+                    </TabsList>
                   </div>
 
-                  {placeData.highlights && placeData.highlights.length > 0 && (
+                  {/* Overview Tab */}
+                  <TabsContent value="overview" className="p-6 space-y-8">
                     <div>
-                      <h3 className="font-semibold mb-3">Highlights</h3>
-                      <div className="grid md:grid-cols-2 gap-2">
-                        {placeData.highlights.map((highlight, index) => (
-                          <div key={index} className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-primary rounded-full shrink-0" />
-                            <span className="text-sm">{highlight}</span>
-                          </div>
-                        ))}
-                      </div>
+                        <h3 className="text-xl font-bold mb-3 text-gray-900">About the Place</h3>
+                        <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                            {selectedHotel.description}
+                        </p>
                     </div>
-                  )}
 
-                  {whatToExpectItems && whatToExpectItems.length > 0 && (
                     <div>
-                      <h3 className="font-semibold mb-3">What to Expect</h3>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        {whatToExpectItems.map((item, index) => {
-                           const IconComponent = item.icon;
-                          return (
-                          <div key={index} className="flex items-start space-x-3 p-3 border rounded-lg">
-                            <IconComponent className="w-5 h-5 text-primary mt-1 shrink-0" />
-                            <div>
-                              <h4 className="font-medium text-sm">{item.title}</h4>
-                              <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
-                            </div>
-                          </div>
-                        )})}
-                      </div>
-                    </div>
-                  )}
-
-                  {placeData.accessibility && (
-                    <div>
-                      <h3 className="font-semibold mb-3">Accessibility & Info</h3>
-                      <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {placeData.accessibility.difficulty && (
-                            <div>
-                              <span className="text-sm font-medium">Difficulty:</span>
-                              <span className="text-sm ml-2">{placeData.accessibility.difficulty}</span>
-                            </div>
-                          )}
-                          {placeData.accessibility.duration && (
-                            <div>
-                              <span className="text-sm font-medium">Duration:</span>
-                              <span className="text-sm ml-2">{placeData.accessibility.duration}</span>
-                            </div>
-                          )}
-                          {placeData.accessibility.distance && (
-                            <div>
-                              <span className="text-sm font-medium">Distance:</span>
-                              <span className="text-sm ml-2">{placeData.accessibility.distance}</span>
-                            </div>
-                          )}
-                          {placeData.accessibility.transport && (
-                            <div>
-                              <span className="text-sm font-medium">Transport:</span>
-                              <span className="text-sm ml-2">{placeData.accessibility.transport}</span>
-                            </div>
-                          )}
+                        <h3 className="text-xl font-bold mb-4 text-gray-900">Amenities</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {amenities.map((am, i) => (
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                                    <div className="text-primary">{getAmenityIcon(am)}</div>
+                                    <span className="text-sm font-medium text-gray-700">{am}</span>
+                                </div>
+                            ))}
                         </div>
-                        {placeData.accessibility.facilities && placeData.accessibility.facilities.length > 0 && (
-                          <div>
-                            <span className="text-sm font-medium">Facilities:</span>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {placeData.accessibility.facilities.map((facility, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">{facility}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </div>
-                  )}
+                  </TabsContent>
 
-                  {placeData.tips && placeData.tips.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold mb-3">
-                        <Info className="w-4 h-4 inline mr-2" />
-                        Visitor Tips
-                      </h3>
-                      <ul className="space-y-2 text-sm text-muted-foreground">
-                        {placeData.tips.map((tip, index) => (
-                          <li key={index} className="flex items-start">
-                            <span className="text-primary mr-2">•</span>
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </TabsContent>
+                  {/* Rooms Tab */}
+                  <TabsContent value="rooms" className="p-6">
+                    <h3 className="text-xl font-bold mb-6 text-gray-900">Available Accommodation</h3>
+                    {selectedHotel.listingDetails?.rooms?.length > 0 ? (
+                        <div className="space-y-4">
+                            {selectedHotel.listingDetails.rooms.map((room, idx) => (
+                                <div key={idx} className="border border-gray-200 rounded-xl p-5 hover:border-primary/50 transition-colors flex flex-col md:flex-row gap-4 justify-between bg-white">
+                                    <div className="flex gap-4">
+                                        <div className="h-20 w-20 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                                            <BedDouble className="h-8 w-8 text-gray-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-lg text-gray-900">{room.type}</h4>
+                                            <p className="text-sm text-gray-500 mb-2 capitalize">{room.view} View</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {room.features?.map((f, fIdx) => (
+                                                    <span key={fIdx} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-md">
+                                                        {f}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-row md:flex-col justify-between items-center md:items-end border-t md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
+                                        <div className="text-right">
+                                            <p className="text-2xl font-bold text-primary">₹{room.price}</p>
+                                            <p className="text-xs text-gray-400">per night</p>
+                                        </div>
+                                        <Button size="sm" variant="outline" className="mt-2" onClick={() => window.alert("Select dates to proceed")}>
+                                            Select Room
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                            No specific room details listed. Contact host for options.
+                        </div>
+                    )}
+                  </TabsContent>
 
-                {/* Photos Tab Content */}
-                <TabsContent value="photos" className="mt-6">
+                  {/* Photos Tab */}
+                  <TabsContent value="photos" className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {placeData.images.map((image, index) => (
-                        <img
-                          key={index}
-                          src={image}
-                          alt={`${placeData.name} - Photo ${index + 1}`}
-                          className="w-full h-32 md:h-40 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
-                          onClick={() => {
-                            setCurrentImageIndex(index);
-                            // Firebase Analytics Event: Click Photo Thumbnail
-                            if (analytics) {
-                              logEvent(analytics, 'select_content', { content_type: 'photo_thumbnail', item_id: placeData.name, new_image_index: index });
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  {/* Reviews Tab Content */}
-                  <TabsContent value="reviews" className="mt-6">
-                    <div className="space-y-4">
-                      {placeData.reviews && placeData.reviews.length > 0 ? (
-                          placeData.reviews.map((review, index) => (
-                              <div key={index} className="border-b pb-4 last:border-b-0">
-                                  <div className="flex items-center space-x-2 mb-2">
-                                      <div className="flex">
-                                          {Array(5).fill(0).map((_, i) => (
-                                              <Star key={i} className={`w-4 h-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                                          ))}
-                                      </div>
-                                      <span className="font-medium">{review.author}</span>
-                                      <span className="text-sm text-muted-foreground">{review.date}</span>
-                                  </div>
-                                  <p className="text-muted-foreground leading-relaxed">{review.comment}</p>
-                              </div>
-                          ))
-                      ) : (
-                          <p className="text-muted-foreground">No reviews available yet.</p>
-                      )}
-                    </div>
-                  </TabsContent>
-
-                  {/* Nearby Tab Content */}
-                  <TabsContent value="nearby" className="mt-6">
-                    <div className="space-y-6">
-                      {placeData.nearbyAttractions && placeData.nearbyAttractions.length > 0 && (
-                        <div>
-                          <h3 className="font-semibold mb-3">Nearby Attractions</h3>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            {placeData.nearbyAttractions.map((attraction, index) => (
-                              <div
-                                  key={index}
-                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
-                                  onClick={() => handleViewDetails(attraction.id, attraction.type)}
-                              >
-                                <div>
-                                  <h4 className="font-medium">{attraction.name}</h4>
-                                  <p className="text-sm text-muted-foreground">{attraction.type}</p>
-                                  <div className="flex items-center space-x-1 mt-1">
-                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                    <span className="text-xs">{attraction.rating}</span>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-medium">{attraction.distance}</div>
-                                  <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(attraction.id, attraction.type); }}>
-                                    <Navigation className="w-3 h-3 mr-1" />
-                                    View
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* {placeData.nearbyHotels && placeData.nearbyHotels.length > 0 && (
-                        <div>
-                          <h3 className="font-semibold mb-3">Nearby Hotels</h3>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            {placeData.nearbyHotels.map((hotel, index) => (
-                              <div
-                                  key={index}
-                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
-                                  onClick={() => handleViewDetails(hotel.id, "hotel")}
-                              >
-                                <div>
-                                  <h4 className="font-medium">{hotel.name}</h4>
-                                  <div className="flex items-center space-x-1 mt-1">
-                                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                    <span className="text-xs">{hotel.rating}</span>
-                                  </div>
-                                  <p className="text-sm text-primary font-medium">{hotel.price}/night</p>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-medium">{hotel.distance}</div>
-                                  <Button variant="outline" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); handleViewDetails(hotel.id, "hotel"); }}>
-                                    View Hotel
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )} */}
+                        {photos.map((photo, i) => (
+                            <div key={i} className="aspect-square rounded-lg overflow-hidden cursor-pointer group" onClick={() => setCurrentImageIndex(i)}>
+                                <img src={photo} alt="Gallery" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            </div>
+                        ))}
                     </div>
                   </TabsContent>
                 </Tabs>
               </div>
             </div>
 
-            {/* Right Column - Call to Actions & FAQs */}
+            {/* Right Column (Sticky Sidebar) */}
             <div className="lg:col-span-1">
-              <div className="sticky top-20 space-y-4">
-                <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
-                  <CardHeader>
-                    <CardTitle>{isHotelPage ? "Book Your Stay" : "Visit This Place"}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isHotelPage ? (
-                      <Button
-                        className="w-full bg-primary hover:bg-primary/90"
-                        size="lg"
-                        onClick={handleBookNow}
-                      >
-                        <Home className="w-4 h-4 mr-2" />
-                        Book Now
-                      </Button>
-                    ) : (
-                      <Button
-                        className="w-full bg-primary hover:bg-primary/90"
-                        size="lg"
-                        // Ensure lat and lng are passed for directions
-                        onClick={() => handleGetDirections(placeData.lat, placeData.lng, placeData.name)}
-                      >
-                        <Navigation className="w-4 h-4 mr-2" />
-                        Get Directions
-                      </Button>
-                    )}
-
-                    <div className="space-y-3 text-sm">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <h4 className="font-medium mb-2">Quick Info</h4>
-                        <div className="space-y-1">
-                          {!isHotelPage && placeData.entryFee && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Entry Fee:</span>
-                              <span className="font-medium text-green-600">{placeData.entryFee}</span>
-                            </div>
-                          )}
-                          {!isHotelPage && placeData.duration && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Duration:</span>
-                              <span>{placeData.duration}</span>
-                            </div>
-                          )}
-                          {placeData.bestTime && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Best Time:</span>
-                              <span>{placeData.bestTime}</span>
-                            </div>
-                          )}
-                          {isHotelPage && placeData.price && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Starting Price:</span>
-                              <span className="font-medium">{placeData.price}/night</span>
-                            </div>
-                          )}
-                          {isHotelPage && placeData.checkInTime && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Check-in:</span>
-                              <span>{placeData.checkInTime}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {!isHotelPage && (
-                  <Card className="bg-white/95 backdrop-blur-sm shadow-sm">
+               <div className="sticky top-24 space-y-6">
+                  
+                  {/* Booking Card */}
+                  <Card className="shadow-lg border-t-4 border-t-primary">
                     <CardHeader>
-                      <CardTitle className="text-base">Need a Guide?</CardTitle>
+                        <CardTitle className="flex justify-between items-end">
+                            <div>
+                                <span className="text-sm text-gray-500 font-normal">Starting from</span>
+                                <div className="text-3xl font-bold text-gray-900">₹{displayPrice.toLocaleString()}</div>
+                            </div>
+                            <Badge variant="secondary" className="mb-1 bg-green-100 text-green-700">Available</Badge>
+                        </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Get a local guide for the best experience and safety.
-                      </p>
-                      <Button variant="outline" className="w-full" size="sm" onClick={handleFindLocalGuides}>
-                        Find Local Guides
-                      </Button>
+                    <CardContent className="space-y-4">
+                        <div className="p-4 bg-gray-50 rounded-lg space-y-3 border border-gray-100">
+                             {/* Dynamic Phone Logic */}
+                             <div className="flex items-center gap-3">
+                                <Phone className="h-5 w-5 text-primary" />
+                                {loadingOwner ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                                ) : displayPhone ? (
+                                    <div className="flex flex-col">
+                                        <span className="text-xs text-gray-500">Contact Host</span>
+                                        <a href={`tel:${displayPhone}`} className="font-bold text-blue-600 hover:text-blue-800 hover:underline">
+                                            {displayPhone}
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <span className="text-sm font-medium text-gray-600">
+                                        {selectedHotel.ownerId ? "Login to view contact" : "Contact hidden"}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <Button className="w-full py-6 text-lg shadow-md hover:shadow-lg transition-all" onClick={() => window.alert('Booking Engine integration coming soon!')}>
+                            Book Your Stay
+                        </Button>
+                        
+                        <div className="text-center">
+                             <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
+                                <Info className="h-3 w-3" /> No booking fees involved
+                             </p>
+                        </div>
                     </CardContent>
                   </Card>
-                )}
 
-                {placeData.faqs && placeData.faqs.length > 0 && (
-                  <FAQSection faqs={placeData.faqs} className="bg-white/95 backdrop-blur-sm shadow-sm" />
-                )}
-              </div>
+                  {/* Host Info Card */}
+                  <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
+                                <Users className="h-6 w-6 text-gray-500" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900">Property Host</h4>
+                                <p className="text-xs text-gray-500">Member since 2024</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Usually responds within an hour. Known for great hospitality and local tips.
+                        </p>
+                        <Button variant="outline" className="w-full text-xs">Message Host</Button>
+                    </CardContent>
+                  </Card>
+
+               </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW 2: LIST PAGE (Browsing Hotels)
+  // ==========================================
+  return (
+    <div className="min-h-screen bg-gray-50 pb-12">
+      {/* Header & Filter Section */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center gap-2 pl-0 hover:bg-transparent hover:text-primary">
+                <ArrowLeft className="h-5 w-5" /> Back Home
+              </Button>
+            </div>
+            <h1 className="text-xl font-bold hidden md:block text-gray-800">Hotels & Resorts</h1>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+               <Input 
+                placeholder="Search hotels by name..." 
+                value={filters.search}
+                onChange={(e) => setFilters({...filters, search: e.target.value})}
+                className="bg-gray-50 pl-10"
+               />
+               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Filter className="h-4 w-4" />
+               </div>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+               <Select value={filters.location} onValueChange={(v) => setFilters({...filters, location: v})}>
+                  <SelectTrigger className="w-40 bg-gray-50">
+                    <SelectValue placeholder="Location" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Locations</SelectItem>
+                    <SelectItem value="nainital">Nainital</SelectItem>
+                    <SelectItem value="bhimtal">Bhimtal</SelectItem>
+                    <SelectItem value="mukteshwar">Mukteshwar</SelectItem>
+                    <SelectItem value="pangot">Pangot</SelectItem>
+                  </SelectContent>
+               </Select>
+
+               <Select value={filters.price} onValueChange={(v) => setFilters({...filters, price: v})}>
+                  <SelectTrigger className="w-40 bg-gray-50">
+                    <SelectValue placeholder="Price" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Prices</SelectItem>
+                    <SelectItem value="budget">Budget (Under ₹3k)</SelectItem>
+                    <SelectItem value="mid">Mid (₹3k - ₹6k)</SelectItem>
+                    <SelectItem value="luxury">Luxury (Above ₹6k)</SelectItem>
+                  </SelectContent>
+               </Select>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Main Grid Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {loading ? (
+          <div className="flex flex-col justify-center items-center h-64">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+            <span className="text-gray-500 font-medium">Finding best stays for you...</span>
+          </div>
+        ) : filteredListings.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-dashed border-gray-300">
+            <div className="bg-gray-50 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <Home className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No hotels found</h3>
+            <p className="text-gray-500 mb-6">We couldn't find any stays matching your criteria.</p>
+            <Button variant="outline" onClick={() => setFilters({location:'all', price:'all', search:''})}>
+                Clear all filters
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredListings.map((hotel) => {
+              const startPrice = getPrice(hotel);
+              const amenities = getAmenities(hotel);
+
+              return (
+                <Card 
+                  key={hotel.id} 
+                  className="overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group flex flex-col h-full border-gray-100"
+                  onClick={() => setSelectedHotel(hotel)}
+                >
+                  <div className="relative h-60 overflow-hidden">
+                    <img
+                      src={hotel.photos?.[0] || "https://placehold.co/600x400?text=No+Image"}
+                      alt={hotel.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                    
+                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-xs font-bold shadow-sm uppercase tracking-wide text-gray-800">
+                      {hotel.profession === 'hill-stays' ? 'Hill Stay' : 'Hotel'}
+                    </div>
+                    
+                    <div className="absolute bottom-3 left-3 text-white">
+                        <div className="flex items-center gap-1 text-sm font-medium drop-shadow-md">
+                           <MapPin className="h-3 w-3" /> {hotel.location}
+                        </div>
+                    </div>
+                  </div>
+                  
+                  <CardContent className="p-5 flex flex-col grow">
+                    <div className="mb-3">
+                      <h3 className="text-xl font-bold line-clamp-1 group-hover:text-primary transition-colors text-gray-900">{hotel.name}</h3>
+                      <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs text-gray-500 font-medium">4.5 (12 reviews)</span>
+                      </div>
+                    </div>
+                    
+                    {/* Amenities Preview */}
+                    <div className="flex gap-2 mb-6 overflow-hidden">
+                      {amenities.slice(0, 3).map((am, i) => (
+                         <Badge key={i} variant="secondary" className="px-2 py-0.5 font-normal text-xs bg-gray-100 text-gray-600 border-none">
+                            {am}
+                         </Badge>
+                      ))}
+                      {amenities.length > 3 && (
+                        <span className="text-xs text-gray-400 flex items-center pl-1">+{amenities.length - 3} more</span>
+                      )}
+                    </div>
+
+                    <div className="mt-auto pt-4 border-t border-gray-100 flex items-end justify-between">
+                      <div>
+                        <span className="text-xs text-gray-400 uppercase font-semibold">Starts from </span>
+                        <div className="flex items-center gap-1">
+                            <span className="text-xl font-bold text-primary">₹{startPrice.toLocaleString()}</span>
+                            <span className="text-xs text-gray-400 font-normal">/ night</span>
+                        </div>
+                      </div>
+                      <div className="bg-primary/5 p-2 rounded-full group-hover:bg-primary group-hover:text-white transition-colors">
+                        <ChevronRight className="h-5 w-5" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
