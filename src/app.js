@@ -16,6 +16,7 @@ import PlaceDetailsPage from "./pages/PlaceDetailsPage";
 import MapViewPage from "./pages/MapViewPage";
 import PopularDetailsPage from './pages/PopularDetailsPage';
 import HotelDetails from "./pages/HotelDetails";
+import ToursDetails from "./pages/ToursDetails"
 import BookingPage from './pages/BookingPage';
 import TrekDetailsPage from './pages/TrekDetailsPage';
 import About from "./pages/About";
@@ -26,6 +27,7 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
 import HotelDetails from "./pages/HotelDetails";
+import { TourDetails } from "./pages/ToursDetails";
 
 
 const RouteChangeTracker = () => {
@@ -89,6 +91,7 @@ function App() {
                     <Route path="/map-view/:focusId" element={<MapViewPage/>} />
                     <Route path="/popular-details/:popularId" element={<PopularDetailsPage/>} />
                     <Route path="/hotels" element={<HotelDetails />} />
+                    <Route path="/tours" element={<ToursDetails />} />
                     <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><ComingSoonPage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>

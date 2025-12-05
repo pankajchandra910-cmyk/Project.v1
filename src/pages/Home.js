@@ -130,6 +130,7 @@ export default function Home() {
     }
   }, [navigate, userType, profession]);
 
+  // --- UPDATED CATEGORY CLICK HANDLER ---
   const handleCategoryClick = useCallback((categoryTitle, categoryId) => {
     if (analytics) {
       logEvent(analytics, 'select_content', {
@@ -140,12 +141,15 @@ export default function Home() {
     
     setSelectedCategory(categoryTitle);
     
-    // Route logic based on category ID
+    // Route logic based on category Title
     if (categoryTitle === 'Hotels & Resorts') {
       navigate('/hotels');
+    } else if (categoryTitle === 'Tours & Treks') {
+      // Dynamic navigation for Tours
+      navigate('/tours');
     } else {
       // Fallback for other coming soon pages
-     navigate("/book-item/:itemId")
+      navigate("/book-item/:itemId");
     }
   }, [navigate, setSelectedCategory]);
 

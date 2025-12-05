@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import { GlobalContext } from "../component/GlobalContext";
 import { trekDetailsData } from "../assets/dummy"; // Assuming you have this utility
 import { analytics } from "../firebase"; // Import analytics from your firebase.js
@@ -26,7 +27,7 @@ const iconMap = {
   TreePine, Camera, Sunrise, Info, Phone, Mail, ListTodo, Walking: Footprints,
 };
 
-export default function TrekDetailsPage() {
+export default function TrekDetails() {
     const navigate = useNavigate();
     const { trekId } = useParams();
     const { setSelectedItemId, setSelectedDetailType, setFocusArea } = useContext(GlobalContext);

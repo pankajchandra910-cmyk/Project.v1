@@ -18,7 +18,7 @@ import { logEvent } from "firebase/analytics";
 import { signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { doc, setDoc, addDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore";
 
-// Initial structure for new listings
+// Initial structure for new listings (Updated with Tour Data)
 const initialFormData = {
   id: null,
   name: "",
@@ -31,8 +31,21 @@ const initialFormData = {
     bikes: [],
     vehicles: [],
     guideFeatures: [],
-    treks: [],
     hillStayAmenities: [],
+    // Expanded Tour Data Structure
+    tourData: {
+      difficulty: "Moderate",
+      duration: "",
+      type: "day", // day, weekend, extended
+      maxGroupSize: "",
+      fitnessLevel: "",
+      includes: [],
+      excludes: [],
+      itinerary: [] 
+    },
+    // Keep legacy treks array if needed for backward compatibility, 
+    // but we will use tourData for the new page
+    treks: [],
   },
 };
 
@@ -54,6 +67,12 @@ export default function OwnerDashboard() {
   const [ownerListings, setOwnerListings] = useState([]);
   const [editingListingId, setEditingListingId] = useState(null);
   const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
+  
+  // --- New Helper States for Tours ---
+  const [newInclude, setNewInclude] = useState("");
+  const [newExclude, setNewExclude] = useState("");
+  const [itineraryDay, setItineraryDay] = useState({ title: "", activities: "", meals: "" });
+
   const fileInputRef = useRef(null);
 
   // --- Phone Verification State ---
@@ -184,8 +203,85 @@ export default function OwnerDashboard() {
     }
   }));
 
+  // --- Specific Tour Helpers ---
+  const updateTourField = (field, value) => {
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        tourData: { ...p.listingDetails.tourData, [field]: value }
+      }
+    }));
+  };
+
+  const addTourArrayItem = (field, value, setter) => {
+    if(!value.trim()) return;
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        tourData: { 
+          ...p.listingDetails.tourData, 
+          [field]: [...(p.listingDetails.tourData[field] || []), value.trim()] 
+        }
+      }
+    }));
+    setter("");
+  };
+
+  const removeTourArrayItem = (field, index) => {
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        tourData: {
+          ...p.listingDetails.tourData,
+          [field]: p.listingDetails.tourData[field].filter((_, i) => i !== index)
+        }
+      }
+    }));
+  };
+
+  const addItineraryDay = () => {
+    if(!itineraryDay.title) return toast.error("Day title is required");
+    
+    const dayData = {
+      day: (formData.listingDetails.tourData.itinerary?.length || 0) + 1,
+      title: itineraryDay.title,
+      activities: itineraryDay.activities.split(',').map(s => s.trim()).filter(Boolean),
+      meals: itineraryDay.meals.split(',').map(s => s.trim()).filter(Boolean)
+    };
+
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        tourData: {
+          ...p.listingDetails.tourData,
+          itinerary: [...(p.listingDetails.tourData.itinerary || []), dayData]
+        }
+      }
+    }));
+    setItineraryDay({ title: "", activities: "", meals: "" });
+  };
+
+  const removeItineraryDay = (index) => {
+    setFormData(p => {
+      const newItinerary = p.listingDetails.tourData.itinerary.filter((_, i) => i !== index);
+      // Re-index days automatically
+      const reIndexed = newItinerary.map((item, i) => ({ ...item, day: i + 1 }));
+      return {
+        ...p,
+        listingDetails: {
+          ...p.listingDetails,
+          tourData: { ...p.listingDetails.tourData, itinerary: reIndexed }
+        }
+      };
+    });
+  };
+
   // --- CRUD Operations ---
-   const handlePublishListing = async () => {
+  const handlePublishListing = async () => {
     // 1. Basic Validation
     if (!formData.name || !formData.location) return toast.error("Listing Name and Location are required.");
     if (!ownerId) return toast.error("Authentication error. Please re-login.");
@@ -200,22 +296,15 @@ export default function OwnerDashboard() {
     const listingData = {
       ...formData,
       profession: globalProfession,
-      
-      // --- LINKING DATA FOR DYNAMIC FETCHING ---
       ownerId, 
-      
-      // --- CONTACT SNAPSHOT ---
       contactSnapshot: {
         phone: userPhone,
         email: userEmail,
         name: userName
       },
-      
       status: "Active",
       bookings: 0,
       revenue: "₹0",
-      
-      // --- NEW FIELD ADDED HERE ---
       verified: false, 
     };
 
@@ -223,32 +312,13 @@ export default function OwnerDashboard() {
       if (editingListingId) {
         // Update Logic
         const docRef = doc(db, "listings", editingListingId);
-        // We include verified: false here so if they edit an existing listing,
-        // it resets to unverified until approved again.
         await setDoc(docRef, { ...listingData, updatedAt: serverTimestamp() }, { merge: true });
-
-        if (analytics) {
-          logEvent(analytics, 'update_listing', {
-            profession: globalProfession,
-            listing_name: formData.name,
-          });
-        }
-
         toast.success("Listing updated successfully!");
       } else {
         // Create Logic
         const listingsCollectionRef = collection(db, "listings");
         const newDocRef = await addDoc(listingsCollectionRef, { ...listingData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         await setDoc(newDocRef, { id: newDocRef.id }, { merge: true });
-
-        if (analytics) {
-          logEvent(analytics, 'create_listing', {
-            profession: globalProfession,
-            listing_name: formData.name,
-            price: parseInt(formData.price) || 0
-          });
-        }
-
         toast.success("Listing published successfully!");
       }
       setFormData(initialFormData);
@@ -261,11 +331,22 @@ export default function OwnerDashboard() {
     }
   };
 
-
   const handleEditListing = (listingId) => {
     const listing = ownerListings.find(l => l.id === listingId);
     if (listing) {
-      setFormData({ ...initialFormData, ...listing });
+      // Merge strictly to ensure tourData exists even if editing an old listing
+      setFormData({ 
+        ...initialFormData, 
+        ...listing, 
+        listingDetails: {
+          ...initialFormData.listingDetails,
+          ...listing.listingDetails,
+          tourData: {
+            ...initialFormData.listingDetails.tourData,
+            ...(listing.listingDetails?.tourData || {})
+          }
+        }
+      });
       setGlobalProfession(listing.profession); 
       setEditingListingId(listingId);
       setActiveTab("add-listing");
@@ -302,10 +383,7 @@ export default function OwnerDashboard() {
     });
 
     if (success) {
-      if (analytics) {
-        logEvent(analytics, 'update_owner_profile', { owner_id: ownerId });
-      }
-      toast.success('Profile updated successfully! Information is now available for your listings.');
+      toast.success('Profile updated successfully!');
     } else {
       toast.error('Profile update failed.');
     }
@@ -313,7 +391,7 @@ export default function OwnerDashboard() {
 
   const handleSendPhoneOTP = async () => {
     if (!phoneToVerify || phoneToVerify.length < 10) {
-      return toast.error('Please enter a valid phone number, including country code (e.g., +919876543210).');
+      return toast.error('Please enter a valid phone number (+91...)');
     }
     setPhoneLoading(true);
     try {
@@ -329,22 +407,17 @@ export default function OwnerDashboard() {
   };
 
   const handleConfirmPhoneOTP = async () => {
-    if (!phoneConfirmationResult || !phoneOtp) {
-      return toast.error('Please enter the OTP to verify.');
-    }
+    if (!phoneConfirmationResult || !phoneOtp) return toast.error('Enter OTP.');
     setPhoneLoading(true);
     try {
       const phoneCred = PhoneAuthProvider.credential(phoneConfirmationResult.verificationId, phoneOtp);
       await linkWithCredential(auth.currentUser, phoneCred); 
       await updateUserProfileInFirestore({ phoneNumber: phoneToVerify, phoneVerified: true });
       setUserPhone(phoneToVerify); 
-      toast.success('Phone number verified and linked!');
+      toast.success('Phone verified!');
       setShowPhoneModal(false);
-      setPhoneOtp("");
-      setPhoneConfirmationResult(null);
-      setPhoneOtpSent(false);
     } catch (e) {
-      toast.error(`Failed to verify OTP: ${e.message}`);
+      toast.error(`Failed to verify: ${e.message}`);
     } finally {
       setPhoneLoading(false);
     }
@@ -362,50 +435,23 @@ export default function OwnerDashboard() {
                 <Plus className="w-4 h-4 mr-2" />Add Room
               </Button>
             </div>
-            {formData.listingDetails.rooms.length === 0 && <p className="text-muted-foreground">No rooms added yet.</p>}
             {formData.listingDetails.rooms.map((room) => (
               <Card key={room.id}>
                 <CardContent className="p-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label>Room Type</Label>
-                      <Input placeholder="e.g., Deluxe, Suite" value={room.type} onChange={(e) => updateNestedArray("rooms", room.id, "type", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Price per Night</Label>
-                      <Input type="number" placeholder="Enter Price" value={room.price} onChange={(e) => updateNestedArray("rooms", room.id, "price", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>View</Label>
-                      <Select value={room.view} onValueChange={(v) => updateNestedArray("rooms", room.id, "view", v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select view" />
-                        </SelectTrigger>
+                    <Input placeholder="Room Type" value={room.type} onChange={(e) => updateNestedArray("rooms", room.id, "type", e.target.value)} />
+                    <Input type="number" placeholder="Price" value={room.price} onChange={(e) => updateNestedArray("rooms", room.id, "price", e.target.value)} />
+                    <Select value={room.view} onValueChange={(v) => updateNestedArray("rooms", room.id, "view", v)}>
+                        <SelectTrigger><SelectValue placeholder="View" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lake">Lake View</SelectItem>
-                          <SelectItem value="mountain">Mountain View</SelectItem>
-                          <SelectItem value="garden">Garden View</SelectItem>
-                          <SelectItem value="city">City View</SelectItem>
-                          <SelectItem value="forest">Forest View</SelectItem>
+                          <SelectItem value="lake">Lake</SelectItem>
+                          <SelectItem value="mountain">Mountain</SelectItem>
                         </SelectContent>
-                      </Select>
-                    </div>
+                    </Select>
                   </div>
-                  <div>
-                    <Label>Features</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {["TV", "WiFi", "AC", "Room Service", "Pool Access", "Balcony", "Mini Bar"].map(f => (
-                        <Badge key={f} variant={room.features.includes(f) ? "default" : "outline"} className="cursor-pointer" onClick={() => toggleInArray('rooms', room.id, 'features', f)}>
-                          {f}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="destructive" size="sm" onClick={() => deleteFromArray("rooms", room.id)}>
+                  <Button variant="destructive" size="sm" onClick={() => deleteFromArray("rooms", room.id)}>
                       <Trash2 className="w-4 h-4 mr-2" />Delete Room
-                    </Button>
-                  </div>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -415,44 +461,19 @@ export default function OwnerDashboard() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Bikes & Scooters</h3>
+              <h3 className="text-lg font-semibold">Bikes</h3>
               <Button onClick={() => addToArray('bikes', { id: Date.now(), type: "", name: "", price: "" })} size="sm">
                 <Plus className="w-4 h-4 mr-2" />Add Bike
               </Button>
             </div>
-            {formData.listingDetails.bikes.length === 0 && <p className="text-muted-foreground">No bikes added yet.</p>}
             {formData.listingDetails.bikes.map(bike => (
               <Card key={bike.id}>
                 <CardContent className="p-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label>Name / Model</Label>
-                      <Input placeholder="e.g., Activa, Classic 350" value={bike.name} onChange={e => updateNestedArray("bikes", bike.id, "name", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Type</Label>
-                      <Select value={bike.type} onValueChange={v => updateNestedArray("bikes", bike.id, "type", v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="scooter">Scooter</SelectItem>
-                          <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                          <SelectItem value="electric">Electric Bike</SelectItem>
-                          <SelectItem value="bicycle">Bicycle</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Price per Day</Label>
-                      <Input type="number" placeholder="Enter Price" value={bike.price} onChange={e => updateNestedArray("bikes", bike.id, "price", e.target.value)} />
-                    </div>
+                    <Input placeholder="Name/Model" value={bike.name} onChange={e => updateNestedArray("bikes", bike.id, "name", e.target.value)} />
+                    <Input type="number" placeholder="Price/Day" value={bike.price} onChange={e => updateNestedArray("bikes", bike.id, "price", e.target.value)} />
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="destructive" size="sm" onClick={() => deleteFromArray("bikes", bike.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />Delete Bike
-                    </Button>
-                  </div>
+                  <Button variant="destructive" size="sm" onClick={() => deleteFromArray("bikes", bike.id)}>Delete</Button>
                 </CardContent>
               </Card>
             ))}
@@ -467,111 +488,143 @@ export default function OwnerDashboard() {
                 <Plus className="w-4 h-4 mr-2" />Add Vehicle
               </Button>
             </div>
-            {formData.listingDetails.vehicles.length === 0 && <p className="text-muted-foreground">No vehicles added yet.</p>}
             {formData.listingDetails.vehicles.map(vehicle => (
               <Card key={vehicle.id}>
                 <CardContent className="p-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label>Name / Model</Label>
-                      <Input placeholder="e.g., Maruti Dzire" value={vehicle.name} onChange={e => updateNestedArray("vehicles", vehicle.id, "name", e.target.value)} />
-                    </div>
-                    <div>
-                      <Label>Type</Label>
-                      <Select value={vehicle.type} onValueChange={v => updateNestedArray("vehicles", vehicle.id, "type", v)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sedan">Sedan</SelectItem>
-                          <SelectItem value="suv">SUV</SelectItem>
-                          <SelectItem value="hatchback">Hatchback</SelectItem>
-                          <SelectItem value="tempo">Tempo Traveller</SelectItem>
-                          <SelectItem value="luxury">Luxury Car</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Rate</Label>
-                      <Input placeholder="e.g., ₹20/km or ₹2000/day" value={vehicle.rate} onChange={e => updateNestedArray("vehicles", vehicle.id, "rate", e.target.value)} />
-                    </div>
+                    <Input placeholder="Model" value={vehicle.name} onChange={e => updateNestedArray("vehicles", vehicle.id, "name", e.target.value)} />
+                    <Input placeholder="Rate" value={vehicle.rate} onChange={e => updateNestedArray("vehicles", vehicle.id, "rate", e.target.value)} />
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="destructive" size="sm" onClick={() => deleteFromArray("vehicles", vehicle.id)}>
-                      <Trash2 className="w-4 h-4 mr-2" />Delete Vehicle
-                    </Button>
-                  </div>
+                  <Button variant="destructive" size="sm" onClick={() => deleteFromArray("vehicles", vehicle.id)}>Delete</Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         );
-      case "local-guides":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Guide Details</h3>
-            <div>
-              <Label htmlFor="guide-rate">Service Rate (per day)</Label>
-              <Input id="guide-rate" type="number" placeholder="800" name="price" value={formData.price} onChange={handleFormChange} />
-            </div>
-            <div>
-              <Label>Expertise/Specialization</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {formData.listingDetails.guideFeatures.map((f) => (
-                  <Badge key={f} className="flex items-center gap-1" onClick={() => removeGuideFeature(f)}>
-                    {f}<X className="w-3 h-3 cursor-pointer" />
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Input placeholder="e.g., Mountain Trekking, Bird Watching" value={newGuideFeatureText} onChange={e => setNewGuideFeatureText(e.target.value)} onKeyPress={e => e.key === 'Enter' && addGuideFeature()} />
-                <Button onClick={addGuideFeature}>Add</Button>
-              </div>
-            </div>
-          </div>
-        );
-      case "hill-stays":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Hill Stay Details</h3>
-            <div>
-              <Label>Price per Night</Label>
-              <Input type="number" placeholder="Enter Price" name="price" value={formData.price} onChange={handleFormChange} />
-            </div>
-            <div>
-              <Label>Amenities</Label>
-              <p className="text-muted-foreground text-sm">Add key amenities like 'Fireplace','private balcony', 'Kitchen' in the main description section above.</p>
-            </div>
-          </div>
-        );
       case "tours-treks":
+        const { tourData } = formData.listingDetails;
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Tour & Trek Details</h3>
-            <div>
-              <Label>Price per Person</Label>
-              <Input type="number" placeholder="Enter Price" name="price" value={formData.price} onChange={handleFormChange} />
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
+                <h3 className="text-lg font-bold text-blue-800 mb-4">Tour Specifics</h3>
+                
+                {/* Basic Tour Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <Label>Tour Type</Label>
+                        <Select value={tourData.type} onValueChange={v => updateTourField("type", v)}>
+                            <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="day">Day Tour</SelectItem>
+                                <SelectItem value="weekend">Weekend (2-3 Days)</SelectItem>
+                                <SelectItem value="extended">Extended (4+ Days)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label>Difficulty</Label>
+                        <Select value={tourData.difficulty} onValueChange={v => updateTourField("difficulty", v)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Easy">Easy</SelectItem>
+                                <SelectItem value="Moderate">Moderate</SelectItem>
+                                <SelectItem value="Challenging">Challenging</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label>Total Duration</Label>
+                        <Input value={tourData.duration} onChange={e => updateTourField("duration", e.target.value)} placeholder="e.g. 4 Hours / 2 Days" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <Label>Price Per Person (₹)</Label>
+                        <Input type="number" value={formData.price} onChange={handleFormChange} name="price" placeholder="1500" />
+                    </div>
+                    <div>
+                        <Label>Max Group Size</Label>
+                        <Input type="number" value={tourData.maxGroupSize} onChange={e => updateTourField("maxGroupSize", e.target.value)} placeholder="15" />
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <Label>Fitness Level Required</Label>
+                    <Input value={tourData.fitnessLevel} onChange={e => updateTourField("fitnessLevel", e.target.value)} placeholder="e.g. Good physical fitness required" />
+                </div>
             </div>
-            <div>
-              <Label>Difficulty</Label>
-              <Select value={formData.listingDetails.treks[0]?.difficulty || ""} onValueChange={v => setFormData(p => ({
-                ...p,
-                listingDetails: {
-                  ...p.listingDetails,
-                  treks: [{ id: Date.now(), difficulty: v }] 
-                }
-              }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="easy">Easy</SelectItem>
-                  <SelectItem value="moderate">Moderate</SelectItem>
-                  <SelectItem value="challenging">Challenging</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Includes & Excludes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="border p-4 rounded-md">
+                    <Label className="text-green-600">What's Included</Label>
+                    <div className="flex gap-2 mt-2">
+                        <Input value={newInclude} onChange={e => setNewInclude(e.target.value)} placeholder="e.g. Lunch" />
+                        <Button size="sm" onClick={() => addTourArrayItem("includes", newInclude, setNewInclude)}><Plus className="w-4 h-4" /></Button>
+                    </div>
+                    <ul className="mt-2 space-y-1">
+                        {tourData.includes?.map((item, i) => (
+                            <li key={i} className="flex justify-between bg-green-50 px-2 py-1 rounded text-sm">
+                                {item} <X className="w-4 h-4 cursor-pointer text-red-500" onClick={() => removeTourArrayItem("includes", i)} />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className="border p-4 rounded-md">
+                    <Label className="text-red-600">What's Excluded</Label>
+                    <div className="flex gap-2 mt-2">
+                        <Input value={newExclude} onChange={e => setNewExclude(e.target.value)} placeholder="e.g. Transport" />
+                        <Button size="sm" onClick={() => addTourArrayItem("excludes", newExclude, setNewExclude)}><Plus className="w-4 h-4" /></Button>
+                    </div>
+                    <ul className="mt-2 space-y-1">
+                        {tourData.excludes?.map((item, i) => (
+                            <li key={i} className="flex justify-between bg-red-50 px-2 py-1 rounded text-sm">
+                                {item} <X className="w-4 h-4 cursor-pointer text-red-500" onClick={() => removeTourArrayItem("excludes", i)} />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
-            <p className="text-muted-foreground text-sm">Add duration, itinerary, and inclusions in the main description.</p>
+
+            {/* Itinerary Builder */}
+            <div className="border p-4 rounded-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Itinerary Builder</h3>
+                    <Badge variant="secondary">Day {tourData.itinerary?.length + 1}</Badge>
+                </div>
+                
+                <div className="space-y-3 bg-gray-50 p-4 rounded">
+                    <div>
+                        <Label>Day Title</Label>
+                        <Input value={itineraryDay.title} onChange={e => setItineraryDay({...itineraryDay, title: e.target.value})} placeholder="e.g. Arrival at Camp" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <Label>Activities (comma separated)</Label>
+                            <Input value={itineraryDay.activities} onChange={e => setItineraryDay({...itineraryDay, activities: e.target.value})} placeholder="Trek to lake, Bonfire" />
+                        </div>
+                        <div>
+                            <Label>Meals (comma separated)</Label>
+                            <Input value={itineraryDay.meals} onChange={e => setItineraryDay({...itineraryDay, meals: e.target.value})} placeholder="Breakfast, Dinner" />
+                        </div>
+                    </div>
+                    <Button onClick={addItineraryDay} className="w-full mt-2" variant="outline"><Plus className="w-4 h-4 mr-2" />Add Day to Itinerary</Button>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                    {tourData.itinerary?.map((day, idx) => (
+                        <div key={idx} className="relative border-l-4 border-blue-500 pl-4 py-2 bg-white shadow-sm rounded-r-md">
+                            <h4 className="font-bold">Day {day.day}: {day.title}</h4>
+                            <p className="text-sm text-gray-600">Activities: {day.activities.join(', ')}</p>
+                            <p className="text-xs text-gray-500">Meals: {day.meals.join(', ')}</p>
+                            <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-red-500 hover:bg-red-50" onClick={() => removeItineraryDay(idx)}>
+                                <Trash2 className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            </div>
           </div>
         );
       default:
@@ -579,44 +632,27 @@ export default function OwnerDashboard() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">General Listing Details</h3>
             <div>
-              <Label>Service Rate (Optional)</Label>
-              <Input type="number" placeholder="e.g., 800" name="price" value={formData.price} onChange={handleFormChange} />
+              <Label>Service Rate</Label>
+              <Input type="number" placeholder="800" name="price" value={formData.price} onChange={handleFormChange} />
             </div>
             <div>
-              <Label>Expertise/Specialization (comma-separated)</Label>
+              <Label>Specialization (comma-separated)</Label>
               <Input
-                placeholder="e.g., Hiking, Photography, Cuisine"
+                placeholder="Hiking, Photography"
                 value={formData.listingDetails.guideFeatures.join(", ")}
-                onChange={(e) =>
-                  setFormData((p) => ({
-                    ...p,
-                    listingDetails: {
-                      ...p.listingDetails,
-                      guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean),
-                    },
-                  }))
-                }
+                onChange={(e) => setFormData((p) => ({...p, listingDetails: {...p.listingDetails, guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean)}}))}
               />
             </div>
-            <p className="text-sm text-muted-foreground mt-1">For more specific options, please select a profession in your profile.</p>
           </div>
         );
     }
   };
 
   const getPreviewPrice = () => {
-    if (globalProfession === "resort-hotel" && formData.listingDetails.rooms.length > 0) {
-      return `₹${formData.listingDetails.rooms[0].price || "---"}/night`;
-    }
-    if (globalProfession === "rental-bikes" && formData.listingDetails.bikes.length > 0) {
-      return `₹${formData.listingDetails.bikes[0].price || "---"}/day`;
-    }
-    if (globalProfession === "cabs-taxis" && formData.listingDetails.vehicles.length > 0) {
-      return `${formData.listingDetails.vehicles[0].rate || "---"}`;
-    }
-    if (formData.price) {
-      return `₹${formData.price}`;
-    }
+    if (globalProfession === "resort-hotel" && formData.listingDetails.rooms.length > 0) return `₹${formData.listingDetails.rooms[0].price || "---"}/night`;
+    if (globalProfession === "rental-bikes" && formData.listingDetails.bikes.length > 0) return `₹${formData.listingDetails.bikes[0].price || "---"}/day`;
+    if (globalProfession === "cabs-taxis" && formData.listingDetails.vehicles.length > 0) return `${formData.listingDetails.vehicles[0].rate || "---"}`;
+    if (formData.price) return `₹${formData.price}`;
     return "N/A";
   };
 
@@ -668,7 +704,10 @@ export default function OwnerDashboard() {
                         <SelectItem value="bhimtal">Bhimtal</SelectItem>
                         <SelectItem value="sukhatal">Sukhatal</SelectItem>
                         <SelectItem value="naukuchiatal">Naukuchiatal</SelectItem>
-                        <SelectItem value="brahmasthali">Brahmasthali</SelectItem>
+                        <SelectItem value="mukteshwar">Mukteshwar</SelectItem>
+                        <SelectItem value="pangot">Pangot</SelectItem>
+                        <SelectItem value="almora">Almora</SelectItem>
+                        <SelectItem value="kausani">Kausani</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
