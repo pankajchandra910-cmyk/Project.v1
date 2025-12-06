@@ -147,6 +147,9 @@ export default function Home() {
     } else if (categoryTitle === 'Tours & Treks') {
       // Dynamic navigation for Tours
       navigate('/tours');
+    } else if (categoryTitle === 'Cabs & Taxis') {
+      // Dynamic navigation for Cabs
+      navigate('/cabs');
     } else {
       // Fallback for other coming soon pages
       navigate("/book-item/:itemId");

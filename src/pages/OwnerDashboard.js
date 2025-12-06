@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { Badge } from "../component/badge";
 import { Separator } from "../component/separator";
-import { Plus, Upload, Edit, Trash2, X, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Upload, Edit, Trash2, X, Loader2, RefreshCw, Car, IndianRupee, MapPin } from "lucide-react"; 
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { toast } from "sonner";
@@ -18,34 +18,48 @@ import { logEvent } from "firebase/analytics";
 import { signInWithPhoneNumber, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { doc, setDoc, addDoc, deleteDoc, collection, serverTimestamp } from "firebase/firestore";
 
-// Initial structure for new listings (Updated with Tour Data)
+// --- 1. INITIAL STATE STRUCTURE ---
 const initialFormData = {
   id: null,
   name: "",
-  location: "",
+  location: "", 
   description: "",
   price: "",
   photos: [], 
+  verified: false, 
   listingDetails: {
-    rooms: [],
-    bikes: [],
-    vehicles: [],
-    guideFeatures: [],
-    hillStayAmenities: [],
-    // Expanded Tour Data Structure
+    rooms: [], 
+    bikes: [], 
+    vehicles: [], 
+    guideFeatures: [], // Used for Local Guide / General Specializations
+    hillStayAmenities: [], 
+    
+    // Tour Specific Data
     tourData: {
       difficulty: "Moderate",
       duration: "",
-      type: "day", // day, weekend, extended
+      type: "day",
       maxGroupSize: "",
       fitnessLevel: "",
       includes: [],
       excludes: [],
       itinerary: [] 
     },
-    // Keep legacy treks array if needed for backward compatibility, 
-    // but we will use tourData for the new page
-    treks: [],
+
+    // Cab Vendor Specific Data
+    cabData: {
+      pricing: {
+        local: "", 
+        outstation: "", 
+        airport: "" 
+      },
+      availableVehicleTypes: [], 
+      services: [], 
+      areas: [], 
+      specializations: [] 
+    },
+    
+    treks: [], 
   },
 };
 
@@ -60,22 +74,29 @@ export default function OwnerDashboard() {
 
   const navigate = useNavigate();
 
+  // --- 2. LOCAL STATE ---
   const [activeTab, setActiveTab] = useState("add-listing");
   const [syncStatus, setSyncStatus] = useState('idle');
   const [isSyncing, setIsSyncing] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
   const [ownerListings, setOwnerListings] = useState([]);
   const [editingListingId, setEditingListingId] = useState(null);
+  
+  // Helpers for Guides / General
   const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
   
-  // --- New Helper States for Tours ---
+  // Helpers for Tours
   const [newInclude, setNewInclude] = useState("");
   const [newExclude, setNewExclude] = useState("");
   const [itineraryDay, setItineraryDay] = useState({ title: "", activities: "", meals: "" });
 
+  // Helpers for Cabs
+  const [newCabTag, setNewCabTag] = useState({ vehicle: "", service: "", area: "", spec: "" });
+  const [newVehicleInv, setNewVehicleInv] = useState({ name: "", rate: "" });
+
   const fileInputRef = useRef(null);
 
-  // --- Phone Verification State ---
+  // Phone Verification State
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [phoneToVerify, setPhoneToVerify] = useState(userPhone || "");
   const [phoneOtp, setPhoneOtp] = useState("");
@@ -83,7 +104,7 @@ export default function OwnerDashboard() {
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
   const [phoneLoading, setPhoneLoading] = useState(false);
 
-  // --- Data Fetching ---
+  // --- 3. DATA FETCHING ---
   const fetchListings = useCallback(async () => {
     if (ownerId) {
       const listings = await readOwnerListingsRemote(ownerId);
@@ -99,7 +120,7 @@ export default function OwnerDashboard() {
     setPhoneToVerify(userPhone || "");
   }, [userPhone]);
 
-  // --- Sync Listings ---
+  // --- 4. SYNC LOGIC ---
   const syncListings = useCallback(async () => {
     if (!ownerId || isSyncing) return;
     setIsSyncing(true);
@@ -128,7 +149,7 @@ export default function OwnerDashboard() {
     }
   }, [ownerId, ownerListings, writeOwnerListingsRemote, isSyncing, fetchListings]);
 
-  // --- Form Handlers ---
+  // --- 5. FORM HANDLERS ---
   const handleFormChange = (e) => setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
   const handleSelectChange = (name, value) => setFormData(p => ({ ...p, [name]: value }));
 
@@ -146,6 +167,7 @@ export default function OwnerDashboard() {
 
   const removePhoto = (index) => setFormData(p => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
 
+  // Helper: Update object inside an array
   const updateNestedArray = (arr, id, field, val) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -154,6 +176,7 @@ export default function OwnerDashboard() {
     }
   }));
 
+  // Helper: Add object to an array
   const addToArray = (arr, item) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -162,6 +185,7 @@ export default function OwnerDashboard() {
     }
   }));
 
+  // Helper: Remove object from array
   const deleteFromArray = (arr, id) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -170,40 +194,108 @@ export default function OwnerDashboard() {
     }
   }));
 
-  const toggleInArray = (arr, id, field, val) => setFormData(p => ({
-    ...p,
-    listingDetails: {
-      ...p.listingDetails,
-      [arr]: p.listingDetails[arr].map(item =>
-        item.id === id
-          ? { ...item, [field]: item[field].includes(val) ? item[field].filter(f => f !== val) : [...item[field], val] }
-          : item
-      )
+  // --- GUIDE / GENERAL SPECIALIZATION HELPERS (FIXED) ---
+  const addGuideFeature = () => {
+    if (!newGuideFeatureText || !newGuideFeatureText.trim()) return;
+    
+    const feature = newGuideFeatureText.trim();
+    if (formData.listingDetails.guideFeatures.includes(feature)) {
+        toast.info("Feature already added");
+        return;
     }
-  }));
 
-  const addGuideFeature = useCallback(() => {
-    if (newGuideFeatureText.trim() && !formData.listingDetails.guideFeatures.includes(newGuideFeatureText.trim())) {
-      setFormData(p => ({
-        ...p,
+    setFormData(prev => ({
+        ...prev,
         listingDetails: {
-          ...p.listingDetails,
-          guideFeatures: [...p.listingDetails.guideFeatures, newGuideFeatureText.trim()]
+            ...prev.listingDetails,
+            guideFeatures: [...prev.listingDetails.guideFeatures, feature]
         }
-      }));
-      setNewGuideFeatureText(""); 
-    }
-  }, [newGuideFeatureText, formData.listingDetails.guideFeatures]);
+    }));
+    setNewGuideFeatureText("");
+  };
 
-  const removeGuideFeature = (feature) => setFormData(p => ({
-    ...p,
-    listingDetails: {
-      ...p.listingDetails,
-      guideFeatures: p.listingDetails.guideFeatures.filter(f => f !== feature)
-    }
-  }));
+  const removeGuideFeature = (index) => {
+    setFormData(prev => ({
+        ...prev,
+        listingDetails: {
+            ...prev.listingDetails,
+            guideFeatures: prev.listingDetails.guideFeatures.filter((_, i) => i !== index)
+        }
+    }));
+  };
 
-  // --- Specific Tour Helpers ---
+  // --- CAB SPECIFIC HELPERS (FIXED) ---
+  const updateCabPricing = (field, value) => {
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        cabData: {
+          ...p.listingDetails.cabData,
+          pricing: { ...p.listingDetails.cabData.pricing, [field]: value }
+        }
+      }
+    }));
+  };
+
+  const addCabArrayItem = (arrayName, value, inputFieldKey) => {
+    if (!value || !value.trim()) return;
+    
+    const cleanValue = value.trim();
+    const currentArray = formData.listingDetails.cabData[arrayName] || [];
+
+    if (currentArray.includes(cleanValue)) {
+        toast.info(`${cleanValue} is already added.`);
+        return;
+    }
+
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        cabData: {
+          ...p.listingDetails.cabData,
+          [arrayName]: [...currentArray, cleanValue]
+        }
+      }
+    }));
+    
+    if (inputFieldKey) {
+        setNewCabTag(prev => ({ ...prev, [inputFieldKey]: "" }));
+    }
+  };
+
+  // FIXED REMOVE FUNCTION FOR CAB ITEMS
+  const removeCabArrayItem = (arrayName, index) => {
+    setFormData(prev => {
+        const currentList = prev.listingDetails.cabData[arrayName];
+        const updatedList = currentList.filter((_, i) => i !== index);
+        
+        return {
+            ...prev,
+            listingDetails: {
+                ...prev.listingDetails,
+                cabData: {
+                    ...prev.listingDetails.cabData,
+                    [arrayName]: updatedList
+                }
+            }
+        };
+    });
+  };
+
+  const addVehicleToInventory = () => {
+    if (!newVehicleInv.name || !newVehicleInv.rate) return toast.error("Vehicle name and rate are required");
+    addToArray('vehicles', { 
+        id: Date.now(), 
+        type: "car", 
+        name: newVehicleInv.name, 
+        rate: newVehicleInv.rate 
+    });
+    setNewVehicleInv({ name: "", rate: "" });
+  };
+
+  // --- TOUR SPECIFIC HELPERS ---
   const updateTourField = (field, value) => {
     setFormData(p => ({
       ...p,
@@ -244,14 +336,12 @@ export default function OwnerDashboard() {
 
   const addItineraryDay = () => {
     if(!itineraryDay.title) return toast.error("Day title is required");
-    
     const dayData = {
       day: (formData.listingDetails.tourData.itinerary?.length || 0) + 1,
       title: itineraryDay.title,
       activities: itineraryDay.activities.split(',').map(s => s.trim()).filter(Boolean),
       meals: itineraryDay.meals.split(',').map(s => s.trim()).filter(Boolean)
     };
-
     setFormData(p => ({
       ...p,
       listingDetails: {
@@ -268,7 +358,6 @@ export default function OwnerDashboard() {
   const removeItineraryDay = (index) => {
     setFormData(p => {
       const newItinerary = p.listingDetails.tourData.itinerary.filter((_, i) => i !== index);
-      // Re-index days automatically
       const reIndexed = newItinerary.map((item, i) => ({ ...item, day: i + 1 }));
       return {
         ...p,
@@ -280,13 +369,11 @@ export default function OwnerDashboard() {
     });
   };
 
-  // --- CRUD Operations ---
+  // --- 6. CRUD OPERATIONS ---
   const handlePublishListing = async () => {
-    // 1. Basic Validation
     if (!formData.name || !formData.location) return toast.error("Listing Name and Location are required.");
     if (!ownerId) return toast.error("Authentication error. Please re-login.");
 
-    // 2. Profile Completeness Validation
     if (!userPhone) {
       toast.error("Contact Number is required. Please update your Profile.");
       setActiveTab("profile");
@@ -305,17 +392,15 @@ export default function OwnerDashboard() {
       status: "Active",
       bookings: 0,
       revenue: "₹0",
-      verified: false, 
+      verified: formData.verified || false, 
     };
 
     try {
       if (editingListingId) {
-        // Update Logic
         const docRef = doc(db, "listings", editingListingId);
         await setDoc(docRef, { ...listingData, updatedAt: serverTimestamp() }, { merge: true });
         toast.success("Listing updated successfully!");
       } else {
-        // Create Logic
         const listingsCollectionRef = collection(db, "listings");
         const newDocRef = await addDoc(listingsCollectionRef, { ...listingData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         await setDoc(newDocRef, { id: newDocRef.id }, { merge: true });
@@ -334,7 +419,6 @@ export default function OwnerDashboard() {
   const handleEditListing = (listingId) => {
     const listing = ownerListings.find(l => l.id === listingId);
     if (listing) {
-      // Merge strictly to ensure tourData exists even if editing an old listing
       setFormData({ 
         ...initialFormData, 
         ...listing, 
@@ -344,7 +428,12 @@ export default function OwnerDashboard() {
           tourData: {
             ...initialFormData.listingDetails.tourData,
             ...(listing.listingDetails?.tourData || {})
-          }
+          },
+          cabData: {
+            ...initialFormData.listingDetails.cabData,
+            ...(listing.listingDetails?.cabData || {})
+          },
+          guideFeatures: listing.listingDetails?.guideFeatures || []
         }
       });
       setGlobalProfession(listing.profession); 
@@ -355,15 +444,11 @@ export default function OwnerDashboard() {
 
   const handleDeleteListing = async (listingId) => {
     if (!window.confirm("Are you sure you want to permanently delete this listing?")) return;
-
     const listingToDelete = ownerListings.find(l => l.id === listingId);
     try {
       await deleteDoc(doc(db, "listings", listingId));
       if (analytics && listingToDelete) {
-        logEvent(analytics, 'delete_listing', {
-          profession: listingToDelete.profession,
-          listing_name: listingToDelete.name
-        });
+        logEvent(analytics, 'delete_listing', { profession: listingToDelete.profession });
       }
       toast.success("Listing deleted successfully.");
       setOwnerListings(prev => prev.filter(l => l.id !== listingId));
@@ -372,7 +457,7 @@ export default function OwnerDashboard() {
     }
   };
 
-  // --- Profile & Phone Verification ---
+  // --- 7. PROFILE LOGIC ---
   const handleUpdateProfile = async () => {
     const success = await updateUserProfileInFirestore({
       displayName: userName,
@@ -381,18 +466,11 @@ export default function OwnerDashboard() {
       businessAddress,
       licenseNumber
     });
-
-    if (success) {
-      toast.success('Profile updated successfully!');
-    } else {
-      toast.error('Profile update failed.');
-    }
+    if (success) toast.success('Profile updated!'); else toast.error('Update failed.');
   };
 
   const handleSendPhoneOTP = async () => {
-    if (!phoneToVerify || phoneToVerify.length < 10) {
-      return toast.error('Please enter a valid phone number (+91...)');
-    }
+    if (!phoneToVerify || phoneToVerify.length < 10) return toast.error('Enter valid phone (+91...)');
     setPhoneLoading(true);
     try {
       const confirmationResult = await signInWithPhoneNumber(auth, phoneToVerify);
@@ -423,7 +501,7 @@ export default function OwnerDashboard() {
     }
   };
 
-  // --- Render Functions ---
+  // --- 8. RENDER PROFESSION SPECIFIC FORMS ---
   const renderProfessionForm = () => {
     switch (globalProfession) {
       case "resort-hotel":
@@ -444,8 +522,11 @@ export default function OwnerDashboard() {
                     <Select value={room.view} onValueChange={(v) => updateNestedArray("rooms", room.id, "view", v)}>
                         <SelectTrigger><SelectValue placeholder="View" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lake">Lake</SelectItem>
-                          <SelectItem value="mountain">Mountain</SelectItem>
+                          <SelectItem value="lake">Lake View</SelectItem>
+                          <SelectItem value="mountain">Mountain View</SelectItem>
+                          <SelectItem value="garden">Garden View</SelectItem>
+                          <SelectItem value="city">City View</SelectItem>
+                          <SelectItem value="forest">Forest View</SelectItem>
                         </SelectContent>
                     </Select>
                   </div>
@@ -457,6 +538,7 @@ export default function OwnerDashboard() {
             ))}
           </div>
         );
+
       case "rental-bikes":
         return (
           <div className="space-y-6">
@@ -479,36 +561,248 @@ export default function OwnerDashboard() {
             ))}
           </div>
         );
+
       case "cabs-taxis":
+        const { cabData } = formData.listingDetails;
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Vehicles</h3>
-              <Button onClick={() => addToArray('vehicles', { id: Date.now(), type: "", name: "", rate: "" })} size="sm">
-                <Plus className="w-4 h-4 mr-2" />Add Vehicle
-              </Button>
-            </div>
-            {formData.listingDetails.vehicles.map(vehicle => (
-              <Card key={vehicle.id}>
-                <CardContent className="p-4 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input placeholder="Model" value={vehicle.name} onChange={e => updateNestedArray("vehicles", vehicle.id, "name", e.target.value)} />
-                    <Input placeholder="Rate" value={vehicle.rate} onChange={e => updateNestedArray("vehicles", vehicle.id, "rate", e.target.value)} />
+            
+            {/* Pricing Section */}
+            <div className="bg-orange-50 p-4 rounded-md border border-orange-100">
+              <h3 className="text-lg font-bold text-orange-800 mb-4 flex items-center gap-2">
+                <IndianRupee className="h-5 w-5" /> Standard Pricing & Rates
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600">Local Rate (per km)</Label>
+                  <div className="relative">
+                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                     <Input className="pl-7" placeholder="15/km" value={cabData.pricing?.local} onChange={(e) => updateCabPricing("local", e.target.value)} />
                   </div>
-                  <Button variant="destructive" size="sm" onClick={() => deleteFromArray("vehicles", vehicle.id)}>Delete</Button>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600">Outstation Rate (per km)</Label>
+                  <div className="relative">
+                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                     <Input className="pl-7" placeholder="12/km" value={cabData.pricing?.outstation} onChange={(e) => updateCabPricing("outstation", e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600">Airport Drop (Fixed)</Label>
+                  <div className="relative">
+                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                     <Input className="pl-7" placeholder="2500" value={cabData.pricing?.airport} onChange={(e) => updateCabPricing("airport", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Vehicle Inventory */}
+            <div className="border rounded-md p-4 bg-white">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold flex items-center gap-2"><Car className="h-5 w-5" /> Vehicle Inventory</h3>
+                    <Badge variant="outline">{formData.listingDetails.vehicles.length} Vehicles</Badge>
+                </div>
+                
+                {/* Add New Vehicle Input */}
+                <div className="flex flex-col md:flex-row gap-3 bg-gray-50 p-3 rounded mb-4">
+                    <Input 
+                        placeholder="Vehicle Name (e.g. Swift Dzire, Innova)" 
+                        value={newVehicleInv.name} 
+                        onChange={e => setNewVehicleInv({...newVehicleInv, name: e.target.value})}
+                        className="grow"
+                    />
+                    <div className="relative w-full md:w-1/3">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                        <Input 
+                            placeholder="Rate (e.g. 14/km)" 
+                            value={newVehicleInv.rate} 
+                            onChange={e => setNewVehicleInv({...newVehicleInv, rate: e.target.value})}
+                            className="pl-7"
+                        />
+                    </div>
+                    <Button onClick={addVehicleToInventory} size="sm"><Plus className="w-4 h-4 mr-1" /> Add</Button>
+                </div>
+
+                {/* List of Vehicles */}
+                <div className="space-y-2">
+                    {formData.listingDetails.vehicles.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-2">No vehicles added yet. Add your fleet above.</p>
+                    ) : (
+                        formData.listingDetails.vehicles.map(vehicle => (
+                            <div key={vehicle.id} className="flex justify-between items-center border p-3 rounded hover:bg-gray-50 transition">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 p-2 rounded-full"><Car className="w-4 h-4 text-blue-600"/></div>
+                                    <div>
+                                        <p className="font-semibold text-sm">{vehicle.name}</p>
+                                        <p className="text-xs text-gray-500">Rate: ₹{vehicle.rate}</p>
+                                    </div>
+                                </div>
+                                <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => deleteFromArray("vehicles", vehicle.id)}>
+                                    <Trash2 className="w-4 h-4"/>
+                                </Button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Details & Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Vehicle Categories */}
+                <div className="border p-3 rounded bg-white">
+                  <Label>Vehicle Categories</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input 
+                        placeholder="Type category (e.g. Minivan)" 
+                        value={newCabTag.vehicle} 
+                        onChange={(e) => setNewCabTag({...newCabTag, vehicle: e.target.value})} 
+                    />
+                    <Button size="sm" onClick={() => addCabArrayItem("availableVehicleTypes", newCabTag.vehicle, "vehicle")}>
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                      <Select onValueChange={(val) => addCabArrayItem("availableVehicleTypes", val, null)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Quick Add Common Types" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Hatchback">Hatchback</SelectItem>
+                            <SelectItem value="Sedan">Sedan</SelectItem>
+                            <SelectItem value="SUV">SUV</SelectItem>
+                            <SelectItem value="Tempo Traveller">Tempo Traveller</SelectItem>
+                            <SelectItem value="Luxury">Luxury</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {cabData.availableVehicleTypes?.map((item, i) => (
+                      <Badge key={i} variant="secondary" className="pr-1 flex items-center gap-1">
+                        {item} 
+                        <span 
+                            className="cursor-pointer hover:text-red-500 p-0.5 rounded-full hover:bg-red-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeCabArrayItem("availableVehicleTypes", i);
+                            }}
+                        >
+                            <X className="w-3 h-3" />
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Services Offered */}
+                <div className="border p-3 rounded bg-white">
+                  <Label>Services Offered</Label>
+                  <div className="flex gap-2 mt-2">
+                    <Input 
+                        placeholder="Type service (e.g. Wedding)" 
+                        value={newCabTag.service} 
+                        onChange={(e) => setNewCabTag({...newCabTag, service: e.target.value})} 
+                    />
+                    <Button size="sm" onClick={() => addCabArrayItem("services", newCabTag.service, "service")}>
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-2">
+                     <Select onValueChange={(val) => addCabArrayItem("services", val, null)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Quick Add Common Services" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Local City Ride">Local City Ride</SelectItem>
+                            <SelectItem value="Outstation">Outstation</SelectItem>
+                            <SelectItem value="Airport Transfer">Airport Transfer</SelectItem>
+                            <SelectItem value="Group Tours">Group Tours</SelectItem>
+                            <SelectItem value="Railway Transfer">Railway Transfer</SelectItem>
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {cabData.services?.map((item, i) => (
+                      <Badge key={i} variant="outline" className="pr-1 bg-blue-50 flex items-center gap-1">
+                        {item} 
+                        <span 
+                            className="cursor-pointer hover:text-red-500 p-0.5 rounded-full hover:bg-red-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeCabArrayItem("services", i);
+                            }}
+                        >
+                            <X className="w-3 h-3" />
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Areas */}
+                <div className="border p-3 rounded bg-white">
+                  <Label>Operating Areas</Label>
+                  <div className="flex gap-2 mt-2">
+                     <Input 
+                      placeholder="e.g. Nainital, Bhimtal" 
+                      value={newCabTag.area} 
+                      onChange={e => setNewCabTag({...newCabTag, area: e.target.value})} 
+                    />
+                    <Button size="sm" onClick={() => addCabArrayItem("areas", newCabTag.area, "area")}><Plus className="w-4 h-4" /></Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {cabData.areas?.map((item, i) => (
+                      <Badge key={i} variant="outline" className="pr-1 flex items-center gap-1">
+                        {item} 
+                        <span 
+                            className="cursor-pointer hover:text-red-500 p-0.5 rounded-full hover:bg-red-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeCabArrayItem("areas", i);
+                            }}
+                        >
+                            <X className="w-3 h-3" />
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                 {/* Specializations */}
+                 <div className="border p-3 rounded bg-white">
+                  <Label>Specializations</Label>
+                  <div className="flex gap-2 mt-2">
+                     <Input 
+                      placeholder="e.g. 24/7 Service, Luxury" 
+                      value={newCabTag.spec} 
+                      onChange={e => setNewCabTag({...newCabTag, spec: e.target.value})} 
+                    />
+                    <Button size="sm" onClick={() => addCabArrayItem("specializations", newCabTag.spec, "spec")}><Plus className="w-4 h-4" /></Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {cabData.specializations?.map((item, i) => (
+                      <Badge key={i} variant="outline" className="pr-1 bg-green-50 flex items-center gap-1">
+                        {item} 
+                        <span 
+                            className="cursor-pointer hover:text-red-500 p-0.5 rounded-full hover:bg-red-50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeCabArrayItem("specializations", i);
+                            }}
+                        >
+                            <X className="w-3 h-3" />
+                        </span>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+            </div>
           </div>
         );
+
       case "tours-treks":
         const { tourData } = formData.listingDetails;
         return (
           <div className="space-y-6">
             <div className="bg-blue-50 p-4 rounded-md border border-blue-100">
                 <h3 className="text-lg font-bold text-blue-800 mb-4">Tour Specifics</h3>
-                
-                {/* Basic Tour Info */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <Label>Tour Type</Label>
@@ -537,18 +831,19 @@ export default function OwnerDashboard() {
                         <Input value={tourData.duration} onChange={e => updateTourField("duration", e.target.value)} placeholder="e.g. 4 Hours / 2 Days" />
                     </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <Label>Price Per Person (₹)</Label>
-                        <Input type="number" value={formData.price} onChange={handleFormChange} name="price" placeholder="1500" />
+                        <Label>Price Per Person</Label>
+                        <div className="relative">
+                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                           <Input className="pl-7" type="number" value={formData.price} onChange={handleFormChange} name="price" placeholder="1500" />
+                        </div>
                     </div>
                     <div>
                         <Label>Max Group Size</Label>
                         <Input type="number" value={tourData.maxGroupSize} onChange={e => updateTourField("maxGroupSize", e.target.value)} placeholder="15" />
                     </div>
                 </div>
-
                 <div className="mb-4">
                     <Label>Fitness Level Required</Label>
                     <Input value={tourData.fitnessLevel} onChange={e => updateTourField("fitnessLevel", e.target.value)} placeholder="e.g. Good physical fitness required" />
@@ -593,7 +888,6 @@ export default function OwnerDashboard() {
                     <h3 className="font-semibold">Itinerary Builder</h3>
                     <Badge variant="secondary">Day {tourData.itinerary?.length + 1}</Badge>
                 </div>
-                
                 <div className="space-y-3 bg-gray-50 p-4 rounded">
                     <div>
                         <Label>Day Title</Label>
@@ -611,13 +905,11 @@ export default function OwnerDashboard() {
                     </div>
                     <Button onClick={addItineraryDay} className="w-full mt-2" variant="outline"><Plus className="w-4 h-4 mr-2" />Add Day to Itinerary</Button>
                 </div>
-
                 <div className="mt-4 space-y-4">
                     {tourData.itinerary?.map((day, idx) => (
                         <div key={idx} className="relative border-l-4 border-blue-500 pl-4 py-2 bg-white shadow-sm rounded-r-md">
                             <h4 className="font-bold">Day {day.day}: {day.title}</h4>
                             <p className="text-sm text-gray-600">Activities: {day.activities.join(', ')}</p>
-                            <p className="text-xs text-gray-500">Meals: {day.meals.join(', ')}</p>
                             <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-red-500 hover:bg-red-50" onClick={() => removeItineraryDay(idx)}>
                                 <Trash2 className="w-4 h-4" />
                             </Button>
@@ -627,31 +919,65 @@ export default function OwnerDashboard() {
             </div>
           </div>
         );
+      
+      // Default: Includes Local Guides & General
       default:
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">General Listing Details</h3>
             <div>
               <Label>Service Rate</Label>
-              <Input type="number" placeholder="800" name="price" value={formData.price} onChange={handleFormChange} />
+              <div className="relative">
+                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                 <Input className="pl-7" type="number" placeholder="800" name="price" value={formData.price} onChange={handleFormChange} />
+              </div>
             </div>
+            
+            {/* UPDATED SPECIALIZATION (TAGS) FOR GUIDES/GENERAL */}
             <div>
-              <Label>Specialization (comma-separated)</Label>
-              <Input
-                placeholder="Hiking, Photography"
-                value={formData.listingDetails.guideFeatures.join(", ")}
-                onChange={(e) => setFormData((p) => ({...p, listingDetails: {...p.listingDetails, guideFeatures: e.target.value.split(",").map(f => f.trim()).filter(Boolean)}}))}
-              />
+              <Label>Specialization / Features</Label>
+              <div className="flex gap-2 mt-2">
+                 <Input
+                   placeholder="e.g. Hiking, Photography, History"
+                   value={newGuideFeatureText}
+                   onChange={(e) => setNewGuideFeatureText(e.target.value)}
+                   onKeyDown={(e) => {
+                     if(e.key === 'Enter') {
+                       e.preventDefault();
+                       addGuideFeature();
+                     }
+                   }}
+                 />
+                 <Button onClick={addGuideFeature}><Plus className="w-4 h-4"/></Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 mt-3">
+                 {formData.listingDetails.guideFeatures.map((feature, idx) => (
+                     <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                        {feature}
+                        <span 
+                          className="cursor-pointer hover:text-red-500 p-0.5"
+                          onClick={() => removeGuideFeature(idx)}
+                        >
+                           <X className="w-3 h-3"/>
+                        </span>
+                     </Badge>
+                 ))}
+              </div>
             </div>
           </div>
         );
     }
   };
 
+  // --- 9. PRICE PREVIEW LOGIC ---
   const getPreviewPrice = () => {
     if (globalProfession === "resort-hotel" && formData.listingDetails.rooms.length > 0) return `₹${formData.listingDetails.rooms[0].price || "---"}/night`;
     if (globalProfession === "rental-bikes" && formData.listingDetails.bikes.length > 0) return `₹${formData.listingDetails.bikes[0].price || "---"}/day`;
-    if (globalProfession === "cabs-taxis" && formData.listingDetails.vehicles.length > 0) return `${formData.listingDetails.vehicles[0].rate || "---"}`;
+    if (globalProfession === "cabs-taxis") {
+        if (formData.listingDetails.cabData.pricing.local) return `₹${formData.listingDetails.cabData.pricing.local}/km`;
+        return "N/A";
+    }
     if (formData.price) return `₹${formData.price}`;
     return "N/A";
   };
@@ -700,14 +1026,16 @@ export default function OwnerDashboard() {
                     <Select value={formData.location} onValueChange={v => handleSelectChange("location", v)}>
                       <SelectTrigger id="listing-location"><SelectValue placeholder="Select location" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="nainital">Nainital</SelectItem>
-                        <SelectItem value="bhimtal">Bhimtal</SelectItem>
-                        <SelectItem value="sukhatal">Sukhatal</SelectItem>
-                        <SelectItem value="naukuchiatal">Naukuchiatal</SelectItem>
-                        <SelectItem value="mukteshwar">Mukteshwar</SelectItem>
-                        <SelectItem value="pangot">Pangot</SelectItem>
-                        <SelectItem value="almora">Almora</SelectItem>
-                        <SelectItem value="kausani">Kausani</SelectItem>
+                        <SelectItem value="Nainital">Nainital</SelectItem>
+                        <SelectItem value="Bhimtal">Bhimtal</SelectItem>
+                        <SelectItem value="Sattal">Sattal</SelectItem>
+                        <SelectItem value="Naukuchiatal">Naukuchiatal</SelectItem>
+                        <SelectItem value="Mukteshwar">Mukteshwar</SelectItem>
+                        <SelectItem value="Ramgarh">Ramgarh</SelectItem>
+                        <SelectItem value="Pangot">Pangot</SelectItem>
+                        <SelectItem value="Almora">Almora</SelectItem>
+                        <SelectItem value="Ranikhet">Ranikhet</SelectItem>
+                        <SelectItem value="Kausani">Kausani</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -758,7 +1086,9 @@ export default function OwnerDashboard() {
                     <p className="text-muted-foreground text-sm h-12 overflow-hidden">{formData.description || "Description..."}</p>
                     <div className="mt-4 flex items-center justify-between">
                         <span className="text-xl font-bold text-primary">{getPreviewPrice()}</span>
-                        <Button size="sm" disabled>View Details</Button>
+                        {formData.verified && (
+                             <Badge className="bg-green-100 text-green-800 border-green-200">Verified</Badge>
+                        )}
                     </div>
                   </div>
                 </CardContent>
@@ -782,6 +1112,7 @@ export default function OwnerDashboard() {
                     <p className="text-muted-foreground capitalize">{l.location}</p>
                     <div className="mt-2 flex items-center space-x-4 text-sm">
                         <Badge>{l.status}</Badge>
+                        {l.verified && <Badge variant="secondary" className="text-green-600 bg-green-50 border-green-200">Verified</Badge>}
                         <span className="text-gray-600">
                         {globalProfession === "local-guides" && l.listingDetails.guideFeatures?.length > 0 && (
                             `Expertise: ${l.listingDetails.guideFeatures.join(', ')}`
