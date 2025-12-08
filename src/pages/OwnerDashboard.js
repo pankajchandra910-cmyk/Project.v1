@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../component/tabs";
 import { Badge } from "../component/badge";
 import { Separator } from "../component/separator";
-import { Plus, Upload, Edit, Trash2, X, Loader2, RefreshCw, Car, IndianRupee, MapPin } from "lucide-react"; 
+import { Plus, Upload, Edit, Trash2, X, Loader2, RefreshCw, Car, IndianRupee, MapPin, Award, Languages as LangIcon, Calendar, Activity } from "lucide-react"; 
 import { useNavigate } from "react-router-dom";
 import { GlobalContext } from "../component/GlobalContext";
 import { toast } from "sonner";
@@ -24,42 +24,46 @@ const initialFormData = {
   name: "",
   location: "", 
   description: "",
-  price: "",
+  price: "", // Daily Rate (Guides), Nightly (Hotels), Base (Tours)
   photos: [], 
   verified: false, 
   listingDetails: {
     rooms: [], 
     bikes: [], 
-    vehicles: [], 
-    guideFeatures: [], // Used for Local Guide / General Specializations
-    hillStayAmenities: [], 
     
-    // Tour Specific Data
-    tourData: {
-      difficulty: "Moderate",
-      duration: "",
-      type: "day",
-      maxGroupSize: "",
-      fitnessLevel: "",
-      includes: [],
-      excludes: [],
-      itinerary: [] 
-    },
-
-    // Cab Vendor Specific Data
+    // Vehicle/Cab Data
+    vehicles: [], // Inventory List
     cabData: {
-      pricing: {
-        local: "", 
-        outstation: "", 
-        airport: "" 
-      },
+      pricing: { local: "", outstation: "", airport: "" },
       availableVehicleTypes: [], 
       services: [], 
       areas: [], 
       specializations: [] 
     },
+
+    // Tour Data
+    tourData: {
+      difficulty: "Moderate",
+      duration: "",
+      type: "day",
+      maxGroupSize: "",
+      fitnessLevel: "", // Added Fitness Level
+      includes: [],
+      excludes: [],
+      itinerary: [] 
+    },
+    
+    // Local Guide Data
+    guideData: {
+      experience: "",     
+      maxGroupSize: "",   
+      languages: [],      
+      specializations: [],
+      itinerary: []       
+    },
     
     treks: [], 
+    hillStayAmenities: [], 
   },
 };
 
@@ -82,17 +86,20 @@ export default function OwnerDashboard() {
   const [ownerListings, setOwnerListings] = useState([]);
   const [editingListingId, setEditingListingId] = useState(null);
   
-  // Helpers for Guides / General
-  const [newGuideFeatureText, setNewGuideFeatureText] = useState("");
-  
-  // Helpers for Tours
+  // -- Helper States for Input Fields --
+
+  // For Tours
   const [newInclude, setNewInclude] = useState("");
   const [newExclude, setNewExclude] = useState("");
-  const [itineraryDay, setItineraryDay] = useState({ title: "", activities: "", meals: "" });
+  const [tourItineraryDay, setTourItineraryDay] = useState({ title: "", activities: "", meals: "" });
 
-  // Helpers for Cabs
+  // For Cabs
   const [newCabTag, setNewCabTag] = useState({ vehicle: "", service: "", area: "", spec: "" });
   const [newVehicleInv, setNewVehicleInv] = useState({ name: "", rate: "" });
+
+  // For Local Guides
+  const [newGuideTag, setNewGuideTag] = useState({ lang: "", spec: "" });
+  const [guideItineraryDay, setGuideItineraryDay] = useState({ title: "", activities: "" });
 
   const fileInputRef = useRef(null);
 
@@ -167,7 +174,7 @@ export default function OwnerDashboard() {
 
   const removePhoto = (index) => setFormData(p => ({ ...p, photos: p.photos.filter((_, i) => i !== index) }));
 
-  // Helper: Update object inside an array
+  // Helper: Update object inside an array (General)
   const updateNestedArray = (arr, id, field, val) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -176,7 +183,7 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Helper: Add object to an array
+  // Helper: Add object to an array (General)
   const addToArray = (arr, item) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -185,7 +192,7 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // Helper: Remove object from array
+  // Helper: Remove object from array (General)
   const deleteFromArray = (arr, id) => setFormData(p => ({
     ...p,
     listingDetails: {
@@ -194,37 +201,93 @@ export default function OwnerDashboard() {
     }
   }));
 
-  // --- GUIDE / GENERAL SPECIALIZATION HELPERS (FIXED) ---
-  const addGuideFeature = () => {
-    if (!newGuideFeatureText || !newGuideFeatureText.trim()) return;
-    
-    const feature = newGuideFeatureText.trim();
-    if (formData.listingDetails.guideFeatures.includes(feature)) {
-        toast.info("Feature already added");
+  // ==========================================
+  // --- LOCAL GUIDE SPECIFIC HELPERS ---
+  // ==========================================
+  const updateGuideField = (field, value) => {
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        guideData: { ...p.listingDetails.guideData, [field]: value }
+      }
+    }));
+  };
+
+  const addGuideArrayItem = (arrayName, value, inputKey) => {
+    if (!value || !value.trim()) return;
+    const cleanValue = value.trim();
+    const currentList = formData.listingDetails.guideData[arrayName] || [];
+
+    if (currentList.includes(cleanValue)) {
+        toast.info("Item already added.");
         return;
     }
 
-    setFormData(prev => ({
-        ...prev,
+    setFormData(p => ({
+        ...p,
         listingDetails: {
-            ...prev.listingDetails,
-            guideFeatures: [...prev.listingDetails.guideFeatures, feature]
+            ...p.listingDetails,
+            guideData: {
+                ...p.listingDetails.guideData,
+                [arrayName]: [...currentList, cleanValue]
+            }
         }
     }));
-    setNewGuideFeatureText("");
+    setNewGuideTag(prev => ({ ...prev, [inputKey]: "" }));
   };
 
-  const removeGuideFeature = (index) => {
-    setFormData(prev => ({
-        ...prev,
+  // FIXED: Properly removes items from Languages/Specializations
+  const removeGuideArrayItem = (arrayName, index) => {
+    setFormData(p => ({
+        ...p,
         listingDetails: {
-            ...prev.listingDetails,
-            guideFeatures: prev.listingDetails.guideFeatures.filter((_, i) => i !== index)
+            ...p.listingDetails,
+            guideData: {
+                ...p.listingDetails.guideData,
+                [arrayName]: p.listingDetails.guideData[arrayName].filter((_, i) => i !== index)
+            }
         }
     }));
   };
 
-  // --- CAB SPECIFIC HELPERS (FIXED) ---
+  const addGuideItineraryDay = () => {
+    if(!guideItineraryDay.title) return toast.error("Day title is required");
+    const dayData = {
+      day: (formData.listingDetails.guideData.itinerary?.length || 0) + 1,
+      title: guideItineraryDay.title,
+      activities: guideItineraryDay.activities.split(',').map(s => s.trim()).filter(Boolean)
+    };
+    setFormData(p => ({
+      ...p,
+      listingDetails: {
+        ...p.listingDetails,
+        guideData: {
+          ...p.listingDetails.guideData,
+          itinerary: [...(p.listingDetails.guideData.itinerary || []), dayData]
+        }
+      }
+    }));
+    setGuideItineraryDay({ title: "", activities: "" });
+  };
+
+  const removeGuideItineraryDay = (index) => {
+    setFormData(p => {
+      const newItinerary = p.listingDetails.guideData.itinerary.filter((_, i) => i !== index);
+      const reIndexed = newItinerary.map((item, i) => ({ ...item, day: i + 1 }));
+      return {
+        ...p,
+        listingDetails: {
+          ...p.listingDetails,
+          guideData: { ...p.listingDetails.guideData, itinerary: reIndexed }
+        }
+      };
+    });
+  };
+
+  // ==========================================
+  // --- CAB SPECIFIC HELPERS ---
+  // ==========================================
   const updateCabPricing = (field, value) => {
     setFormData(p => ({
       ...p,
@@ -240,15 +303,12 @@ export default function OwnerDashboard() {
 
   const addCabArrayItem = (arrayName, value, inputFieldKey) => {
     if (!value || !value.trim()) return;
-    
     const cleanValue = value.trim();
     const currentArray = formData.listingDetails.cabData[arrayName] || [];
-
     if (currentArray.includes(cleanValue)) {
         toast.info(`${cleanValue} is already added.`);
         return;
     }
-
     setFormData(p => ({
       ...p,
       listingDetails: {
@@ -259,33 +319,24 @@ export default function OwnerDashboard() {
         }
       }
     }));
-    
-    if (inputFieldKey) {
-        setNewCabTag(prev => ({ ...prev, [inputFieldKey]: "" }));
-    }
+    if (inputFieldKey) setNewCabTag(prev => ({ ...prev, [inputFieldKey]: "" }));
   };
 
-  // FIXED REMOVE FUNCTION FOR CAB ITEMS
   const removeCabArrayItem = (arrayName, index) => {
-    setFormData(prev => {
-        const currentList = prev.listingDetails.cabData[arrayName];
-        const updatedList = currentList.filter((_, i) => i !== index);
-        
-        return {
-            ...prev,
-            listingDetails: {
-                ...prev.listingDetails,
-                cabData: {
-                    ...prev.listingDetails.cabData,
-                    [arrayName]: updatedList
-                }
+    setFormData(prev => ({
+        ...prev,
+        listingDetails: {
+            ...prev.listingDetails,
+            cabData: {
+                ...prev.listingDetails.cabData,
+                [arrayName]: prev.listingDetails.cabData[arrayName].filter((_, i) => i !== index)
             }
-        };
-    });
+        }
+    }));
   };
 
   const addVehicleToInventory = () => {
-    if (!newVehicleInv.name || !newVehicleInv.rate) return toast.error("Vehicle name and rate are required");
+    if (!newVehicleInv.name || !newVehicleInv.rate) return toast.error("Name and rate required");
     addToArray('vehicles', { 
         id: Date.now(), 
         type: "car", 
@@ -295,7 +346,9 @@ export default function OwnerDashboard() {
     setNewVehicleInv({ name: "", rate: "" });
   };
 
+  // ==========================================
   // --- TOUR SPECIFIC HELPERS ---
+  // ==========================================
   const updateTourField = (field, value) => {
     setFormData(p => ({
       ...p,
@@ -334,13 +387,13 @@ export default function OwnerDashboard() {
     }));
   };
 
-  const addItineraryDay = () => {
-    if(!itineraryDay.title) return toast.error("Day title is required");
+  const addTourItineraryDay = () => {
+    if(!tourItineraryDay.title) return toast.error("Day title is required");
     const dayData = {
       day: (formData.listingDetails.tourData.itinerary?.length || 0) + 1,
-      title: itineraryDay.title,
-      activities: itineraryDay.activities.split(',').map(s => s.trim()).filter(Boolean),
-      meals: itineraryDay.meals.split(',').map(s => s.trim()).filter(Boolean)
+      title: tourItineraryDay.title,
+      activities: tourItineraryDay.activities.split(',').map(s => s.trim()).filter(Boolean),
+      meals: tourItineraryDay.meals.split(',').map(s => s.trim()).filter(Boolean)
     };
     setFormData(p => ({
       ...p,
@@ -352,10 +405,10 @@ export default function OwnerDashboard() {
         }
       }
     }));
-    setItineraryDay({ title: "", activities: "", meals: "" });
+    setTourItineraryDay({ title: "", activities: "", meals: "" });
   };
 
-  const removeItineraryDay = (index) => {
+  const removeTourItineraryDay = (index) => {
     setFormData(p => {
       const newItinerary = p.listingDetails.tourData.itinerary.filter((_, i) => i !== index);
       const reIndexed = newItinerary.map((item, i) => ({ ...item, day: i + 1 }));
@@ -425,15 +478,9 @@ export default function OwnerDashboard() {
         listingDetails: {
           ...initialFormData.listingDetails,
           ...listing.listingDetails,
-          tourData: {
-            ...initialFormData.listingDetails.tourData,
-            ...(listing.listingDetails?.tourData || {})
-          },
-          cabData: {
-            ...initialFormData.listingDetails.cabData,
-            ...(listing.listingDetails?.cabData || {})
-          },
-          guideFeatures: listing.listingDetails?.guideFeatures || []
+          tourData: { ...initialFormData.listingDetails.tourData, ...(listing.listingDetails?.tourData || {}) },
+          cabData: { ...initialFormData.listingDetails.cabData, ...(listing.listingDetails?.cabData || {}) },
+          guideData: { ...initialFormData.listingDetails.guideData, ...(listing.listingDetails?.guideData || {}) }
         }
       });
       setGlobalProfession(listing.profession); 
@@ -504,6 +551,143 @@ export default function OwnerDashboard() {
   // --- 8. RENDER PROFESSION SPECIFIC FORMS ---
   const renderProfessionForm = () => {
     switch (globalProfession) {
+      // ==========================
+      // LOCAL GUIDES UI
+      // ==========================
+      case "local-guides":
+        const { guideData } = formData.listingDetails;
+        return (
+            <div className="space-y-6">
+                <div className="bg-purple-50 p-4 rounded-md border border-purple-100">
+                    <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
+                        <Award className="w-5 h-5"/> Guide Details
+                    </h3>
+                    
+                    {/* Basic Stats Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <Label className="text-purple-900">Daily Rate (Full Day)</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                <Input className="pl-7" type="number" name="price" value={formData.price} onChange={handleFormChange} placeholder="1500" />
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="text-purple-900">Experience (Years)</Label>
+                            <Input 
+                                type="number" 
+                                value={guideData.experience} 
+                                onChange={(e) => updateGuideField("experience", e.target.value)} 
+                                placeholder="e.g. 5" 
+                            />
+                        </div>
+                        <div>
+                            <Label className="text-purple-900">Max Group Size</Label>
+                            <Input 
+                                type="number" 
+                                value={guideData.maxGroupSize} 
+                                onChange={(e) => updateGuideField("maxGroupSize", e.target.value)} 
+                                placeholder="e.g. 10" 
+                            />
+                        </div>
+                    </div>
+
+                    {/* Languages - FIXED X BUTTON */}
+                    <div className="mb-4 bg-white p-3 rounded border">
+                        <Label className="flex items-center gap-2 mb-2"><LangIcon className="w-4 h-4"/> Languages Spoken</Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                placeholder="e.g. English, Hindi, Kumaoni" 
+                                value={newGuideTag.lang} 
+                                onChange={(e) => setNewGuideTag({...newGuideTag, lang: e.target.value})} 
+                                onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addGuideArrayItem("languages", newGuideTag.lang, "lang"); } }}
+                            />
+                            <Button size="sm" onClick={() => addGuideArrayItem("languages", newGuideTag.lang, "lang")}><Plus className="w-4 h-4"/></Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {guideData.languages?.map((lang, idx) => (
+                                <Badge key={idx} variant="outline" className="bg-gray-50 flex items-center gap-1">
+                                    {lang} 
+                                    <span
+                                        className="cursor-pointer hover:text-red-500 hover:bg-red-50 rounded-full p-0.5" 
+                                        onClick={() => removeGuideArrayItem("languages", idx)} 
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </span>
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Specializations - FIXED X BUTTON */}
+                    <div className="mb-4 bg-white p-3 rounded border">
+                        <Label className="flex items-center gap-2 mb-2"><Award className="w-4 h-4"/> Specializations / Expertise</Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                placeholder="e.g. Bird Watching, Heritage Walks, Photography" 
+                                value={newGuideTag.spec} 
+                                onChange={(e) => setNewGuideTag({...newGuideTag, spec: e.target.value})} 
+                                onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); addGuideArrayItem("specializations", newGuideTag.spec, "spec"); } }}
+                            />
+                            <Button size="sm" onClick={() => addGuideArrayItem("specializations", newGuideTag.spec, "spec")}><Plus className="w-4 h-4"/></Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {guideData.specializations?.map((feature, idx) => (
+                                <Badge key={idx} variant="secondary" className="bg-purple-100 text-purple-800 flex items-center gap-1">
+                                    {feature} 
+                                    <span 
+                                        className="cursor-pointer hover:text-red-500 hover:bg-red-50 rounded-full p-0.5" 
+                                        onClick={() => removeGuideArrayItem("specializations", idx)} 
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </span>
+                                </Badge>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Sample Itinerary Builder for Guides */}
+                    <div className="border p-4 rounded-md bg-white">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <Calendar className="w-4 h-4" /> Sample Itinerary Builder
+                            </h3>
+                            <Badge variant="secondary">Day {(guideData.itinerary?.length || 0) + 1}</Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">Add sample days to show clients what a typical tour looks like.</p>
+                        
+                        <div className="space-y-3 bg-gray-50 p-4 rounded border">
+                            <div>
+                                <Label>Day Title</Label>
+                                <Input value={guideItineraryDay.title} onChange={e => setGuideItineraryDay({...guideItineraryDay, title: e.target.value})} placeholder="e.g. Full Day Lake Tour" />
+                            </div>
+                            <div>
+                                <Label>Activities (comma separated)</Label>
+                                <Input value={guideItineraryDay.activities} onChange={e => setGuideItineraryDay({...guideItineraryDay, activities: e.target.value})} placeholder="Boating, Lunch at Mall Road, Ropeway view" />
+                            </div>
+                            <Button onClick={addGuideItineraryDay} className="w-full mt-2" variant="outline" size="sm">
+                                <Plus className="w-4 h-4 mr-2" />Add Sample Day
+                            </Button>
+                        </div>
+                        
+                        <div className="mt-4 space-y-2">
+                            {guideData.itinerary?.map((day, idx) => (
+                                <div key={idx} className="flex justify-between items-center bg-white border p-3 rounded shadow-sm">
+                                    <div>
+                                        <span className="font-semibold block text-sm">Day {day.day}: {day.title}</span>
+                                        <span className="text-xs text-gray-500 block">{day.activities.join(', ')}</span>
+                                    </div>
+                                    <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-50" onClick={() => removeGuideItineraryDay(idx)}>
+                                        <Trash2 className="w-4 h-4"/>
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
       case "resort-hotel":
         return (
           <div className="space-y-6">
@@ -517,7 +701,7 @@ export default function OwnerDashboard() {
               <Card key={room.id}>
                 <CardContent className="p-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input placeholder="Room Type" value={room.type} onChange={(e) => updateNestedArray("rooms", room.id, "type", e.target.value)} />
+                    <Input placeholder="Room Type e.g., Deluxe, Suite " value={room.type} onChange={(e) => updateNestedArray("rooms", room.id, "type", e.target.value)} />
                     <Input type="number" placeholder="Price" value={room.price} onChange={(e) => updateNestedArray("rooms", room.id, "price", e.target.value)} />
                     <Select value={room.view} onValueChange={(v) => updateNestedArray("rooms", room.id, "view", v)}>
                         <SelectTrigger><SelectValue placeholder="View" /></SelectTrigger>
@@ -736,7 +920,7 @@ export default function OwnerDashboard() {
                   </div>
                 </div>
 
-                {/* Areas */}
+                {/* ADDED: Operating Areas */}
                 <div className="border p-3 rounded bg-white">
                   <Label>Operating Areas</Label>
                   <div className="flex gap-2 mt-2">
@@ -765,7 +949,7 @@ export default function OwnerDashboard() {
                   </div>
                 </div>
 
-                 {/* Specializations */}
+                 {/* ADDED: Specializations */}
                  <div className="border p-3 rounded bg-white">
                   <Label>Specializations</Label>
                   <div className="flex gap-2 mt-2">
@@ -831,7 +1015,9 @@ export default function OwnerDashboard() {
                         <Input value={tourData.duration} onChange={e => updateTourField("duration", e.target.value)} placeholder="e.g. 4 Hours / 2 Days" />
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                
+                {/* Price, Group Size, and Fitness Level */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <Label>Price Per Person</Label>
                         <div className="relative">
@@ -843,10 +1029,15 @@ export default function OwnerDashboard() {
                         <Label>Max Group Size</Label>
                         <Input type="number" value={tourData.maxGroupSize} onChange={e => updateTourField("maxGroupSize", e.target.value)} placeholder="15" />
                     </div>
-                </div>
-                <div className="mb-4">
-                    <Label>Fitness Level Required</Label>
-                    <Input value={tourData.fitnessLevel} onChange={e => updateTourField("fitnessLevel", e.target.value)} placeholder="e.g. Good physical fitness required" />
+                    {/* ADDED FITNESS LEVEL */}
+                    <div>
+                        <Label className="flex items-center gap-1"><Activity className="w-3 h-3"/> Fitness Level</Label>
+                        <Input 
+                            value={tourData.fitnessLevel} 
+                            onChange={e => updateTourField("fitnessLevel", e.target.value)} 
+                            placeholder="e.g. Moderate / High Endurance" 
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -891,26 +1082,26 @@ export default function OwnerDashboard() {
                 <div className="space-y-3 bg-gray-50 p-4 rounded">
                     <div>
                         <Label>Day Title</Label>
-                        <Input value={itineraryDay.title} onChange={e => setItineraryDay({...itineraryDay, title: e.target.value})} placeholder="e.g. Arrival at Camp" />
+                        <Input value={tourItineraryDay.title} onChange={e => setTourItineraryDay({...tourItineraryDay, title: e.target.value})} placeholder="e.g. Arrival at Camp" />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <Label>Activities (comma separated)</Label>
-                            <Input value={itineraryDay.activities} onChange={e => setItineraryDay({...itineraryDay, activities: e.target.value})} placeholder="Trek to lake, Bonfire" />
+                            <Input value={tourItineraryDay.activities} onChange={e => setTourItineraryDay({...tourItineraryDay, activities: e.target.value})} placeholder="Trek to lake, Bonfire" />
                         </div>
                         <div>
                             <Label>Meals (comma separated)</Label>
-                            <Input value={itineraryDay.meals} onChange={e => setItineraryDay({...itineraryDay, meals: e.target.value})} placeholder="Breakfast, Dinner" />
+                            <Input value={tourItineraryDay.meals} onChange={e => setTourItineraryDay({...tourItineraryDay, meals: e.target.value})} placeholder="Breakfast, Dinner" />
                         </div>
                     </div>
-                    <Button onClick={addItineraryDay} className="w-full mt-2" variant="outline"><Plus className="w-4 h-4 mr-2" />Add Day to Itinerary</Button>
+                    <Button onClick={addTourItineraryDay} className="w-full mt-2" variant="outline"><Plus className="w-4 h-4 mr-2" />Add Day to Itinerary</Button>
                 </div>
                 <div className="mt-4 space-y-4">
                     {tourData.itinerary?.map((day, idx) => (
                         <div key={idx} className="relative border-l-4 border-blue-500 pl-4 py-2 bg-white shadow-sm rounded-r-md">
                             <h4 className="font-bold">Day {day.day}: {day.title}</h4>
                             <p className="text-sm text-gray-600">Activities: {day.activities.join(', ')}</p>
-                            <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-red-500 hover:bg-red-50" onClick={() => removeItineraryDay(idx)}>
+                            <Button size="icon" variant="ghost" className="absolute top-2 right-2 text-red-500 hover:bg-red-50" onClick={() => removeTourItineraryDay(idx)}>
                                 <Trash2 className="w-4 h-4" />
                             </Button>
                         </div>
@@ -920,11 +1111,11 @@ export default function OwnerDashboard() {
           </div>
         );
       
-      // Default: Includes Local Guides & General
+      // Default / Other
       default:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">General Listing Details</h3>
+            <h3 className="text-lg font-semibold">Listing Details</h3>
             <div>
               <Label>Service Rate</Label>
               <div className="relative">
@@ -932,39 +1123,7 @@ export default function OwnerDashboard() {
                  <Input className="pl-7" type="number" placeholder="800" name="price" value={formData.price} onChange={handleFormChange} />
               </div>
             </div>
-            
-            {/* UPDATED SPECIALIZATION (TAGS) FOR GUIDES/GENERAL */}
-            <div>
-              <Label>Specialization / Features</Label>
-              <div className="flex gap-2 mt-2">
-                 <Input
-                   placeholder="e.g. Hiking, Photography, History"
-                   value={newGuideFeatureText}
-                   onChange={(e) => setNewGuideFeatureText(e.target.value)}
-                   onKeyDown={(e) => {
-                     if(e.key === 'Enter') {
-                       e.preventDefault();
-                       addGuideFeature();
-                     }
-                   }}
-                 />
-                 <Button onClick={addGuideFeature}><Plus className="w-4 h-4"/></Button>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 mt-3">
-                 {formData.listingDetails.guideFeatures.map((feature, idx) => (
-                     <Badge key={idx} variant="secondary" className="flex items-center gap-1">
-                        {feature}
-                        <span 
-                          className="cursor-pointer hover:text-red-500 p-0.5"
-                          onClick={() => removeGuideFeature(idx)}
-                        >
-                           <X className="w-3 h-3"/>
-                        </span>
-                     </Badge>
-                 ))}
-              </div>
-            </div>
+            <p className="text-sm text-muted-foreground">Select a specific profession in your profile to see tailored fields.</p>
           </div>
         );
     }
@@ -978,6 +1137,9 @@ export default function OwnerDashboard() {
         if (formData.listingDetails.cabData.pricing.local) return `₹${formData.listingDetails.cabData.pricing.local}/km`;
         return "N/A";
     }
+    if (globalProfession === "local-guides") {
+        return `₹${formData.price || "---"}/day`;
+    }
     if (formData.price) return `₹${formData.price}`;
     return "N/A";
   };
@@ -988,7 +1150,7 @@ export default function OwnerDashboard() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold">Owner Dashboard</h1>
-            <p className="text-muted-foreground capitalize">Manage your {globalProfession.replace('-', ' ')} listings</p>
+            <p className="text-muted-foreground capitalize">Manage your {globalProfession?.replace('-', ' ')} listings</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-sm font-medium flex items-center gap-1 ${syncStatus === 'synced' ? 'text-green-600' : syncStatus === 'syncing' ? 'text-blue-600' : 'text-gray-500'}`}>
@@ -1049,7 +1211,7 @@ export default function OwnerDashboard() {
                   <div className="border-2 border-dashed rounded-lg p-6 text-center relative mt-1">
                     <input type="file" multiple accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handlePhotoUpload} ref={fileInputRef} />
                     <Upload className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-                    <p>Drop files or <span className="text-primary font-medium">browse</span> (Max 5 )</p>
+                    <p>Drop files or <span className="text-primary font-medium">browse</span> (Max 10)</p>
                   </div>
                   {formData.photos.length > 0 && (
                     <div className="mt-4 grid grid-cols-3 md:grid-cols-5 gap-2">
@@ -1113,10 +1275,9 @@ export default function OwnerDashboard() {
                     <div className="mt-2 flex items-center space-x-4 text-sm">
                         <Badge>{l.status}</Badge>
                         {l.verified && <Badge variant="secondary" className="text-green-600 bg-green-50 border-green-200">Verified</Badge>}
-                        <span className="text-gray-600">
-                        {globalProfession === "local-guides" && l.listingDetails.guideFeatures?.length > 0 && (
-                            `Expertise: ${l.listingDetails.guideFeatures.join(', ')}`
-                        )}
+                        <span className="text-gray-600 text-xs">
+                          {l.profession === "local-guides" && l.listingDetails.guideData?.languages?.length > 0 && `Languages: ${l.listingDetails.guideData.languages.join(', ')}`}
+                          {l.profession === "cabs-taxis" && l.listingDetails.cabData?.availableVehicleTypes?.length > 0 && `Vehicles: ${l.listingDetails.cabData.availableVehicleTypes.join(', ')}`}
                         </span>
                     </div>
                     </div>

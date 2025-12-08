@@ -20,6 +20,7 @@ import ToursDetails from "./pages/ToursDetails"
 import CabDetails from "./pages/CabDetails";
 import BookingPage from './pages/BookingPage';
 import TrekDetailsPage from './pages/TrekDetailsPage';
+import LocalGuideDetails from './pages/LocalGuideDetails';
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -94,6 +95,7 @@ function App() {
                     <Route path="/hotels" element={<HotelDetails />} />
                     <Route path="/cabs" element={<CabDetails />} />
                     <Route path="/tours" element={<ToursDetails />} />
+                    <Route path="/guide" element={<LocalGuideDetails />} />
                     <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><ComingSoonPage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>
