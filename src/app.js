@@ -18,9 +18,12 @@ import PopularDetailsPage from './pages/PopularDetailsPage';
 import HotelDetails from "./pages/HotelDetails";
 import ToursDetails from "./pages/ToursDetails"
 import CabDetails from "./pages/CabDetails";
+import HillStaysDetails from "./pages/HillStaysDetails";
+import LocalGuideDetails from './pages/LocalGuideDetails';
+import GeneralServicesPage from "./pages/GeneralServicesDetails";
+import BikesDetails from "./pages/BikesDetails";
 import BookingPage from './pages/BookingPage';
 import TrekDetailsPage from './pages/TrekDetailsPage';
-import LocalGuideDetails from './pages/LocalGuideDetails';
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -29,7 +32,8 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import { Toaster } from "sonner";
 import { Loader2 } from "lucide-react";
 import HotelDetails from "./pages/HotelDetails";
-import { TourDetails } from "./pages/ToursDetails";
+
+
 
 
 const RouteChangeTracker = () => {
@@ -92,10 +96,20 @@ function App() {
                     <Route path="/trek-details/:trekId" element={<TrekDetailsPage />}/>
                     <Route path="/map-view/:focusId" element={<MapViewPage/>} />
                     <Route path="/popular-details/:popularId" element={<PopularDetailsPage/>} />
-                    <Route path="/hotels" element={<HotelDetails />} />
-                    <Route path="/cabs" element={<CabDetails />} />
-                    <Route path="/tours" element={<ToursDetails />} />
-                    <Route path="/guide" element={<LocalGuideDetails />} />
+                    <Route path="/hotel-details" element={<HotelDetails />} />
+                    <Route path="/cab-details" element={<CabDetails />} />
+                    <Route path="/tours-details" element={<ToursDetails />} />
+                    <Route path="/local-guide-details" element={<LocalGuideDetails />} />
+                    <Route path="/hill-stays" element={<HillStaysDetails />} />
+                    <Route path="/rental-bikes" element={<BikesDetails />} />
+                    <Route path="/general-services" element={<GeneralServicesPage />} />
+                    <Route path="/hotel-details/:id" element={<HotelDetails />} />
+                    <Route path="/tours-details/:id" element={<ToursDetails />} />
+                    <Route path="/cab-details/:id" element={<CabDetails />} />
+                    <Route path="/local-guide-details/:id" element={<LocalGuideDetails />} />
+                    <Route path="/hill-stays/:id" element={<HillStaysDetails />} />
+                    <Route path="/rental-bikes/:id" element={<BikesDetails />} />
+                    <Route path="/general-services/:id" element={<GeneralServicesPage />} />
                     <Route path="/book-item/:itemId" element={<ProtectedRoute allowedRoles={["user", "owner", "guest"]}><ComingSoonPage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>

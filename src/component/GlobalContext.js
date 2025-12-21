@@ -4,7 +4,7 @@ import { analytics } from "../firebase"; // Assuming firebase.js exports 'analyt
 import { setUserId, logEvent } from "firebase/analytics"; // Firebase v9 Analytics functions
 
 import { useIsMobile } from "../hooks/use-mobile";
-import { Bed, MapPin, Mountain, Car, Users, Home as HomeIcon, Bike } from 'lucide-react';
+import { Bed, MapPin, Mountain, Car, Users, Home as HomeIcon, Bike,Wrench } from 'lucide-react';
 import { auth, db } from "../firebase"; // Assuming firebase.js correctly exports auth and db
 import { onAuthStateChanged, signOut, signInAnonymously } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
@@ -21,7 +21,9 @@ const categoriesData = [
   { icon: Users, title: "Local Guides", description: "Expert guidance" },
   { icon: HomeIcon, title: "Hill Stays", description: "Mountain resorts" },
   { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" },
+  { icon: Wrench, title: "General Services", description: "General Services like photographer and other..." }
 ];
+
 
 // --- Global Provider Component ---
 const GlobalProvider = ({ children }) => {

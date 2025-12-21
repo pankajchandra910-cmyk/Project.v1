@@ -1,12 +1,7 @@
 import { Card, CardContent } from "./Card";
 import { LucideIcon } from "lucide-react";
 
-// interface CategoryCardProps {
-//   icon: LucideIcon;
-//   title: string;
-//   description?: string;
-//   onClick: () => void;
-// }
+
 
 export default function CategoryCard({ icon: Icon, title, description, onClick }) {
   return (

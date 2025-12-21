@@ -19,11 +19,13 @@ import {
   Users,
   Home as HomeIcon,
   Bike,
+  Wrench,
   Navigation,
 } from "lucide-react";
 import { Card } from "../component/Card";
 import { Button } from "../component/button";
 import { featuredPlaces } from "../assets/dummy";
+import HillStaysPage from "./HillStaysDetails";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -36,6 +38,7 @@ export default function Home() {
     { icon: Users, title: "Local Guides", description: "Expert guidance" },
     { icon: HomeIcon, title: "Hill Stays", description: "Mountain resorts" },
     { icon: Bike, title: "Rental Bikes", description: "Scooters & bikes" },
+    { icon: Wrench, title: "General Services", description: "General Services like photographer and other..." }
   ];
 
   const {
@@ -69,10 +72,12 @@ export default function Home() {
       popular: `/popular-details/${id}`,
       place: `/place-details/${id}`,
       trek: `/trek-details/${id}`,
-      bike: `/bike-details/${id}`,
+      bike: `/rental-bikes/${id}`,
       cab: `/cab-details/${id}`,
       guide: `/guide-details/${id}`,
       resort: `/hotel-details/${id}`,
+      HillStays:`/hill-stays/${id}`,
+      other:`/general-services/${id}`
     };
     const path = routeMap[type.toLowerCase()] || "/";
     navigate(path);
@@ -86,6 +91,7 @@ export default function Home() {
     }
   }, [navigate]);
 
+  
   const handleSearch = useCallback((query) => {
     setSearchQuery(query);
     setSelectedCategory("");
@@ -140,22 +146,34 @@ export default function Home() {
     }
     
     setSelectedCategory(categoryTitle);
-    
+    console.log(categoryTitle)
     // Route logic based on category Title
     if (categoryTitle === 'Hotels & Resorts') {
-      navigate('/hotels');
+      navigate('/hotel-details');
     } else if (categoryTitle === 'Tours & Treks') {
       // Dynamic navigation for Tours
-      navigate('/tours');
+      navigate('/tours-details');
     } else if (categoryTitle === 'Cabs & Taxis') {
       // Dynamic navigation for Cabs
-      navigate('/cabs');
+      navigate('/cab-details');
     } 
-     else if (categoryTitle === 'Local Guides') {
-      // Dynamic navigation for Guide
-      navigate('/guide');
-    } else {
-      // Fallback for other coming soon pages
+    else if (categoryTitle === 'Local Guides') {
+     // Dynamic navigation for Guide
+     navigate('/local-guide-details');
+   } 
+    else if (categoryTitle === 'Hill Stays') {
+     // Dynamic navigation for Hill
+     navigate('/hill-stays');
+   } 
+    else if (categoryTitle === 'Rental Bikes') {
+     // Dynamic navigation for Hill
+     navigate('/rental-bikes');
+   } 
+    else if (categoryTitle === 'General Services') {
+     // Dynamic navigation for Hill
+     navigate('/general-services');
+   } else {
+    // Fallback for other coming soon pages
       navigate("/book-item/:itemId");
     }
   }, [navigate, setSelectedCategory]);
@@ -218,7 +236,7 @@ export default function Home() {
           {/* Categories */}
           <section>
             <h2 className="text-3xl font-bold text-center mb-8">Services</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-4">
               {categories.map((category) => (
                 <CategoryCard
                   key={category.title}

@@ -1,27 +1,208 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, Home, MapPin, Star, MessageCircle, Phone, 
   Languages, Award, Search, Loader2, User, CheckCircle,
-  ShieldCheck, ChevronLeft, ChevronRight, Clock, Users, Calendar
+  ShieldCheck, ChevronLeft, ChevronRight, Clock, Users, Calendar,
+  Send, UserCircle, Mail, Lock
 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+
+// --- FIREBASE IMPORTS ---
+import { 
+  collection, query, where, getDocs, doc, getDoc, 
+  addDoc, serverTimestamp, updateDoc, increment, orderBy, limit, startAfter 
+} from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase'; 
+
+// --- UI IMPORTS ---
 import { Card, CardContent } from '../component/Card';
 import { Button } from '../component/button';
 import { Badge } from '../component/badge';
 import { Input } from '../component/Input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../component/select';
+import { Textarea } from '../component/textarea';
+import { toast } from 'sonner';
 
+// ==========================================
+// 1. INTERNAL COMPONENT: REVIEW SECTION
+// ==========================================
+const ReviewSection = ({ listingId, ownerId, currentUser }) => {
+  const [reviews, setReviews] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  
+  // Submission State
+  const [newRating, setNewRating] = useState(0);
+  const [newComment, setNewComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch Reviews
+  const fetchReviews = async (isMore = false) => {
+    try {
+      setLoading(true);
+      const reviewsRef = collection(db, "listings", listingId, "reviews");
+      let q = query(reviewsRef, orderBy("createdAt", "desc"), limit(isMore ? 10 : 5));
+
+      if (isMore && lastDoc) {
+        q = query(reviewsRef, orderBy("createdAt", "desc"), startAfter(lastDoc), limit(10));
+      }
+
+      const snapshot = await getDocs(q);
+      const fetchedReviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (snapshot.docs.length > 0) {
+        setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+        if (isMore) setReviews(prev => [...prev, ...fetchedReviews]);
+        else setReviews(fetchedReviews);
+      } else {
+        setHasMore(false);
+      }
+      
+      if (snapshot.docs.length < (isMore ? 10 : 5)) setHasMore(false);
+
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (listingId) fetchReviews();
+  }, [listingId]);
+
+  // Submit Review
+  const handleSubmit = async () => {
+    if (!currentUser) return toast.error("Please login to submit a review");
+    if (newRating === 0) return toast.error("Please select a star rating");
+    if (!newComment.trim()) return toast.error("Please write a comment");
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, "listings", listingId, "reviews"), {
+        userName: currentUser.displayName || "Guest User",
+        userId: currentUser.uid,
+        rating: newRating,
+        comment: newComment,
+        createdAt: serverTimestamp(),
+        hostId: ownerId || "unknown" 
+      });
+
+      // Update Listing Aggregates
+      const listingRef = doc(db, "listings", listingId);
+      const listingSnap = await getDoc(listingRef);
+      
+      if (listingSnap.exists()) {
+        const data = listingSnap.data();
+        const currentCount = data.reviews || 0;
+        const currentRating = data.rating || 0;
+        const newAvg = ((currentRating * currentCount) + newRating) / (currentCount + 1);
+
+        await updateDoc(listingRef, {
+          reviews: increment(1),
+          rating: Number(newAvg.toFixed(1))
+        });
+      }
+
+      toast.success("Review submitted!");
+      setNewComment("");
+      setNewRating(0);
+      setReviews([]); 
+      setLastDoc(null);
+      fetchReviews(false); 
+    } catch (error) {
+      toast.error("Failed to submit review");
+      console.error(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-md p-6 mt-8 border border-gray-100">
+      <h3 className="text-xl font-bold mb-6">Traveller Feedback</h3>
+
+      <div className="bg-gray-50 p-4 rounded-lg mb-8 border border-gray-200">
+        <h4 className="font-semibold mb-3">Rate your guide</h4>
+        <div className="flex gap-2 mb-4">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`cursor-pointer h-8 w-8 ${star <= newRating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+              onClick={() => setNewRating(star)}
+            />
+          ))}
+        </div>
+        <Textarea 
+          placeholder="How was your experience?" 
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          className="bg-white mb-3 min-h-[100px] w-full p-2 border rounded"
+        />
+        <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
+          {submitting ? <Loader2 className="animate-spin h-4 w-4 mr-2"/> : <Send className="h-4 w-4 mr-2"/>}
+          Submit Feedback
+        </Button>
+      </div>
+
+      <div className="space-y-6">
+        {reviews.length > 0 ? (
+          reviews.map((review) => (
+            <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <User className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{review.userName}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-400">
+                       {review.createdAt?.toDate ? new Date(review.createdAt.toDate()).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-gray-600 text-sm ml-10">{review.comment}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500 italic text-center py-4">No reviews yet.</p>
+        )}
+
+        {hasMore && reviews.length > 0 && (
+          <Button variant="outline" className="w-full mt-4" onClick={() => fetchReviews(true)} disabled={loading}>
+            {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : 'Load More Reviews'}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 2. MAIN COMPONENT: LOCAL GUIDE DETAILS
+// ==========================================
 export default function LocalGuideDetails() {
   const navigate = useNavigate();
+  const { id } = useParams(); 
 
   // --- State Management ---
   const [guides, setGuides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGuide, setSelectedGuide] = useState(null);
-  const [hostPhoneNumber, setHostPhoneNumber] = useState(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Detail View State
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(1);
 
   // --- Filters ---
   const [filters, setFilters] = useState({
@@ -30,101 +211,122 @@ export default function LocalGuideDetails() {
     specialization: 'all'
   });
 
-  // --- 1. Fetch Guides from Firestore (CORRECTED MAPPING) ---
+  // --- 1. Auth Listener ---
   useEffect(() => {
-    const fetchGuides = async () => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser({ uid: user.uid, displayName: user.displayName || "Anonymous" });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // --- 2. Fetch Logic (List vs Detail) ---
+  useEffect(() => {
+    const loadContent = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const q = query(
-          collection(db, "listings"),
-          where("profession", "==", "local-guides"),
-          where("status", "==", "Active")
-        );
+        if (id) {
+          // A. DETAIL MODE
+          const docRef = doc(db, "listings", id);
+          const docSnap = await getDoc(docRef);
 
-        const querySnapshot = await getDocs(q);
-        
-        const fetchedGuides = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          
-          // CRITICAL FIX: Access the specific guideData object from your dashboard structure
-          const guideDetails = data.listingDetails?.guideData || {};
-
-          return {
-            id: doc.id,
-            ...data,
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            const guideDetails = data.listingDetails?.guideData || {};
             
-            // Map fields correctly from guideData
-            specializations: guideDetails.specializations || [],
-            languages: guideDetails.languages || [],
-            experience: guideDetails.experience || "0",
-            maxGroupSize: guideDetails.maxGroupSize || 'Flexible',
-            itinerary: guideDetails.itinerary || [],
-            
-            // Standard root fields
-            price: Number(data.price) || 0,
-            photos: data.photos && data.photos.length > 0 
-              ? data.photos 
-              : ['https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=1200&q=80'],
-            reviews: data.reviews || 0,
-            rating: data.rating || 5.0,
-            verified: data.verified || false
-          };
-        });
+            const normalizedGuide = {
+              id: docSnap.id,
+              ...data,
+              specializations: guideDetails.specializations || [],
+              languages: guideDetails.languages || [],
+              experience: guideDetails.experience || "0",
+              maxGroupSize: guideDetails.maxGroupSize || 'Flexible',
+              itinerary: guideDetails.itinerary || [],
+              price: Number(data.price) || 0,
+              photos: data.photos && data.photos.length > 0 
+                ? data.photos 
+                : ['https://placehold.co/800x600?text=No+Image'],
+              verified: data.verified || false
+            };
+            setSelectedGuide(normalizedGuide);
+          } else {
+            toast.error("Guide not found");
+            navigate('/local-guide-details');
+          }
+        } else {
+          // B. LIST MODE
+          const q = query(
+            collection(db, "listings"),
+            where("profession", "==", "local-guides"),
+            where("status", "==", "Active")
+          );
 
-        setGuides(fetchedGuides);
+          const querySnapshot = await getDocs(q);
+          const fetchedGuides = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            const guideDetails = data.listingDetails?.guideData || {};
+            return {
+              id: doc.id,
+              ...data,
+              specializations: guideDetails.specializations || [],
+              languages: guideDetails.languages || [],
+              experience: guideDetails.experience || "0",
+              price: Number(data.price) || 0,
+              photos: data.photos && data.photos.length > 0 
+                ? data.photos 
+                : ['https://placehold.co/800x600?text=No+Image'],
+              verified: data.verified || false
+            };
+          });
+          setGuides(fetchedGuides);
+          setSelectedGuide(null);
+        }
       } catch (error) {
-        console.error("Error fetching guides:", error);
+        console.error("Error loading content:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchGuides();
-  }, []);
+    loadContent();
+  }, [id, navigate]);
 
-  // --- 2. Fetch Host Phone & Reset Slider ---
-  useEffect(() => {
-    setHostPhoneNumber(null);
-    setCurrentImageIndex(0);
-
-    const fetchHostDetails = async () => {
-      if (selectedGuide && selectedGuide.ownerId) {
-        try {
-          const userDocRef = doc(db, "users", selectedGuide.ownerId);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            setHostPhoneNumber(userDocSnap.data().phoneNumber);
-          }
-        } catch (error) {
-          console.error("Error fetching host details:", error);
-        }
-      }
-    };
-
-    if (selectedGuide) fetchHostDetails();
-  }, [selectedGuide]);
-
+  
   // --- Helpers ---
   const renderStars = (rating) => {
+    const validRating = Number(rating) || 0;
     return Array.from({ length: 5 }, (_, i) => (
-      <Star key={i} className={`h-3.5 w-3.5 ${i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+      <Star key={i} className={`h-3.5 w-3.5 ${i < Math.floor(validRating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
     ));
   };
 
   const nextImage = (e) => {
     e?.stopPropagation();
     if (!selectedGuide?.photos) return;
-    setCurrentImageIndex((prev) => 
-      prev === selectedGuide.photos.length - 1 ? 0 : prev + 1
-    );
+    setCurrentImageIndex((prev) => prev === selectedGuide.photos.length - 1 ? 0 : prev + 1);
   };
 
   const prevImage = (e) => {
     e?.stopPropagation();
     if (!selectedGuide?.photos) return;
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? selectedGuide.photos.length - 1 : prev - 1
-    );
+    setCurrentImageIndex((prev) => prev === 0 ? selectedGuide.photos.length - 1 : prev - 1);
+  };
+
+  const handleWhatsApp = () => {
+    if (!selectedGuide.contactSnapshot.phone) return;
+    // Strip non-digit characters
+    const cleanNumber = selectedGuide.contactSnapshot.phone.replace(/\D/g, '');
+    // Add 91 if it's a 10 digit number
+    const finalNumber = cleanNumber.length === 10 ? `91${cleanNumber}` : cleanNumber;
+    window.open(`https://wa.me/${finalNumber}`, '_blank');
+  };
+
+  const handleGuideClick = (guideId) => {
+    navigate(`/local-guide-details/${guideId}`);
   };
 
   // --- Filters Logic ---
@@ -140,6 +342,15 @@ export default function LocalGuideDetails() {
 
   const allSpecializations = Array.from(new Set(guides.flatMap(g => g.specializations))).sort();
 
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+        <span className="text-gray-500 font-medium">Finding local experts...</span>
+      </div>
+    );
+  }
+
   // ==========================================
   // --- VIEW 1: SINGLE GUIDE DETAIL PAGE ---
   // ==========================================
@@ -149,8 +360,8 @@ export default function LocalGuideDetails() {
         {/* Sticky Header */}
         <div className="bg-white shadow-sm border-b sticky top-0 z-20">
           <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <Button variant="ghost" onClick={() => setSelectedGuide(null)} className="gap-2">
-              <ArrowLeft className="h-4 w-4" /> Back to Guides
+            <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+              <ArrowLeft className="h-4 w-4" /> Back 
             </Button>
             <Button variant="ghost" onClick={() => navigate('/')} className="gap-2">
               <Home className="h-4 w-4" /> Home
@@ -177,10 +388,10 @@ export default function LocalGuideDetails() {
           {/* Slider Controls */}
           {selectedGuide.photos.length > 1 && (
             <>
-              <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100">
+              <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 z-10">
                 <ChevronLeft className="h-6 w-6" />
               </button>
-              <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100">
+              <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 z-10">
                 <ChevronRight className="h-6 w-6" />
               </button>
               <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2 z-20">
@@ -195,26 +406,22 @@ export default function LocalGuideDetails() {
           <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 pb-8 text-white z-10">
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-wrap gap-2 mb-3">
-                {selectedGuide.verified && (
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white border-none flex items-center gap-1 px-3 py-1 text-sm shadow-sm">
-                        <ShieldCheck className="h-4 w-4" /> Verified Guide
-                    </Badge>
-                )}
                 <Badge variant="outline" className="text-white border-white/40 bg-black/20 backdrop-blur-sm px-3 py-1">
                     {selectedGuide.experience} Years Experience
                 </Badge>
               </div>
 
-              <h1 className="text-3xl md:text-5xl font-extrabold mb-2 drop-shadow-xl">{selectedGuide.name}</h1>
+              {/* Verified Shield next to Name */}
+              <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl md:text-5xl font-extrabold drop-shadow-xl">{selectedGuide.name}</h1>
+                  {selectedGuide.verified && (
+                      <ShieldCheck className="h-8 w-8 text-blue-400 fill-blue-500/20" />
+                  )}
+              </div>
               
               <div className="flex flex-col md:flex-row gap-4 md:items-center text-lg text-gray-200">
                   <div className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" /> {selectedGuide.location}
-                  </div>
-                  <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-                  <div className="flex items-center gap-2">
-                     <div className="flex text-yellow-400">{renderStars(selectedGuide.rating)}</div>
-                     <span>({selectedGuide.reviews} reviews)</span>
                   </div>
               </div>
             </div>
@@ -229,7 +436,7 @@ export default function LocalGuideDetails() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* About Card */}
-              <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+              <div className="bg-white rounded-xl shadow-md p-6 md:p-8 border border-gray-100">
                 <h2 className="text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
                     <User className="h-6 w-6 text-primary"/> About
                 </h2>
@@ -247,7 +454,7 @@ export default function LocalGuideDetails() {
                         </h3>
                         <div className="flex flex-wrap gap-2">
                             {selectedGuide.languages.length > 0 ? selectedGuide.languages.map((lang, i) => (
-                                <Badge key={i} variant="outline" className="px-3 py-1">{lang}</Badge>
+                                <Badge key={i} variant="outline" className="px-3 py-1 text-gray-600 border-gray-200">{lang}</Badge>
                             )) : <span className="text-gray-400 text-sm italic">English, Hindi</span>}
                         </div>
                     </div>
@@ -287,7 +494,7 @@ export default function LocalGuideDetails() {
               </div>
 
               {/* Itinerary Section */}
-              <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+              <div className="bg-white rounded-xl shadow-md p-6 md:p-8 border border-gray-100">
                  <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-primary"/> Suggested Itineraries
                  </h2>
@@ -318,12 +525,12 @@ export default function LocalGuideDetails() {
               </div>
 
               {/* Trust Section */}
-              <div className="bg-white rounded-xl shadow-md p-6 md:p-8">
+              <div className="bg-white rounded-xl shadow-md p-6 md:p-8 border border-gray-100">
                  <h2 className="text-xl font-bold mb-4">Why hire {selectedGuide.name}?</h2>
                  <ul className="space-y-3">
                     <li className="flex gap-3 items-start text-gray-700">
                         <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5"/>
-                        <span>Deep local knowledge of {selectedGuide.location} hidden gems.</span>
+                        <span>Deep local knowledge of {selectedGuide.location}'s hidden gems.</span>
                     </li>
                     <li className="flex gap-3 items-start text-gray-700">
                         <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5"/>
@@ -335,11 +542,28 @@ export default function LocalGuideDetails() {
                     </li>
                  </ul>
               </div>
+
+              {/* Reviews Section */}
+              {currentUser ? (
+                  <ReviewSection 
+                    listingId={selectedGuide.id} 
+                    ownerId={selectedGuide.ownerId} 
+                    currentUser={currentUser} 
+                  />
+              ) : (
+                  <Card className="p-6 bg-gray-50 border-dashed text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <UserCircle className="h-10 w-10 text-gray-400"/>
+                      <h3 className="font-semibold">Login to view & leave reviews</h3>
+                      <Button variant="outline" onClick={() => navigate('/login')}>Login Now</Button>
+                    </div>
+                  </Card>
+              )}
             </div>
 
             {/* Right Column (Sticky Booking Box) */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24 border border-gray-100">
+              <div className="bg-white rounded-xl shadow-lg p-6 sticky top-24 border border-gray-100 border-t-4 border-t-primary">
                 <div className="mb-6 pb-6 border-b border-gray-100">
                   <span className="text-sm text-gray-500 font-medium">Daily Rate</span>
                   <div className="flex items-baseline gap-1 mt-1">
@@ -358,30 +582,59 @@ export default function LocalGuideDetails() {
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-3 pt-2 border-t border-gray-200">
-                       <Phone className="h-5 w-5 text-gray-400"/>
-                       <span className="font-medium">
-                         {hostPhoneNumber ? hostPhoneNumber : "Contact hidden"}
-                       </span>
-                    </div>
+                    {/* Conditionally Render Contact Info or Hidden Message */}
+
+                        
+                            <div className="flex items-center gap-3 pt-2 border-t border-gray-200">
+                                <div className="bg-white p-2 rounded-full shadow-xs">
+                                    <Phone className="h-4 w-4 text-primary"/>
+                                </div>
+                                <span className="font-medium text-gray-700">
+                                    {selectedGuide.contactSnapshot.phone}
+                                </span>
+                            </div>
+                       
+
+                        {selectedGuide.contactSnapshot?.email && (
+                            <div className="flex items-center gap-3 pt-2 border-t border-gray-200">
+                                <div className="bg-white p-2 rounded-full shadow-xs">
+                                    <Mail className="h-4 w-4 text-primary"/>
+                                </div>
+                                <span className="font-medium text-gray-700 text-sm truncate">
+                                    {selectedGuide.contactSnapshot.email}
+                                </span>
+                            </div>
+                        )}
+                      
+                    
                   </div>
 
-                  {hostPhoneNumber ? (
-                    <>
-                        <Button className="w-full py-6 text-lg" onClick={() => window.location.href = `tel:${hostPhoneNumber}`}>
-                            <Phone className="mr-2 h-5 w-5" /> Call Now
-                        </Button>
-                        <Button 
-                            variant="outline" 
-                            className="w-full py-6 text-lg text-green-600 border-green-200 hover:bg-green-50"
-                            onClick={() => window.open(`https://wa.me/${hostPhoneNumber.replace('+', '')}`, '_blank')}
-                        >
-                            <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
-                        </Button>
-                    </>
-                  ) : (
-                    <Button disabled className="w-full bg-gray-300">Contact details unavailable</Button>
-                  )}
+                  {/* Condition for Buttons */}
+                  {currentUser ? (
+                    
+                        
+                       <>
+                            <Button className="w-full py-6 text-lg shadow-lg" onClick={() => window.location.href = `tel:${selectedGuide.contactSnapshot.phone}`}>
+                                <Phone className="mr-2 h-5 w-5" /> Call Now
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="w-full py-6 text-lg text-green-600 border-green-200 hover:bg-green-50 shadow-sm"
+                                onClick={handleWhatsApp}
+                            >
+                                <MessageCircle className="mr-2 h-5 w-5" /> WhatsApp
+                            </Button>
+                        </>
+                     )  :(
+                      <div className="flex items-center gap-3 pt-2 border-t border-gray-200 text-gray-400">
+                          <div className="bg-white p-2 rounded-full shadow-xs">
+                              <Lock className="h-4 w-4 text-gray-400"/>
+                          </div>
+                          <span className="text-sm italic">
+                              Contact info hidden
+                          </span>
+                      </div>
+                    )}
                   
                   <p className="text-xs text-center text-gray-400 mt-2">
                     Direct booking with guide. No platform fees.
@@ -396,7 +649,7 @@ export default function LocalGuideDetails() {
   }
 
   // ==========================================
-  // --- VIEW 2: LISTING GRID (MAIN PAGE) ---
+  // --- VIEW 2: LISTING GRID (NO ID) ---
   // ==========================================
   return (
     <div className="min-h-screen bg-gray-50">
@@ -432,7 +685,6 @@ export default function LocalGuideDetails() {
                     <SelectItem value="Bhimtal">Bhimtal</SelectItem>
                     <SelectItem value="Mukteshwar">Mukteshwar</SelectItem>
                     <SelectItem value="Almora">Almora</SelectItem>
-                    <SelectItem value="Ranikhet">Ranikhet</SelectItem>
                   </SelectContent>
                </Select>
                <Select value={filters.specialization} onValueChange={(v) => setFilters({...filters, specialization: v})}>
@@ -458,7 +710,7 @@ export default function LocalGuideDetails() {
               <Card 
                 key={guide.id} 
                 className="hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => setSelectedGuide(guide)}
+                onClick={() => handleGuideClick(guide.id)}
               >
                 <CardContent className="p-6">
                     {/* Centered Profile Image with Badge */}
@@ -470,8 +722,8 @@ export default function LocalGuideDetails() {
                                 className="w-full h-full object-cover rounded-full border-4 border-white shadow-md"
                             />
                             {guide.verified && (
-                                <div className="absolute bottom-1 right-1 bg-green-500 rounded-full p-1.5 border-2 border-white shadow-sm flex items-center justify-center">
-                                    <ShieldCheck className="h-4 w-4 text-white" />
+                                <div className="absolute bottom-1 right-1 bg-gray-500 rounded-full p-1.5 border-0 border-white shadow-sm flex items-center justify-center">
+                                    <ShieldCheck className="h-5 w-5 text-blue-400 fill-blue-500/20 mb-1" />
                                 </div>
                             )}
                         </div>
@@ -481,13 +733,6 @@ export default function LocalGuideDetails() {
                         <div className="flex items-center justify-center gap-1 text-sm text-gray-500 mb-2">
                             <MapPin className="h-3.5 w-3.5" />
                             <span>{guide.location}</span>
-                        </div>
-                        
-                        <div className="flex items-center justify-center gap-1 mb-2">
-                            {renderStars(guide.rating)}
-                            <span className="text-sm text-gray-600 ml-1">
-                            ({guide.reviews} reviews)
-                            </span>
                         </div>
                     </div>
 
@@ -507,9 +752,9 @@ export default function LocalGuideDetails() {
                     {/* Specialization Tags */}
                     <div className="mb-4">
                         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">Specializations</span>
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 h-12 overflow-hidden content-start">
                             {guide.specializations.slice(0, 3).map((spec, index) => (
-                                <Badge key={index} variant="secondary" className="text-xs font-normal">
+                                <Badge key={index} variant="secondary" className="text-xs h-10 font-normal">
                                     {spec}
                                 </Badge>
                             ))}
@@ -525,12 +770,12 @@ export default function LocalGuideDetails() {
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
                         <div>
                             <span className="text-lg font-bold text-primary">₹{guide.price.toLocaleString()}</span>
                             <span className="text-xs text-gray-500"> / day</span>
                         </div>
-                        <Button size="sm" onClick={(e) => { e.stopPropagation(); setSelectedGuide(guide); }}>
+                        <Button size="sm" className="bg-primary hover:bg-primary/90">
                             View Profile
                         </Button>
                     </div>
