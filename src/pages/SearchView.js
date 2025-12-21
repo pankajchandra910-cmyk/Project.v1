@@ -11,7 +11,7 @@ import Header from "../component/Header";
 import MobileMenu from "../component/MobileMenu";
 import ListingCard from "../component/ListingCard"; 
 import { Button } from "../component/button";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetFooter } from "../component/sheet"; 
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetFooter } from "../component/Sheet"; 
 import { Badge } from "../component/badge";
 import { Slider } from "../component/slider"; 
 import Footer from "../component/Footer";
